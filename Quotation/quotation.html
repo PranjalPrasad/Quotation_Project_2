@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Quotation Management — VKM Brick &amp; Block Machinery</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          peach: {
+            50:  "#FCEEF3",
+            100: "#F6DCE8",
+            200: "#EFC8DC",
+            300: "#E8B9CE",
+            400: "#B8285F",
+            500: "#800021",
+            600: "#6B001C",
+            700: "#540016",
+          },
+          cream: "#FCEEF3",
+        },
+        fontFamily: {
+          sans: ["Poppins", "ui-sans-serif", "system-ui"],
+        },
+        borderRadius: {
+          "3xl": "1.75rem",
+          "4xl": "2rem",
+        },
+      },
+    },
+  };
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<link rel="stylesheet" href="/Quotation/quotation.css" />
+</head>
+<body class="bg-cream">
+
+  <div class="app-shell w-full flex">
+
+    <div id="sidebarBackdrop" class="sidebar-backdrop hidden"></div>
+
+    <aside id="sidebar" class="sidebar app-sidebar relative flex flex-col items-center py-5 gap-6 bg-cream border-r border-peach-300 transition-all duration-300 ease-in-out w-20 shrink-0">
+      <button id="sidebarToggle" aria-label="Toggle sidebar" class="absolute -right-3 top-8 w-6 h-6 rounded-full bg-cream shadow-md border border-peach-300 flex items-center justify-center text-peach-500 hover:scale-110 transition-transform">
+        <svg id="toggleIcon" class="w-3.5 h-3.5 transition-transform duration-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+      </button>
+
+      <div class="flex items-center justify-center shrink-0">
+        <img src="/img/image.png" alt="VKM Logo" class="w-auto h-10 object-contain" />
+      </div>
+
+      <nav class="nav-list w-full flex-1 flex flex-col items-center gap-1.5 mt-3 px-3">
+        <li data-role="SUPER_ADMIN,ADMIN,SALES" id="menuDashboard" class="nav-item" data-label="Dashboard" aria-label="Dashboard" onclick="window.location.href='../dashboard/dashboard.html'" style="list-style:none; width:100%;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect></svg>
+          <span>Dashboard</span>
+        </li>
+        <li data-role="SUPER_ADMIN,ADMIN,SALES" id="menuQuotation" class="nav-item active" data-label="Quotation Management" aria-label="Quotation Management" onclick="window.location.href='../Quotation/quotation.html'" style="list-style:none; width:100%;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="M9 15h1"></path><path d="M9.5 12.5c0-.83.67-1.5 1.5-1.5h.5a1.5 1.5 0 0 1 0 3H11a1.5 1.5 0 0 0 0 3h.5a1.5 1.5 0 0 0 1.5-1.5"></path><line x1="11" y1="10" x2="11" y2="10.7"></line><line x1="11" y1="17.3" x2="11" y2="18"></line></svg>
+          <span>Quotation Management</span>
+        </li>
+        <li data-role="SUPER_ADMIN,ADMIN,SALES" id="menuProduct" class="nav-item" data-label="Product Management" aria-label="Product Management" onclick="window.location.href='../productM/productm.html'" style="list-style:none; width:100%;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><line x1="12" y1="2" x2="12" y2="4.5"></line><line x1="12" y1="19.5" x2="12" y2="22"></line><line x1="2" y1="12" x2="4.5" y2="12"></line><line x1="4.9" y1="4.9" x2="6.6" y2="6.6"></line><line x1="17.4" y1="17.4" x2="19.1" y2="19.1"></line><line x1="4.9" y1="19.1" x2="6.6" y2="17.4"></line><line x1="17.4" y1="6.6" x2="19.1" y2="4.9"></line></svg>
+          <span>Product Management</span>
+        </li>
+        <li data-role="SUPER_ADMIN,ADMIN,SALES" id="menuCustomer" class="nav-item" data-label="Customer Management" aria-label="Customer Management" style="list-style:none; width:100%;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect>
+            <circle cx="9" cy="11" r="3"></circle>
+            <path d="M3 18.5c1.5-2.5 4-4 7-4s5.5 1.5 7 4"></path>
+            <path d="M16 9l2 2 4-4"></path>
+          </svg>
+          <span>Customer Management</span>
+        </li>
+        <li data-role="SUPER_ADMIN,ADMIN,SALES" id="menuReports" class="nav-item" data-label="Reports Management" aria-label="Reports Management" onclick="window.location.href='../reports/reports.html'" style="list-style:none; width:100%;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="21" x2="5" y2="11"></line><line x1="12" y1="21" x2="12" y2="6"></line><line x1="19" y1="21" x2="19" y2="14"></line><line x1="3" y1="21" x2="21" y2="21"></line></svg>
+          <span>Reports Management</span>
+        </li>
+        <li data-role="SUPER_ADMIN,ADMIN,SALES" id="menuProject" class="nav-item" data-label="Project Management" aria-label="Project Management" onclick="window.location.href='project.html'" style="list-style:none; width:100%;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-6 9 6v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+          <span>Project Management</span>
+        </li>
+        <li data-role="SUPER_ADMIN" id="menuUserManagement" class="nav-item" data-label="User Management" aria-label="User Management" onclick="window.location.href='user.html'" style="list-style:none; width:100%;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+          <span>User Management</span>
+        </li>
+        <li data-role="SUPER_ADMIN,ADMIN,SALES" id="menuCalculator" class="nav-item" data-label="Cost Calculator" aria-label="Cost Calculator" onclick="window.location.href='calc.html'" style="list-style:none; width:100%;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"></rect><line x1="8" y1="6" x2="16" y2="6"></line><line x1="8" y1="10" x2="8.01" y2="10"></line><line x1="12" y1="10" x2="12.01" y2="10"></line><line x1="16" y1="10" x2="16.01" y2="10"></line><line x1="8" y1="14" x2="8.01" y2="14"></line><line x1="12" y1="14" x2="12.01" y2="14"></line><line x1="16" y1="14" x2="16.01" y2="14"></line><line x1="8" y1="18" x2="8.01" y2="18"></line><line x1="12" y1="18" x2="12.01" y2="18"></line><line x1="16" y1="18" x2="16.01" y2="18"></line></svg>
+          <span>Cost Calculator</span>
+        </li>
+        <li data-role="SUPER_ADMIN,ADMIN" id="menuApproval" class="nav-item" data-label="Approval Management" aria-label="Approval Management" onclick="window.location.href='approval.html'" style="list-style:none; width:100%;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+          <span>Approval Management</span>
+        </li>
+      </nav>
+    </aside>
+
+    <main class="app-main flex-1 bg-cream px-4 sm:px-5 md:px-6 py-4 min-w-0">
+
+      <div class="flex items-center justify-between mb-4 gap-3 flex-wrap">
+        <div>
+          <p class="text-sm text-gray-700 font-semibold">📄 Quotation Management</p>
+          <p class="text-[11px] text-gray-400">Create, track and manage machine quotations</p>
+        </div>
+
+        <div class="flex items-center gap-2.5 relative">
+          <div class="relative">
+            <button id="notifBtn" aria-label="Notifications" class="w-8 h-8 rounded-full bg-cream shadow-sm border border-peach-300 flex items-center justify-center text-gray-500 hover:text-peach-500 transition-colors">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+              <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full"></span>
+            </button>
+
+            <div id="notifDropdown" class="topbar-dropdown hidden">
+              <p class="topbar-dropdown-title">Notifications</p>
+              <div class="topbar-notif-item">
+                <p>Quotation SQ-1004 pending 3 days</p>
+                <span>40 min ago</span>
+              </div>
+              <div class="topbar-notif-item">
+                <p>SQ-1002 accepted by customer</p>
+                <span>2 hr ago</span>
+              </div>
+              <div class="topbar-notif-item">
+                <p>SQ-0998 rejected</p>
+                <span>Yesterday</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="relative">
+            <button id="profileBtn" aria-label="Profile" class="w-8 h-8 rounded-full bg-peach-500 flex items-center justify-center text-white font-semibold text-sm shadow-sm">
+              A
+            </button>
+
+            <div id="profileDropdown" class="topbar-dropdown hidden">
+              <div class="topbar-dropdown-title" id="profileRoleLabel" style="padding:4px 6px 2px;">Logged in as: -</div>
+              <button id="profileLogoutBtn" class="topbar-logout-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2.5 mb-2.5">
+        <div class="bg-cream rounded-xl p-3 shadow-sm border border-peach-300 flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-peach-500 flex items-center justify-center shrink-0">
+            <i class="fas fa-file-invoice text-white text-sm"></i>
+          </div>
+          <div class="min-w-0">
+            <p class="text-sm font-semibold text-gray-800" id="stat-total">0</p>
+            <p class="text-[10px] text-gray-400">Total Quotations</p>
+          </div>
+        </div>
+        <div class="bg-cream rounded-xl p-3 shadow-sm border border-peach-300 flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-peach-100 flex items-center justify-center shrink-0">
+            <i class="fas fa-calendar-day text-peach-500 text-sm"></i>
+          </div>
+          <div class="min-w-0">
+            <p class="text-sm font-semibold text-gray-800" id="stat-today">0</p>
+            <p class="text-[10px] text-gray-400">Today's Quotations</p>
+          </div>
+        </div>
+        <div class="bg-cream rounded-xl p-3 shadow-sm border border-peach-300 flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-gray-200 flex items-center justify-center shrink-0">
+            <i class="fas fa-indian-rupee-sign text-gray-600 text-sm"></i>
+          </div>
+          <div class="min-w-0">
+            <p class="text-sm font-semibold text-gray-800" id="stat-value">₹0</p>
+            <p class="text-[10px] text-gray-400">Total Value</p>
+          </div>
+        </div>
+        <div class="bg-cream rounded-xl p-3 shadow-sm border border-peach-300 flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0">
+            <i class="fas fa-circle-check text-emerald-600 text-sm"></i>
+          </div>
+          <div class="min-w-0">
+            <p class="text-sm font-semibold text-gray-800" id="stat-accepted">0</p>
+            <p class="text-[10px] text-gray-400">Accepted</p>
+          </div>
+        </div>
+        <div class="bg-cream rounded-xl p-3 shadow-sm border border-peach-300 flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-rose-50 flex items-center justify-center shrink-0">
+            <i class="fas fa-circle-xmark text-rose-500 text-sm"></i>
+          </div>
+          <div class="min-w-0">
+            <p class="text-sm font-semibold text-gray-800" id="stat-rejected">0</p>
+            <p class="text-[10px] text-gray-400">Rejected</p>
+          </div>
+        </div>
+        <div class="bg-cream rounded-xl p-3 shadow-sm border border-peach-300 flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
+            <i class="fas fa-clock text-amber-600 text-sm"></i>
+          </div>
+          <div class="min-w-0">
+            <p class="text-sm font-semibold text-gray-800" id="stat-pending">0</p>
+            <p class="text-[10px] text-gray-400">Pending</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-cream rounded-xl p-3.5 shadow-sm border border-peach-300 mb-3">
+        <div class="flex flex-wrap gap-2.5 items-center justify-between mb-3">
+          <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input id="search-input" type="text" placeholder="Search by customer, quote no...">
+          </div>
+          <div class="flex flex-wrap gap-2 items-center">
+            <select id="filter-status" class="select-input">
+              <option value="">All Status</option>
+              <option value="Pending">Pending</option>
+              <option value="Accepted">Accepted</option>
+              <option value="Rejected">Rejected</option>
+            </select>
+            <select id="filter-size" class="select-input">
+              <option value="">All Types</option>
+            </select>
+            <button class="btn-outline small" id="btn-reset-filters">
+              <i class="fas fa-rotate-left"></i> Reset
+            </button>
+            <button class="btn-primary" id="btn-new-quotation">
+              <i class="fas fa-plus"></i> New Quotation
+            </button>
+            <div class="flex gap-1">
+              <button class="btn-outline small" id="btn-export-excel"><i class="fas fa-file-excel"></i></button>
+              <button class="btn-outline small" id="btn-export-csv"><i class="fas fa-file-csv"></i></button>
+              <button class="btn-outline small" id="btn-export-pdf"><i class="fas fa-file-pdf"></i></button>
+              <button class="btn-outline small" id="btn-print"><i class="fas fa-print"></i></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-scope overflow-x-auto">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th data-sort="quoteNo">Quotation No. <span class="sort-icon">⇅</span></th>
+                <th data-sort="customer">Customer <span class="sort-icon">⇅</span></th>
+                <th data-sort="amount">Amount <span class="sort-icon">⇅</span></th>
+                <th data-sort="status">Status <span class="sort-icon">⇅</span></th>
+                <th data-sort="referral">Referral <span class="sort-icon">⇅</span></th>
+                <th data-sort="date">Date <span class="sort-icon">⇅</span></th>
+                <th class="actions-th">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="quotation-tbody"></tbody>
+          </table>
+        </div>
+
+        <div class="flex items-center justify-between mt-2 flex-wrap gap-2">
+          <div class="flex items-center gap-2 text-[10.5px] text-gray-400">
+            <span>Rows per page</span>
+            <select id="rows-per-page" class="rows-select">
+              <option value="10">10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+            </select>
+            <span id="table-range"></span>
+          </div>
+          <div class="pagination flex items-center gap-1 flex-wrap" id="pagination"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- MODAL: WIZARD -->
+  <div id="modal-wizard" class="modal-overlay hidden">
+    <div class="modal-box modal-wide">
+      <div class="modal-head">
+        <div class="modal-title"><i class="fas fa-file-invoice-dollar"></i> New Quotation</div>
+        <button class="modal-close" data-close="modal-wizard"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="stepper" id="stepper">
+          <div class="step active" data-step="1"><div class="step-circle">1</div><div class="step-label">Customer</div></div>
+          <div class="step" data-step="2"><div class="step-circle">2</div><div class="step-label">Products</div></div>
+          <div class="step" data-step="3"><div class="step-circle">3</div><div class="step-label">Cost</div></div>
+          <div class="step" data-step="4"><div class="step-circle">4</div><div class="step-label">GST & Discount</div></div>
+          <div class="step" data-step="5"><div class="step-circle">5</div><div class="step-label">Generate</div></div>
+        </div>
+
+        <div class="step-panel active" data-panel="1">
+          <div class="panel-title">Customer Details</div>
+          <div class="form-grid">
+            <div class="form-field">
+              <label>Customer Name <span class="req">*</span></label>
+              <input type="text" id="f-customerName" placeholder="e.g. Yash Pal Singh">
+              <span class="field-error" id="err-customerName"></span>
+            </div>
+            <div class="form-field">
+              <label>Company Name</label>
+              <input type="text" id="f-companyName" placeholder="Optional">
+            </div>
+            <div class="form-field">
+              <label>Mobile Number <span class="req">*</span></label>
+              <input type="tel" id="f-mobile" maxlength="10" placeholder="10-digit mobile">
+              <span class="field-error" id="err-mobile"></span>
+            </div>
+            <div class="form-field">
+              <label>Email Address <span class="req">*</span></label>
+              <input type="email" id="f-email" placeholder="name@example.com">
+              <span class="field-error" id="err-email"></span>
+            </div>
+            <div class="form-field span-2">
+              <label>Installation Address <span class="req">*</span></label>
+              <textarea id="f-address" rows="2" placeholder="Full installation address"></textarea>
+              <span class="field-error" id="err-address"></span>
+            </div>
+            <div class="form-field">
+              <label>City</label>
+              <input type="text" id="f-city" placeholder="City">
+            </div>
+            <div class="form-field">
+              <label>State <span class="req">*</span></label>
+              <input type="text" id="f-state" placeholder="e.g. Uttar Pradesh">
+              <span class="field-error" id="err-state"></span>
+            </div>
+            <div class="form-field">
+              <label>Pincode <span class="req">*</span></label>
+              <input type="text" id="f-pincode" maxlength="6" placeholder="6-digit pincode">
+              <span class="field-error" id="err-pincode"></span>
+            </div>
+            <div class="form-field span-2" id="gst-field">
+              <label>GST Number</label>
+              <input type="text" id="f-gst" maxlength="15" placeholder="15-character GSTIN (optional)">
+              <span class="field-error" id="err-gst"></span>
+            </div>
+          </div>
+
+          <div class="sub-section">
+            <div class="sub-title collapsible-toggle" id="referralToggle">
+              <i class="fas fa-handshake" style="color:#059669;"></i> Referral Details
+              <i class="fas fa-chevron-down" id="referralChevron" style="margin-left:auto;font-size:10px;color:#9CA3AF;"></i>
+            </div>
+            <div class="form-grid collapsible-body" id="referralBody">
+              <div class="form-field span-2">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                  <input type="checkbox" id="f-isReferred" style="width:16px;height:16px;accent-color:#059669;">
+                  Is this a referred customer?
+                </label>
+              </div>
+              <div class="form-field" id="referredByField" style="display:none;">
+                <label>Referred By <span class="req">*</span></label>
+                <input type="text" id="f-referredBy" placeholder="Search customer or channel partner..." list="referrerList">
+                <datalist id="referrerList"></datalist>
+              </div>
+              <div class="form-field" id="referrerTypeField" style="display:none;">
+                <label>Referrer Type <span class="req">*</span></label>
+                <select id="f-referrerType" class="select-input">
+                  <option value="">Select type</option>
+                  <option value="Existing Customer">Existing Customer</option>
+                  <option value="Channel Partner">Channel Partner</option>
+                </select>
+              </div>
+              <div class="form-field" id="referralCodeField" style="display:none;">
+                <label>Referral Code</label>
+                <input type="text" id="f-referralCode" placeholder="Auto-filled or manual" readonly>
+              </div>
+              <div class="form-field" id="referralPercentField" style="display:none;">
+                <label>Referral %</label>
+                <input type="number" id="f-referralPercent" min="0" max="100" value="5" placeholder="e.g. 5">
+              </div>
+              <div class="hint-box span-2" id="referralHint" style="display:none;">
+                <i class="fas fa-info-circle"></i>
+                <span id="referralHintText">Referral details will be used for commission calculation.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="step-panel" data-panel="2">
+          <div class="panel-title">Products & Items</div>
+          <div class="hint-box"><i class="fas fa-circle-info"></i> Pick a product from Product Management catalog, set qty & rate, then add. Use Custom Item for anything not in catalog.</div>
+          <div class="quick-add-row">
+            <select id="product-catalog-select" class="select-input" style="flex:2; min-width:200px;">
+              <option value="">Select a product…</option>
+            </select>
+            <input type="number" id="product-picker-qty" class="select-input" style="width:80px;" min="0.01" step="any" value="1" placeholder="Qty">
+            <input type="number" id="product-picker-rate" class="select-input" style="width:100px;" min="0" step="any" value="0" placeholder="Rate (₹)">
+            <button type="button" class="btn-outline small" id="btn-add-catalog-product"><i class="fas fa-plus"></i> Add</button>
+            <button type="button" class="chip-btn" id="chip-custom"><i class="fas fa-plus"></i> Custom Item</button>
+          </div>
+          <div class="items-table-wrap">
+            <table class="items-table">
+              <thead>
+                <tr>
+                  <th style="width:28px;">#</th>
+                  <th>Equipment Name</th>
+                  <th style="width:70px;">Qty</th>
+                  <th style="width:100px;">Rate (₹)</th>
+                  <th style="width:100px;">Amount</th>
+                  <th style="width:36px;"></th>
+                </tr>
+              </thead>
+              <tbody id="items-tbody"></tbody>
+              <tfoot>
+                <tr class="items-footer-row">
+                  <td colspan="4" class="text-right">Subtotal</td>
+                  <td class="item-amount-cell" id="items-subtotal">₹0</td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          <span class="field-error" id="err-items"></span>
+
+          <div class="sub-section" style="margin-top:14px;">
+            <div class="sub-title"><i class="fas fa-location-dot"></i> Installation Details</div>
+            <div class="form-grid">
+              <div class="form-field">
+                <label>Site Type</label>
+                <select id="f-siteType" class="select-input">
+                  <option value="">Select site type</option>
+                  <option value="Own Land">Own Land</option>
+                  <option value="Rented Shed">Rented Shed</option>
+                  <option value="Open Yard">Open Yard</option>
+                  <option value="Factory">Factory</option>
+                </select>
+              </div>
+              <div class="form-field">
+                <label>Delivery Timeline <span class="req">*</span></label>
+                <input type="text" id="f-deliveryTimeline" placeholder="e.g. 45 days from advance payment" value="45 days from advance payment">
+                <span class="field-error" id="err-deliveryTimeline"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="step-panel" data-panel="3">
+          <div class="panel-title">Cost Calculation</div>
+          <div class="table-scope overflow-x-auto">
+            <table class="data-table cost-table">
+              <thead><tr><th>Cost Head</th><th class="text-right">Amount (₹)</th></tr></thead>
+              <tbody>
+                <tr><td>Items Subtotal <span class="auto-tag">from Products</span></td><td class="text-right" id="cost-items">₹0</td></tr>
+                <tr><td>Installation Charges</td><td class="text-right"><input type="number" class="cost-input" id="cost-installation" value="0"></td></tr>
+                <tr><td>Transportation Charges</td><td class="text-right"><input type="number" class="cost-input" id="cost-transport" value="0"></td></tr>
+                <tr>
+                  <td><input type="text" class="cost-label-input" id="cost-other-label" value="Other Charges"></td>
+                  <td class="text-right"><input type="number" class="cost-input" id="cost-other" value="0"></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="step-panel" data-panel="4">
+          <div class="panel-title">GST & Discount</div>
+          <div class="form-grid">
+            <div class="form-field">
+              <label>GST %</label>
+              <input type="number" id="f-gstPercent" min="0" max="100" step="0.01" value="18" placeholder="e.g. 18">
+            </div>
+            <div class="form-field">
+              <label>Discount Type</label>
+              <select id="f-discountType" class="select-input">
+                <option value="percent">Percentage (%)</option>
+                <option value="flat">Flat Amount (₹)</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label>Discount Value</label>
+              <input type="number" id="f-discountValue" value="0" min="0" step="0.01">
+            </div>
+          </div>
+          <div class="summary-box" id="summary-gst"></div>
+        </div>
+
+        <div class="step-panel" data-panel="5">
+          <div class="panel-title">Generate Quotation</div>
+          <div class="sub-section">
+            <div class="sub-title"><i class="fas fa-university"></i> Bank Details</div>
+            <div class="form-grid">
+              <div class="form-field">
+                <label>Account Name</label>
+                <input type="text" id="f-accountName" value="Vaishnokripa Mercantile">
+              </div>
+              <div class="form-field">
+                <label>Bank Name</label>
+                <input type="text" id="f-bankName" value="HDFC BANK">
+              </div>
+              <div class="form-field">
+                <label>Account Number</label>
+                <input type="text" id="f-accountNumber" value="50200118886367">
+              </div>
+              <div class="form-field">
+                <label>IFSC Code</label>
+                <input type="text" id="f-ifscCode" value="HDFC0003696">
+              </div>
+              <div class="form-field span-2">
+                <label>Branch</label>
+                <input type="text" id="f-branch" value="SHASTRIPURAM AGRA">
+              </div>
+            </div>
+          </div>
+          <div class="sub-section">
+            <div class="sub-title"><i class="fas fa-hand-holding-usd"></i> Payment Schedule</div>
+            <div class="form-grid">
+              <div class="form-field span-2">
+                <label>Payment Type</label>
+                <select id="f-paymentType" class="select-input">
+                  <option value="full">Full Advance (100%)</option>
+                  <option value="installment">Installment</option>
+                </select>
+              </div>
+              <div class="form-field" id="payment-advance-field">
+                <label>Advance %</label>
+                <input type="number" id="f-payment-advance" min="0" max="100" value="50">
+              </div>
+              <div class="form-field" id="payment-material-field">
+                <label>Before Dispatch %</label>
+                <input type="number" id="f-payment-material" min="0" max="100" value="25">
+              </div>
+              <div class="form-field" id="payment-installation-field">
+                <label>On Delivery %</label>
+                <input type="number" id="f-payment-installation" min="0" max="100" value="15">
+              </div>
+              <div class="form-field" id="payment-balance-field">
+                <label>Balance %</label>
+                <input type="number" id="f-payment-balance" min="0" max="100" value="10">
+              </div>
+            </div>
+            <div class="hint-box" id="payment-summary"><i class="fas fa-check-circle"></i> Total: <span id="payment-total">100</span>%</div>
+            <span class="field-error" id="err-payment"></span>
+          </div>
+          <div class="sub-section">
+            <div class="sub-title"><i class="fas fa-calendar-alt"></i> Quotation Validity</div>
+            <div class="form-grid">
+              <div class="form-field span-2">
+                <label>Valid Until</label>
+                <input type="date" id="f-validUntil">
+              </div>
+            </div>
+          </div>
+          <div class="sub-section">
+            <div class="sub-title"><i class="fas fa-file-contract"></i> Terms & Conditions</div>
+            <div class="form-field span-2">
+              <textarea id="edit-terms" rows="5">GST Extra.
+Delivery after Full & Final Payment.
+All Cheques & Drafts in favour of Vaishnokripa Mercantile.
+Jurisdiction Agra only.
+Freight Extra.</textarea>
+            </div>
+          </div>
+          <div class="invoice-preview" id="invoice-preview"></div>
+          <div class="share-grid hidden" id="share-grid">
+            <button class="btn-outline" id="btn-download-pdf"><i class="fas fa-download"></i> Download PDF</button>
+            <button class="btn-outline" id="btn-share-email"><i class="fas fa-envelope"></i> Share via Email</button>
+            <button class="btn-outline" id="btn-share-whatsapp"><i class="fab fa-whatsapp"></i> Share via WhatsApp</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-foot" id="wizard-nav">
+        <button class="btn-outline" id="btn-prev" disabled><i class="fas fa-arrow-left"></i> Back</button>
+        <button class="btn-primary" id="btn-next">Next <i class="fas fa-arrow-right"></i></button>
+        <button class="btn-primary hidden" id="btn-generate"><i class="fas fa-file-invoice"></i> Generate Quotation</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-view" class="modal-overlay hidden">
+    <div class="modal-box modal-wide">
+      <div class="modal-head">
+        <div class="modal-title"><i class="fas fa-eye"></i> View Quotation</div>
+        <button class="modal-close" data-close="modal-view"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="invoice-preview" id="view-invoice-preview"></div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn-outline" id="btn-view-download-pdf"><i class="fas fa-download"></i> Download PDF</button>
+        <button class="btn-outline" data-close="modal-view">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-edit" class="modal-overlay hidden">
+    <div class="modal-box">
+      <div class="modal-head">
+        <div class="modal-title"><i class="fas fa-pen"></i> Edit Quotation — <span id="edit-quoteno"></span></div>
+        <button class="modal-close" data-close="modal-edit"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-field">
+            <label>Customer Name <span class="req">*</span></label>
+            <input type="text" id="edit-customerName">
+            <span class="field-error" id="err-edit-customerName"></span>
+          </div>
+          <div class="form-field">
+            <label>Mobile Number <span class="req">*</span></label>
+            <input type="tel" id="edit-mobile" maxlength="10">
+            <span class="field-error" id="err-edit-mobile"></span>
+          </div>
+          <div class="form-field span-2">
+            <label>Email Address <span class="req">*</span></label>
+            <input type="email" id="edit-email">
+            <span class="field-error" id="err-edit-email"></span>
+          </div>
+          <div class="form-field">
+            <label>Installation Charges (₹)</label>
+            <input type="number" id="edit-installation">
+          </div>
+          <div class="form-field">
+            <label>Transportation Charges (₹)</label>
+            <input type="number" id="edit-transport">
+          </div>
+          <div class="form-field">
+            <label>Discount Value</label>
+            <input type="number" id="edit-discountValue">
+          </div>
+          <div class="form-field">
+            <label>Status</label>
+            <select id="edit-status" class="select-input">
+              <option>Pending</option>
+              <option>Accepted</option>
+              <option>Rejected</option>
+            </select>
+          </div>
+        </div>
+        <div class="summary-box" id="edit-summary"></div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn-outline" data-close="modal-edit">Cancel</button>
+        <button class="btn-primary" id="btn-save-edit"><i class="fas fa-check"></i> Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-delete" class="modal-overlay hidden">
+    <div class="modal-box modal-small">
+      <div class="modal-head">
+        <div class="modal-title"><i class="fas fa-triangle-exclamation"></i> Delete Quotation</div>
+        <button class="modal-close" data-close="modal-delete"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <p class="confirm-text">Are you sure you want to delete <b id="delete-quoteno"></b>? This action cannot be undone.</p>
+      </div>
+      <div class="modal-foot">
+        <button class="btn-outline" data-close="modal-delete">Cancel</button>
+        <button class="btn-danger" id="btn-confirm-delete"><i class="fas fa-trash"></i> Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container" class="toast-container"></div>
+
+<script src="/session.js"></script>
+<script src="/Quotation/quotation.js"></script>
+</body>
+</html>
