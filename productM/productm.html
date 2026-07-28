@@ -5,7 +5,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>Product Management — VKM Brick &amp; Block Machinery</title>
-
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
   tailwind.config = {
@@ -66,15 +66,16 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect></svg>
           <span>Dashboard</span>
         </li>
-        <li data-role="SUPER_ADMIN,ADMIN,SALES" id="menuQuotation" class="nav-item" data-label="Quotation Management" aria-label="Quotation Management" onclick="window.location.href='../Quotation/quotation.html'" style="list-style:none; width:100%;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="M9 15h1"></path><path d="M9.5 12.5c0-.83.67-1.5 1.5-1.5h.5a1.5 1.5 0 0 1 0 3H11a1.5 1.5 0 0 0 0 3h.5a1.5 1.5 0 0 0 1.5-1.5"></path><line x1="11" y1="10" x2="11" y2="10.7"></line><line x1="11" y1="17.3" x2="11" y2="18"></line></svg>
-          <span>Quotation Management</span>
-        </li>
         <li data-role="SUPER_ADMIN,ADMIN,SALES" id="menuProduct" class="nav-item active" data-label="Product Management" aria-label="Product Management" onclick="window.location.href='../productM/productm.html'" style="list-style:none; width:100%;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><line x1="12" y1="2" x2="12" y2="4.5"></line><line x1="12" y1="19.5" x2="12" y2="22"></line><line x1="2" y1="12" x2="4.5" y2="12"></line><line x1="4.9" y1="4.9" x2="6.6" y2="6.6"></line><line x1="17.4" y1="17.4" x2="19.1" y2="19.1"></line><line x1="4.9" y1="19.1" x2="6.6" y2="17.4"></line><line x1="17.4" y1="6.6" x2="19.1" y2="4.9"></line></svg>
           <span>Product Management</span>
         </li>
-        <li data-role="SUPER_ADMIN,ADMIN,SALES" id="menuCustomer" class="nav-item" data-label="Customer Management" aria-label="Customer Management" style="list-style:none; width:100%;">
+        <li data-role="SUPER_ADMIN,ADMIN,SALES" id="menuQuotation" class="nav-item" data-label="Quotation Management" aria-label="Quotation Management" onclick="window.location.href='../Quotation/quotation.html'" style="list-style:none; width:100%;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="M9 15h1"></path><path d="M9.5 12.5c0-.83.67-1.5 1.5-1.5h.5a1.5 1.5 0 0 1 0 3H11a1.5 1.5 0 0 0 0 3h.5a1.5 1.5 0 0 0 1.5-1.5"></path><line x1="11" y1="10" x2="11" y2="10.7"></line><line x1="11" y1="17.3" x2="11" y2="18"></line></svg>
+          <span>Quotation Management</span>
+        </li>
+        
+         <li class="nav-item" data-label="Customer Management" aria-label="Customer Management" onclick="window.location.href='../customer/customer.html'"style="list-style:none; width:100%;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect>
             <circle cx="9" cy="11" r="3"></circle>
@@ -83,25 +84,13 @@
           </svg>
           <span>Customer Management</span>
         </li>
-        <li data-role="SUPER_ADMIN,ADMIN,SALES" id="menuReports" class="nav-item" data-label="Reports Management" aria-label="Reports Management" onclick="window.location.href='../reports/reports.html'" style="list-style:none; width:100%;">
+         <li class="nav-item"  data-label="Billing & Invoice" aria-label="Billing & Invoice" onclick="window.location.href='../billinginvoice/bill.html'" style="list-style:none; width:100%;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
+          <span>Billing & Invoice</span>
+        </li>
+        <li class="nav-item" data-label="Reports Management" aria-label="Reports Management" onclick="window.location.href='../reports/report.html'" style="list-style:none; width:100%;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="21" x2="5" y2="11"></line><line x1="12" y1="21" x2="12" y2="6"></line><line x1="19" y1="21" x2="19" y2="14"></line><line x1="3" y1="21" x2="21" y2="21"></line></svg>
           <span>Reports Management</span>
-        </li>
-        <li data-role="SUPER_ADMIN,ADMIN,SALES" id="menuProject" class="nav-item" data-label="Project Management" aria-label="Project Management" onclick="window.location.href='project.html'" style="list-style:none; width:100%;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-6 9 6v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-          <span>Project Management</span>
-        </li>
-        <li data-role="SUPER_ADMIN" id="menuUserManagement" class="nav-item" data-label="User Management" aria-label="User Management" onclick="window.location.href='user.html'" style="list-style:none; width:100%;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-          <span>User Management</span>
-        </li>
-        <li data-role="SUPER_ADMIN,ADMIN,SALES" id="menuCalculator" class="nav-item" data-label="Cost Calculator" aria-label="Cost Calculator" onclick="window.location.href='calc.html'" style="list-style:none; width:100%;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"></rect><line x1="8" y1="6" x2="16" y2="6"></line><line x1="8" y1="10" x2="8.01" y2="10"></line><line x1="12" y1="10" x2="12.01" y2="10"></line><line x1="16" y1="10" x2="16.01" y2="10"></line><line x1="8" y1="14" x2="8.01" y2="14"></line><line x1="12" y1="14" x2="12.01" y2="14"></line><line x1="16" y1="14" x2="16.01" y2="14"></line><line x1="8" y1="18" x2="8.01" y2="18"></line><line x1="12" y1="18" x2="12.01" y2="18"></line><line x1="16" y1="18" x2="16.01" y2="18"></line></svg>
-          <span>Cost Calculator</span>
-        </li>
-        <li data-role="SUPER_ADMIN,ADMIN" id="menuApproval" class="nav-item" data-label="Approval Management" aria-label="Approval Management" onclick="window.location.href='approval.html'" style="list-style:none; width:100%;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
-          <span>Approval Management</span>
         </li>
       </nav>
     </aside>
@@ -214,6 +203,12 @@
             <input id="search-input" type="text" placeholder="Search by product name, brand or SKU...">
           </div>
           <div class="flex flex-wrap gap-2 items-center">
+            <select id="filter-producttype" class="select-input">
+              <option value="">All Types</option>
+              <option value="machine">Machine (Main Equipment)</option>
+              <option value="component">Component / Sub-Assembly</option>
+              <option value="accessory">Accessory / Consumable</option>
+            </select>
             <select id="filter-category" class="select-input">
               <option value="">All Categories</option>
               <option value="Brick Machine">Brick Machine</option>
@@ -221,10 +216,11 @@
               <option value="Conveyor Belt">Conveyor Belt</option>
               <option value="Power Pack System">Power Pack System</option>
               <option value="PLC Panel">PLC Panel</option>
+              <option value="Vibrator Table">Vibrator Table</option>
+              <option value="Mixer Machine">Mixer Machine</option>
               <option value="Trolley">Trolley</option>
               <option value="Mould">Mould</option>
-              <option value="Vibrator Table">Vibrator Table</option>
-              <option value="Consumables">Consumables</option>
+              <option value="Chemical/Consumable">Chemical/Consumable</option>
             </select>
             <select id="filter-status" class="select-input">
               <option value="">All Status</option>
@@ -244,16 +240,16 @@
             <thead>
               <tr>
                 <th data-sort="name">Product <span class="sort-icon">⇅</span></th>
+                <th data-sort="productType">Type <span class="sort-icon">⇅</span></th>
                 <th data-sort="category">Category <span class="sort-icon">⇅</span></th>
                 <th data-sort="brand">Brand <span class="sort-icon">⇅</span></th>
-                <th data-sort="spec">Specification <span class="sort-icon">⇅</span></th>
                 <th data-sort="qtyPerKw" title="Default quantity required per machine set">Qty / Set <span class="sort-icon">⇅</span></th>
                 <th data-sort="hsn">HSN Code <span class="sort-icon">⇅</span></th>
                 <th data-sort="gst">GST % <span class="sort-icon">⇅</span></th>
                 <th data-sort="price">Selling Price <span class="sort-icon">⇅</span></th>
                 <th data-sort="stock">Stock <span class="sort-icon">⇅</span></th>
                 <th data-sort="status">Status <span class="sort-icon">⇅</span></th>
-                <th class="actions-th">Actions</th>
+                 <th class="actions-th">Actions</th>
               </tr>
             </thead>
             <tbody id="product-tbody"></tbody>
@@ -291,6 +287,28 @@
       <div class="modal-body">
         <input type="hidden" id="pf-id">
         <div class="form-grid">
+
+          <!-- ============ STEP 0: Product Type switch ============ -->
+          <div class="field-group form-field span-2">
+            <label>Product Type <span class="req">*</span></label>
+            <div class="producttype-toggle" id="pf-producttype-toggle">
+              <button type="button" data-val="machine">
+                <span class="pt-title"><i class="fas fa-industry"></i> Machine</span>
+                <span class="pt-sub">Main equipment</span>
+              </button>
+              <button type="button" data-val="component">
+                <span class="pt-title"><i class="fas fa-gears"></i> Component</span>
+                <span class="pt-sub">Sub-assembly, standalone or bundled</span>
+              </button>
+              <button type="button" data-val="accessory">
+                <span class="pt-title"><i class="fas fa-toolbox"></i> Accessory</span>
+                <span class="pt-sub">Consumable / accessory item</span>
+              </button>
+            </div>
+            <input type="hidden" id="pf-producttype" value="">
+            <span class="field-error" id="err-pf-producttype"></span>
+          </div>
+
           <div class="field-group form-field span-2">
             <label>Product Name <span class="req">*</span></label>
             <input type="text" id="pf-name" class="field-input" placeholder="e.g. Hydraulic Brick Making Machine VKM-40">
@@ -305,10 +323,11 @@
               <option>Conveyor Belt</option>
               <option>Power Pack System</option>
               <option>PLC Panel</option>
+              <option>Vibrator Table</option>
+              <option>Mixer Machine</option>
               <option>Trolley</option>
               <option>Mould</option>
-              <option>Vibrator Table</option>
-              <option>Consumables</option>
+              <option>Chemical/Consumable</option>
               <option value="__other__">Other (add new category)</option>
             </select>
             <span class="field-error" id="err-pf-category"></span>
@@ -321,6 +340,10 @@
             </div>
             <span class="field-hint">Click Add — the category appears in the dropdown immediately.</span>
             <span class="field-error" id="err-pf-other-category"></span>
+          </div>
+          <div class="field-group form-field">
+            <label>Machine Series / Model Code</label>
+            <input type="text" id="pf-modelcode" class="field-input" placeholder="e.g. VK001, Nano, Budget, Rotary">
           </div>
           <div class="field-group form-field">
             <label>Brand <span class="req">*</span></label>
@@ -336,11 +359,15 @@
             <input type="text" id="pf-spec" class="field-input" placeholder="e.g. Fully Automatic, 4 Station">
           </div>
           <div class="field-group form-field">
-            <label>Unit <span class="req">*</span></label>
+            <label>Unit of Measurement <span class="req">*</span></label>
             <select id="pf-unit" class="field-input">
-              <option value="Nos">Nos</option>
+              <option value="Piece">Piece</option>
               <option value="Set">Set</option>
-              <option value="Meter">Meter</option>
+              <option value="Kg">Kg</option>
+              <option value="Feet">Feet</option>
+              <option value="Sq.Ft">Sq.Ft</option>
+              <option value="Drum">Drum</option>
+              <option value="Sheet">Sheet</option>
               <option value="Box">Box</option>
             </select>
           </div>
@@ -363,7 +390,7 @@
           <div class="form-subgroup">
             <div class="form-subgroup-title"><i class="fas fa-tag"></i> Pricing</div>
             <div class="field-group form-field">
-              <label>MRP (₹) <span class="req">*</span></label>
+              <label>MRP / Base Price (₹) <span class="req">*</span></label>
               <input type="number" min="0" step="0.01" id="pf-mrp" class="field-input" placeholder="e.g. 1380000">
               <span class="field-error" id="err-pf-mrp"></span>
             </div>
@@ -373,7 +400,7 @@
               <span class="field-error" id="err-pf-discount"></span>
             </div>
             <div class="field-group form-field">
-              <label>Selling Price (₹) <span class="req">*</span></label>
+              <label>Selling Price / Rate (₹) <span class="req">*</span></label>
               <input type="number" min="0" step="0.01" id="pf-price" class="field-input" placeholder="e.g. 1250000">
               <span class="field-error" id="err-pf-price"></span>
             </div>
@@ -400,24 +427,25 @@
             <select id="pf-status" class="field-input">
               <option>Active</option>
               <option>Inactive</option>
+              <option>Discontinued</option>
             </select>
           </div>
 
-          <!-- ============ Machine Information (conditional — Brick Machine only) ============ -->
+          <!-- ============ Machine Information (conditional — Product Type = Machine) ============ -->
           <div class="conditional-section" id="machineInfoSection">
             <div class="conditional-section-title"><i class="fas fa-gears"></i> Machine Information</div>
-            <div class="conditional-section-sub">Shown for Brick Machine products</div>
+            <div class="conditional-section-sub">Shown for Machine (Main Equipment) products</div>
 
+            <div class="field-group form-field">
+              <label>Production Capacity (per 8 Hrs)</label>
+              <input type="text" id="mi-output" class="field-input" placeholder="e.g. 4500–5000 / 8000 UP">
+            </div>
             <div class="field-group form-field">
               <label>Pressure / Tonnage (Ton)</label>
               <input type="number" min="0" step="0.01" id="mi-tonnage" class="field-input" placeholder="e.g. 120">
             </div>
             <div class="field-group form-field">
-              <label>Production Output / 8 Hours</label>
-              <input type="text" id="mi-output" class="field-input" placeholder="e.g. 8,000–10,000 bricks">
-            </div>
-            <div class="field-group form-field">
-              <label>Cycle Time (Sec)</label>
+              <label>Cycle Time (Sec / Stroke)</label>
               <input type="number" min="0" step="0.1" id="mi-cycletime" class="field-input" placeholder="e.g. 12">
             </div>
             <div class="field-group form-field">
@@ -425,49 +453,15 @@
               <input type="number" min="0" id="mi-oiltank" class="field-input" placeholder="e.g. 300">
             </div>
             <div class="field-group form-field">
-              <label>Power Requirement (HP)</label>
+              <label>Power Consumption (HP)</label>
               <input type="number" min="0" step="0.1" id="mi-power-hp" class="field-input" placeholder="e.g. 60">
             </div>
             <div class="field-group form-field">
-              <label>Generator Requirement (KVA)</label>
+              <label>Genset Requirement (KVA)</label>
               <input type="number" min="0" step="0.1" id="mi-genset-kva" class="field-input" placeholder="e.g. 82.5">
             </div>
             <div class="field-group form-field">
-              <label>Motor Details</label>
-              <input type="text" id="mi-motor" class="field-input" placeholder="e.g. 60 HP x 2, 3-Phase">
-            </div>
-            <div class="field-group form-field">
-              <label>Weight</label>
-              <input type="text" id="mi-weight" class="field-input" placeholder="e.g. 12,500 kg">
-            </div>
-            <div class="field-group form-field">
-              <label>Machine Dimensions (L x W x H)</label>
-              <input type="text" id="mi-dimensions" class="field-input" placeholder="e.g. 8.5m x 3.2m x 3.8m">
-            </div>
-            <div class="field-group form-field">
-              <label>Shed / Space Required</label>
-              <input type="text" id="mi-shed" class="field-input" placeholder="e.g. 15m x 10m">
-            </div>
-            <div class="field-group form-field">
-              <label>Labour Required (No. of workers)</label>
-              <input type="number" min="0" id="mi-labour" class="field-input" placeholder="e.g. 6">
-            </div>
-            <div class="field-group form-field">
-              <label>Country of Origin</label>
-              <input type="text" id="mi-origin" class="field-input" placeholder="e.g. India">
-            </div>
-            <div class="field-group form-field span-2">
-              <label>Standard Accessories Included</label>
-              <textarea id="mi-accessories" class="field-input" rows="3" placeholder="One item per line, e.g.&#10;Pallet feeding conveyor&#10;PLC control panel&#10;Hydraulic power pack"></textarea>
-            </div>
-          </div>
-
-          <!-- ============ Technical Specification (conditional — Brick Machine only) ============ -->
-          <div class="conditional-section" id="techSpecSection">
-            <div class="conditional-section-title"><i class="fas fa-microchip"></i> Technical Specification</div>
-
-            <div class="field-group form-field">
-              <label>Automation Type</label>
+              <label>Automation Level</label>
               <select id="ts-automation" class="field-input">
                 <option value="Manual">Manual</option>
                 <option value="Semi-Automatic">Semi-Automatic</option>
@@ -475,8 +469,49 @@
               </select>
             </div>
             <div class="field-group form-field">
+              <label>Vibration Table Included</label>
+              <div class="yn-toggle" id="ts-vibration-toggle">
+                <button type="button" data-val="yes">Yes</button>
+                <button type="button" data-val="no">No</button>
+              </div>
+              <input type="hidden" id="ts-vibration" value="no">
+            </div>
+            <div class="field-group form-field">
               <label>Brick Pallet Size</label>
-              <input type="text" id="ts-palletsize" class="field-input" placeholder="e.g. 900mm x 500mm">
+              <input type="text" id="ts-palletsize" class="field-input" placeholder="e.g. 14x24, 24x24, 32x24">
+            </div>
+            <div class="field-group form-field">
+              <label>Labour Required (Persons)</label>
+              <input type="number" min="0" id="mi-labour" class="field-input" placeholder="e.g. 6">
+            </div>
+            <div class="field-group form-field">
+              <label>Shed / Space Required</label>
+              <input type="text" id="mi-shed" class="field-input" placeholder="e.g. 20x15 ft, 40x60 ft">
+            </div>
+            <div class="field-group form-field">
+              <label>Machine Weight</label>
+              <input type="text" id="mi-weight" class="field-input" placeholder="e.g. 12,500 kg">
+            </div>
+            <div class="field-group form-field">
+              <label>Machine Dimensions (L x W x H)</label>
+              <input type="text" id="mi-dimensions" class="field-input" placeholder="e.g. 8.5m x 3.2m x 3.8m">
+            </div>
+            <div class="field-group form-field">
+              <label>Motor Details (HP, Brand, RPM, Phase)</label>
+              <input type="text" id="mi-motor" class="field-input" placeholder="e.g. 60 HP, Crompton, 1440 RPM, 3-Phase">
+            </div>
+            <div class="field-group form-field">
+              <label>Country of Origin</label>
+              <input type="text" id="mi-origin" class="field-input" placeholder="e.g. India">
+            </div>
+            <div class="field-group form-field">
+              <label>Demo / Reference Video Link</label>
+              <input type="url" id="mi-video" class="field-input" placeholder="e.g. https://youtube.com/...">
+            </div>
+            <div class="field-group form-field span-2">
+              <label>Bundled Equipment Included</label>
+              <input type="text" id="mi-bundled" class="field-input" placeholder="e.g. 500kg Pan Mixer + 20ft Conveyor">
+              <span class="field-hint">Free text — list the equipment sold together with this machine as standard.</span>
             </div>
             <div class="field-group form-field span-2">
               <label>PLC Details</label>
@@ -490,13 +525,55 @@
               <label>Safety Features</label>
               <input type="text" id="ts-safety" class="field-input" placeholder="e.g. Emergency stop, safety guards, overload cutoff">
             </div>
+            <div class="field-group form-field span-2">
+              <label>Standard Accessories Included</label>
+              <textarea id="mi-accessories" class="field-input" rows="3" placeholder="One item per line, e.g.&#10;Pallet feeding conveyor&#10;PLC control panel&#10;Hydraulic power pack"></textarea>
+            </div>
+          </div>
+
+          <!-- ============ Component / Sub-Assembly fields (conditional — Product Type = Component) ============ -->
+          <div class="conditional-section" id="componentSection">
+            <div class="conditional-section-title"><i class="fas fa-puzzle-piece"></i> Component / Sub-Assembly Details</div>
+            <div class="conditional-section-sub">Shown for Pan Mixer, Conveyor, Power Pack, PLC Panel and similar sub-assemblies</div>
+
             <div class="field-group form-field">
-              <label>Vibration System</label>
-              <div class="yn-toggle" id="ts-vibration-toggle">
-                <button type="button" data-val="yes">Yes</button>
-                <button type="button" data-val="no">No</button>
-              </div>
-              <input type="hidden" id="ts-vibration" value="no">
+              <label>Capacity</label>
+              <input type="text" id="co-capacity" class="field-input" placeholder="e.g. Pan Mixer 500kg">
+            </div>
+            <div class="field-group form-field">
+              <label>Length</label>
+              <input type="text" id="co-length" class="field-input" placeholder="e.g. 22 Feet (for Conveyor)">
+            </div>
+            <div class="field-group form-field span-2">
+              <label>Motor / Power Specs</label>
+              <input type="text" id="co-motor" class="field-input" placeholder="e.g. 5 HP, 1440 RPM, 3-Phase, Crompton">
+            </div>
+            <div class="field-group form-field span-2">
+              <label>Key Features</label>
+              <textarea id="co-features" class="field-input" rows="3" placeholder="One feature per line, e.g.&#10;Auto material feeding system&#10;Accident proof locking system"></textarea>
+            </div>
+            <div class="field-group form-field span-2">
+              <label>Compatible Machine Models</label>
+              <input type="text" id="co-compatible" class="field-input" placeholder="e.g. VKM-BM-40, VKM-BM-80">
+            </div>
+          </div>
+
+          <!-- ============ Accessory / Consumable fields (conditional — Product Type = Accessory) ============ -->
+          <div class="conditional-section" id="accessorySection">
+            <div class="conditional-section-title"><i class="fas fa-toolbox"></i> Accessory / Consumable Details</div>
+            <div class="conditional-section-sub">Shown for Trolley, Mould, Chemical Drum, Colour Bag, Ply Board and similar items</div>
+
+            <div class="field-group form-field">
+              <label>Size / Type</label>
+              <input type="text" id="ac-sizetype" class="field-input" placeholder="e.g. Mould Zig Zag with Dumble, Ply Board 8x4">
+            </div>
+            <div class="field-group form-field">
+              <label>Pack / Bulk Unit</label>
+              <input type="text" id="ac-packunit" class="field-input" placeholder="e.g. per drum, per sheet, per set of 100 moulds">
+            </div>
+            <div class="field-group form-field span-2">
+              <label>Minimum Order Quantity</label>
+              <input type="number" min="0" id="ac-moq" class="field-input" placeholder="e.g. 5000 (moulds are often ordered in thousands)">
             </div>
           </div>
 
@@ -586,6 +663,7 @@
       </div>
     </div>
   </div>
+
 
   <div id="toast-container" class="fixed bottom-5 right-5 z-[600] space-y-2 max-w-[calc(100vw-2.5rem)]"></div>
 

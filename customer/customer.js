@@ -1,166 +1,150 @@
-// TODO: replace mock data array below with API call to /api/customer
+/* ============ customer.js ============ */
 
 /* ============================================================
-   customer.js — Customer Management module
-   Vanilla JS only. No frameworks, no jQuery.
-   ============================================================ */
-
-/* ---------- Sidebar collapse/expand (same behaviour as dashboard.js) ----------
-   On tablet/phone (<1024px) the sidebar opens as an overlay drawer
-   (see .sidebar.expanded position:fixed rule in dashboard.css), so a
-   backdrop is shown/hidden alongside it and tapping the backdrop, a
-   nav item, or resizing back to desktop closes the drawer again. */
-const sidebar = document.getElementById('sidebar');
-const sidebarToggle = document.getElementById('sidebarToggle');
-const toggleIcon = document.getElementById('toggleIcon');
-const sidebarBackdrop = document.getElementById('sidebarBackdrop');
-let sidebarExpanded = false;
-
-function isDrawerBreakpoint() {
-  return window.innerWidth <= 1023;
-}
-
-function setSidebarExpanded(expanded) {
-  sidebarExpanded = expanded;
-  sidebar.classList.toggle('expanded', sidebarExpanded);
-  sidebar.classList.toggle('collapsed', !sidebarExpanded);
-  toggleIcon.style.transform = sidebarExpanded ? 'rotate(180deg)' : 'rotate(0deg)';
-
-  if (isDrawerBreakpoint()) {
-    sidebarBackdrop?.classList.toggle('visible', sidebarExpanded);
-    sidebarBackdrop?.classList.toggle('hidden', !sidebarExpanded);
-  } else {
-    sidebarBackdrop?.classList.remove('visible');
-    sidebarBackdrop?.classList.add('hidden');
-  }
-}
-
-sidebarToggle?.addEventListener('click', () => {
-  setSidebarExpanded(!sidebarExpanded);
-});
-
-sidebarBackdrop?.addEventListener('click', () => setSidebarExpanded(false));
-
-/* Tapping a nav item on a phone/tablet should close the drawer instead
-   of leaving it open over the newly-loaded page. */
-document.querySelectorAll('.nav-item').forEach((item) => {
-  item.addEventListener('click', () => {
-    if (isDrawerBreakpoint()) setSidebarExpanded(false);
-  });
-});
-
-/* If the viewport is resized past the drawer breakpoint while the
-   drawer is open, drop the backdrop so it doesn't linger on desktop. */
-window.addEventListener('resize', () => {
-  if (!isDrawerBreakpoint()) {
-    sidebarBackdrop?.classList.remove('visible');
-    sidebarBackdrop?.classList.add('hidden');
-  }
-});
-
-/* ---------- Topbar dropdowns (same behaviour as dashboard.js) ---------- */
-const notifBtn = document.getElementById('notifBtn');
-const notifDropdown = document.getElementById('notifDropdown');
-const profileBtn = document.getElementById('profileBtn');
-const profileDropdown = document.getElementById('profileDropdown');
-const profileLogoutBtn = document.getElementById('profileLogoutBtn');
-const exportBtn = document.getElementById('exportBtn');
-const exportMenu = document.getElementById('exportMenu');
-
-function closeAllDropdowns(except) {
-  [notifDropdown, profileDropdown, exportMenu].forEach((dd) => {
-    if (dd && dd !== except) dd.classList.add('hidden');
-  });
-}
-notifBtn?.addEventListener('click', (e) => {
-  e.stopPropagation();
-  const willOpen = notifDropdown.classList.contains('hidden');
-  closeAllDropdowns();
-  notifDropdown.classList.toggle('hidden', !willOpen);
-});
-profileBtn?.addEventListener('click', (e) => {
-  e.stopPropagation();
-  const willOpen = profileDropdown.classList.contains('hidden');
-  closeAllDropdowns();
-  profileDropdown.classList.toggle('hidden', !willOpen);
-});
-exportBtn?.addEventListener('click', (e) => {
-  e.stopPropagation();
-  const willOpen = exportMenu.classList.contains('hidden');
-  closeAllDropdowns();
-  exportMenu.classList.toggle('hidden', !willOpen);
-});
-document.addEventListener('click', () => closeAllDropdowns());
-profileLogoutBtn?.addEventListener('click', () => showToast('Logged out'));
-
-/* ---------- Close any open <select> dropdown on scroll ----------
-   Native <select> option lists are rendered by the browser/OS, not
-   by our CSS. If the page (or a scrollable container like the
-   modal body) scrolls while one is open, it doesn't track with its
-   input and visually "floats" across the page. Blurring it the
-   moment a scroll happens forces it to close cleanly instead.
-   `capture: true` on window also catches scroll events fired by
-   inner scrollable elements (e.g. .modal-body, .table-scroll),
-   since scroll events don't bubble but are still seen in the
-   capture phase. ---------------------------------------------- */
-window.addEventListener('scroll', () => {
-  const active = document.activeElement;
-  if (active && active.tagName === 'SELECT') {
-    active.blur();
-  }
-}, true);
-
-/* ---------- Toast helper ---------- */
-function showToast(message) {
-  const container = document.getElementById('toast-container');
-  if (!container) return;
-  const toast = document.createElement('div');
-  toast.className = 'toast-animate';
-  toast.style.cssText = 'background:#1F2937;color:#fff;font-size:12px;font-weight:500;padding:10px 16px;border-radius:10px;box-shadow:0 8px 20px rgba(0,0,0,0.18);';
-  toast.textContent = message;
-  container.appendChild(toast);
-  setTimeout(() => toast.remove(), 2500);
-}
-
-/* ============================================================
-   Dummy data
+   Sample data (replace with API later)
    ============================================================ */
 let customers = [
-  { id: 'CUST-1001', name: 'Amit Sharma', mobile: '9876543210', email: 'amit.sharma@example.com', address: '12 Lake View Road', city: 'Pune', state: 'Maharashtra', gst: '', type: 'Residential', project: 'Rooftop 3kW, Kothrud', status: 'Active', created: '2026-06-02', channelPartner: 'CP-0001' },
-  { id: 'CUST-1002', name: 'Priya Enterprises', mobile: '9822011122', email: 'contact@priyaent.com', address: 'Plot 4, MIDC', city: 'Pune', state: 'Maharashtra', gst: '27ABCPE1234F1Z5', type: 'Commercial', project: '10kW Office Rooftop, Hinjewadi', status: 'Active', created: '2026-06-05', channelPartner: 'CP-0002' },
-  { id: 'CUST-1003', name: 'Ravi Constructions', mobile: '9765432109', email: 'ravi.constructions@example.com', address: 'Site Office, Wagholi', city: 'Pune', state: 'Maharashtra', gst: '', type: 'Commercial', project: '5kW Site Office, Wagholi', status: 'Inactive', created: '2026-06-08', channelPartner: 'CP-0001' },
-  { id: 'CUST-1004', name: 'Meena Textiles', mobile: '9911223344', email: 'info@meenatextiles.com', address: 'Textile Park, Ichalkaranji', city: 'Kolhapur', state: 'Maharashtra', gst: '27MEENA5678G1Z2', type: 'Industrial', project: '25kW Factory Roof, Ichalkaranji', status: 'Active', created: '2026-06-10', channelPartner: 'CP-0003' },
-  { id: 'CUST-1005', name: 'Suresh Patel', mobile: '9898989898', email: 'suresh.patel@example.com', address: '45 Sardar Nagar', city: 'Ahmedabad', state: 'Gujarat', gst: '', type: 'Residential', project: '4kW Rooftop, Sardar Nagar', status: 'Active', created: '2026-06-11', channelPartner: 'CP-0002' },
-  { id: 'CUST-1006', name: 'Global Foods Pvt Ltd', mobile: '9012345678', email: 'ops@globalfoods.com', address: 'Industrial Area Phase 2', city: 'Nashik', state: 'Maharashtra', gst: '27GLOBF9999H1Z8', type: 'Industrial', project: '50kW Cold Storage, Nashik', status: 'Active', created: '2026-06-12', channelPartner: 'CP-0001' },
-  { id: 'CUST-1007', name: 'Anita Deshmukh', mobile: '9765011223', email: 'anita.deshmukh@example.com', address: '9 Rose Villa', city: 'Nagpur', state: 'Maharashtra', gst: '', type: 'Residential', project: '3kW Rooftop, Nagpur', status: 'Inactive', created: '2026-06-13', channelPartner: 'CP-0003' },
-  { id: 'CUST-1008', name: 'Rajesh Traders', mobile: '9822334455', email: 'rajesh.traders@example.com', address: 'Market Yard', city: 'Solapur', state: 'Maharashtra', gst: '', type: 'Commercial', project: '7kW Shop Roof, Solapur', status: 'Active', created: '2026-06-14', channelPartner: 'CP-0002' },
-  { id: 'CUST-1009', name: 'Sunrise Apartments', mobile: '9765098765', email: 'admin@sunriseapts.com', address: 'Baner Road', city: 'Pune', state: 'Maharashtra', gst: '27SUNRA4321J1Z6', type: 'Residential', project: '15kW Society Terrace, Baner', status: 'Active', created: '2026-06-16', channelPartner: 'CP-0001' },
-  { id: 'CUST-1010', name: 'Vikram Industries', mobile: '9911001122', email: 'vikram.ind@example.com', address: 'MIDC Chakan', city: 'Pune', state: 'Maharashtra', gst: '27VIKRI8765K1Z1', type: 'Industrial', project: '30kW Plant Roof, Chakan', status: 'Active', created: '2026-06-18', channelPartner: 'CP-0002' },
+  {
+    id: 'CUST-1001',
+    name: 'Ramesh Kumar',
+    company: 'Shree Brick Industries',
+    mobile: '9876543210',
+    altMobile: '9123456780',
+    email: 'ramesh@shreebrick.com',
+    billingAddress: 'Plot 12, MIDC Area',
+    siteAddress: 'Survey No. 45, Outer Ring Road',
+    city: 'Nagpur',
+    state: 'Maharashtra',
+    pincode: '440001',
+    gst: '27AABCU9603R1ZM',
+    type: 'Brick Kiln Owner',
+    leadSource: 'Exhibition',
+    status: 'Active',
+    requirement: '10 Cavity Fully Automatic Brick Machine',
+    siteDetails: 'Shed 80×40 ft, 3-phase electricity available',
+    notes: 'Visited site on 12 Jun. Interested in AMC also.',
+    totalOrders: 2,
+    totalBusiness: 1850000,
+    lastActivity: '2026-07-20',
+    created: '2026-03-15',
+  },
+  {
+    id: 'CUST-1002',
+    name: 'Suresh Patel',
+    company: 'Patel Traders',
+    mobile: '9988776655',
+    altMobile: '',
+    email: 'suresh@pateltraders.in',
+    billingAddress: 'Shop 4, Main Market',
+    siteAddress: '',
+    city: 'Indore',
+    state: 'Madhya Pradesh',
+    pincode: '452001',
+    gst: '23AADCP1234F1Z5',
+    type: 'Trader-Dealer',
+    leadSource: 'Existing Customer Reference',
+    status: 'Active',
+    requirement: 'Semi-Automatic Brick Making Machine',
+    siteDetails: 'Warehouse available',
+    notes: 'Repeat buyer — ordered 2nd machine.',
+    totalOrders: 3,
+    totalBusiness: 920000,
+    lastActivity: '2026-07-18',
+    created: '2025-11-02',
+  },
+  {
+    id: 'CUST-1003',
+    name: 'Anita Deshmukh',
+    company: '',
+    mobile: '9765432109',
+    altMobile: '',
+    email: '',
+    billingAddress: 'Village Khedi, Taluka Hingna',
+    siteAddress: 'Same as billing',
+    city: 'Nagpur',
+    state: 'Maharashtra',
+    pincode: '441110',
+    gst: '',
+    type: 'Individual Buyer',
+    leadSource: 'Direct Enquiry',
+    status: 'Prospect',
+    requirement: 'Manual Brick Press (small unit)',
+    siteDetails: 'Open land 30×20, genset available',
+    notes: 'First enquiry. Follow up after 1 week.',
+    totalOrders: 0,
+    totalBusiness: 0,
+    lastActivity: '2026-07-22',
+    created: '2026-07-22',
+  },
+  {
+    id: 'CUST-1004',
+    name: 'Vikram Singh',
+    company: 'Singh Construction Co.',
+    mobile: '9812345678',
+    altMobile: '9823456789',
+    email: 'vikram@singhconst.com',
+    billingAddress: '12, Civil Lines',
+    siteAddress: 'Project site — Bypass Road',
+    city: 'Raipur',
+    state: 'Chhattisgarh',
+    pincode: '492001',
+    gst: '22AABCS9876G1Z2',
+    type: 'Contractor',
+    leadSource: 'Website',
+    status: 'Active',
+    requirement: 'Fully Automatic Fly Ash Brick Plant',
+    siteDetails: 'Large shed, dedicated transformer',
+    notes: 'High value lead. Quotation sent.',
+    totalOrders: 1,
+    totalBusiness: 2450000,
+    lastActivity: '2026-07-10',
+    created: '2026-01-28',
+  },
+  {
+    id: 'CUST-1005',
+    name: 'Meena Kiln Works',
+    company: 'Meena Kiln Works Pvt Ltd',
+    mobile: '9654321098',
+    altMobile: '',
+    email: 'info@meenakiln.com',
+    billingAddress: 'Industrial Area Phase-2',
+    siteAddress: 'Same',
+    city: 'Bhopal',
+    state: 'Madhya Pradesh',
+    pincode: '462001',
+    gst: '23AADCM4567H1Z8',
+    type: 'Industrial Unit',
+    leadSource: 'Advertisement',
+    status: 'Inactive',
+    requirement: 'Hydraulic Brick Press + Mixer',
+    siteDetails: 'Existing plant expansion',
+    notes: 'Deal postponed due to budget.',
+    totalOrders: 0,
+    totalBusiness: 0,
+    lastActivity: '2026-05-14',
+    created: '2026-04-03',
+  },
 ];
 
 let followups = [
-  { customerId: 'CUST-1001', date: '2026-07-10', remark: 'Discussed pricing, sent brochure', next: '2026-07-20', status: 'Completed' },
-  { customerId: 'CUST-1002', date: '2026-07-15', remark: 'Site visit scheduled', next: '2026-07-22', status: 'Pending' },
-  { customerId: 'CUST-1004', date: '2026-07-05', remark: 'Awaiting management approval', next: '2026-07-18', status: 'Overdue' },
+  { customerId: 'CUST-1001', date: '2026-07-15', remark: 'Discussed AMC package', next: '2026-07-30', status: 'Completed' },
+  { customerId: 'CUST-1003', date: '2026-07-22', remark: 'First call — interested in manual press', next: '2026-07-29', status: 'Pending' },
+  { customerId: 'CUST-1004', date: '2026-07-08', remark: 'Site visit scheduled', next: '2026-07-25', status: 'Pending' },
 ];
 
 let historyData = {
   'CUST-1001': [
-    { label: 'Project Created', when: '2 Jun 2026' },
-    { label: 'Quotation Generated', when: '4 Jun 2026' },
-    { label: 'Quotation Approved', when: '9 Jun 2026' },
-    { label: 'Last Updated', when: '10 Jul 2026' },
+    { label: 'Order placed — 10 Cavity Auto Machine', when: '15 Mar 2026' },
+    { label: 'Quotation QT-2041 approved', when: '10 Mar 2026' },
+    { label: 'Site visit completed', when: '28 Feb 2026' },
   ],
   'CUST-1002': [
-    { label: 'Project Created', when: '5 Jun 2026' },
-    { label: 'Quotation Generated', when: '7 Jun 2026' },
-    { label: 'Last Updated', when: '15 Jul 2026' },
+    { label: 'Order placed — Semi-Auto Machine #3', when: '05 Jun 2026' },
+    { label: 'Repeat order discussion', when: '20 May 2026' },
   ],
   'CUST-1004': [
-    { label: 'Project Created', when: '10 Jun 2026' },
-    { label: 'Quotation Generated', when: '12 Jun 2026' },
-    { label: 'Quotation Approved', when: '20 Jun 2026' },
-    { label: 'Last Updated', when: '5 Jul 2026' },
+    { label: 'Quotation QT-2105 sent', when: '28 Jan 2026' },
+    { label: 'Lead created from website', when: '28 Jan 2026' },
   ],
 };
 
@@ -171,37 +155,68 @@ let searchTerm = '';
 let typeFilter = 'All';
 let statusFilter = 'All';
 let currentPage = 1;
-const rowsPerPage = 6;
+const rowsPerPage = 8;
 
-const typePillClass = { Residential: 'pill-residential', Commercial: 'pill-commercial', Industrial: 'pill-industrial' };
-const statusPillClass = { Active: 'pill-active', Inactive: 'pill-inactive' };
-const followupPillClass = { Pending: 'pill-pending', Completed: 'pill-accepted', Overdue: 'pill-rejected' };
+const typePillClass = {
+  'Individual Buyer': 'pill-type',
+  'Contractor': 'pill-type',
+  'Brick Kiln Owner': 'pill-type',
+  'Trader-Dealer': 'pill-type',
+  'Industrial Unit': 'pill-type',
+};
+const statusPillClass = {
+  Active: 'pill-active',
+  Inactive: 'pill-inactive',
+  Prospect: 'pill-prospect',
+};
+const followupPillClass = {
+  Pending: 'pill-pending',
+  Completed: 'pill-completed',
+  Cancelled: 'pill-cancelled',
+};
 
+/* ============================================================
+   Helpers
+   ============================================================ */
 function formatDateDisplay(iso) {
   if (!iso) return '—';
-  const d = new Date(iso);
-  if (isNaN(d)) return iso;
-  return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  const [y, m, d] = iso.split('-');
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${parseInt(d, 10)} ${months[parseInt(m, 10) - 1]} ${y}`;
+}
+
+function formatCurrency(n) {
+  if (!n && n !== 0) return '—';
+  return '₹' + Number(n).toLocaleString('en-IN');
+}
+
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.remove('hidden');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => el.classList.add('hidden'), 2600);
 }
 
 /* ============================================================
-   Summary cards
+   Summary
    ============================================================ */
 function renderSummary() {
   const total = customers.length;
-  const residential = customers.filter(c => c.type === 'Residential').length;
-  const commercial = customers.filter(c => c.type === 'Commercial').length;
-  const industrial = customers.filter(c => c.type === 'Industrial').length;
+  const active = customers.filter(c => c.status === 'Active').length;
+  const prospect = customers.filter(c => c.status === 'Prospect').length;
+  const business = customers.reduce((s, c) => s + (c.totalBusiness || 0), 0);
 
   document.getElementById('statTotal').textContent = total;
-  document.getElementById('statResidential').textContent = residential;
-  document.getElementById('statCommercial').textContent = commercial;
-  document.getElementById('statIndustrial').textContent = industrial;
+  document.getElementById('statActive').textContent = active;
+  document.getElementById('statProspect').textContent = prospect;
+  document.getElementById('statBusiness').textContent = formatCurrency(business);
 
-  document.getElementById('statTotalTrend').textContent = `${customers.filter(c => c.status === 'Active').length} active`;
-  document.getElementById('statResidentialTrend').textContent = total ? `${Math.round((residential / total) * 100)}% of customers` : 'Homes & apartments';
-  document.getElementById('statCommercialTrend').textContent = total ? `${Math.round((commercial / total) * 100)}% of customers` : 'Offices & shops';
-  document.getElementById('statIndustrialTrend').textContent = total ? `${Math.round((industrial / total) * 100)}% of customers` : 'Plants & factories';
+  document.getElementById('statTotalTrend').textContent = `${active} active`;
+  document.getElementById('statActiveTrend').textContent = total ? `${Math.round((active / total) * 100)}% of customers` : 'Buying customers';
+  document.getElementById('statProspectTrend').textContent = total ? `${Math.round((prospect / total) * 100)}% of customers` : 'Enquiry only';
+  document.getElementById('statBusinessTrend').textContent = 'Lifetime value';
 }
 
 /* ============================================================
@@ -212,8 +227,9 @@ function filteredCustomers() {
     const term = searchTerm.trim().toLowerCase();
     const matchesSearch = !term ||
       c.name.toLowerCase().includes(term) ||
+      (c.company || '').toLowerCase().includes(term) ||
       c.mobile.toLowerCase().includes(term) ||
-      c.email.toLowerCase().includes(term);
+      (c.email || '').toLowerCase().includes(term);
     const matchesType = typeFilter === 'All' || c.type === typeFilter;
     const matchesStatus = statusFilter === 'All' || c.status === statusFilter;
     return matchesSearch && matchesType && matchesStatus;
@@ -263,33 +279,21 @@ function renderTable() {
   tableWrap.classList.remove('hidden');
   tableFooter.classList.remove('hidden');
 
-  // Determine if we should show Channel Partner column
-  const showChannelPartner = window.currentUserRole === 'SUPER_ADMIN';
-
-  tbody.innerHTML = pageRows.map(c => {
-    // Build row with conditional Channel Partner column
-    const channelPartnerCell = showChannelPartner ? `<td data-label="Channel Partner">${c.channelPartner || '—'}</td>` : '';
-    return `
-      <tr data-id="${c.id}">
-        <td data-label="Customer ID" class="font-medium">${c.id}</td>
-        <td data-label="Customer Name">${c.name}</td>
-        <td data-label="Mobile Number">${c.mobile}</td>
-        <td data-label="Email">${c.email || '—'}</td>
-        <td data-label="City">${c.city || '—'}</td>
-        <td data-label="Customer Type"><span class="pill ${typePillClass[c.type]}">${c.type}</span></td>
-        <td data-label="Project Location">${c.project || '—'}</td>
-        ${channelPartnerCell}
-        <td data-label="Status"><span class="pill ${statusPillClass[c.status]}">${c.status}</span></td>
-        <td data-label="Created Date">${formatDateDisplay(c.created)}</td>
-        <td data-label="Actions">${actionIconsHtml(c.id)}</td>
-      </tr>
-    `;
-  }).join('');
-
-  // Hide Channel Partner header if not Super Admin
-  document.querySelectorAll('#customerTable thead th[data-role="SUPER_ADMIN"]').forEach(th => {
-    th.style.display = showChannelPartner ? '' : 'none';
-  });
+  tbody.innerHTML = pageRows.map(c => `
+    <tr data-id="${c.id}">
+      <td data-label="Customer ID" class="font-medium">${c.id}</td>
+      <td data-label="Name">${c.name}</td>
+      <td data-label="Company">${c.company || '—'}</td>
+      <td data-label="Mobile">${c.mobile}</td>
+      <td data-label="City/State">${[c.city, c.state].filter(Boolean).join(', ') || '—'}</td>
+      <td data-label="Type"><span class="pill ${typePillClass[c.type] || 'pill-type'}">${c.type}</span></td>
+      <td data-label="Total Orders">${c.totalOrders || 0}</td>
+      <td data-label="Total Business Value">${formatCurrency(c.totalBusiness)}</td>
+      <td data-label="Status"><span class="pill ${statusPillClass[c.status]}">${c.status}</span></td>
+      <td data-label="Last Activity">${formatDateDisplay(c.lastActivity)}</td>
+      <td data-label="Actions">${actionIconsHtml(c.id)}</td>
+    </tr>
+  `).join('');
 
   document.getElementById('rowsRangeLabel').textContent = `${start + 1}–${Math.min(start + rowsPerPage, totalRows)} of ${totalRows}`;
   renderPagination(totalPages);
@@ -321,13 +325,8 @@ document.getElementById('searchName')?.addEventListener('input', (e) => {
   currentPage = 1;
   renderTable();
 });
-/* ---------- Custom dropdown (Customer Type / Status filters) ----------
-   Replaces native <select> for these two filters: a native select's
-   option list is rendered by the browser at a fixed screen position,
-   so if the page scrolls while it's open it visually detaches/floats.
-   This custom version lives in normal document flow (relative wrapper
-   + absolutely positioned panel), so it scrolls naturally with the
-   page and never detaches. ---------------------------------------- */
+
+/* ---------- Custom dropdown ---------- */
 function setupCustomSelect(rootId, onSelect) {
   const root = document.getElementById(rootId);
   if (!root) return null;
@@ -385,6 +384,9 @@ const statusSelectCtrl = setupCustomSelect('filterStatusSelect', (val) => {
 const fldTypeCtrl = setupCustomSelect('fldTypeSelect', (val) => {
   document.getElementById('fldType').value = val;
 });
+const fldLeadSourceCtrl = setupCustomSelect('fldLeadSourceSelect', (val) => {
+  document.getElementById('fldLeadSource').value = val;
+});
 const fldStatusCtrl = setupCustomSelect('fldStatusSelect', (val) => {
   document.getElementById('fldStatus').value = val;
 });
@@ -392,16 +394,16 @@ const fuStatusCtrl = setupCustomSelect('fuStatusSelect', (val) => {
   document.getElementById('fuStatus').value = val;
 });
 
-/* fuCustomer's options are built dynamically (list of current customers)
-   each time the follow-up modal opens, so it needs its own small setup
-   rather than the static setupCustomSelect() above. */
+/* fuCustomer dynamic dropdown */
 function buildFuCustomerDropdown(selectedId) {
   const root = document.getElementById('fuCustomerSelect');
   const trigger = root.querySelector('.custom-select-trigger');
   const label = root.querySelector('.cs-label');
   const panel = root.querySelector('.custom-select-panel');
 
-  panel.innerHTML = customers.map(c => `<div class="custom-select-option${c.id === selectedId ? ' selected' : ''}" data-value="${c.id}" role="option">${c.name} · ${c.id}</div>`).join('');
+  panel.innerHTML = customers.map(c =>
+    `<div class="custom-select-option${c.id === selectedId ? ' selected' : ''}" data-value="${c.id}" role="option">${c.name} · ${c.id}</div>`
+  ).join('');
 
   const chosen = customers.find(c => c.id === selectedId) || customers[0];
   document.getElementById('fuCustomer').value = chosen ? chosen.id : '';
@@ -438,7 +440,10 @@ document.addEventListener('keydown', (e) => {
 });
 
 document.getElementById('resetFiltersBtn')?.addEventListener('click', () => {
-  searchTerm = ''; typeFilter = 'All'; statusFilter = 'All'; currentPage = 1;
+  searchTerm = '';
+  typeFilter = 'All';
+  statusFilter = 'All';
+  currentPage = 1;
   document.getElementById('searchName').value = '';
   typeSelectCtrl?.setValue('All');
   statusSelectCtrl?.setValue('All');
@@ -450,10 +455,7 @@ document.getElementById('resetFiltersBtn')?.addEventListener('click', () => {
    Add / Edit Customer modal
    ============================================================ */
 const customerFormModal = document.getElementById('customerFormModal');
-const customerForm = document.getElementById('customerForm');
 let formMode = 'add';
-
-const FORM_FIELDS = ['fldName', 'fldMobile', 'fldEmail', 'fldAddress', 'fldCity', 'fldState', 'fldGst', 'fldType', 'fldProject', 'fldStatus', 'fldChannelPartner'];
 
 function openCustomerForm(mode, customer) {
   formMode = mode;
@@ -464,40 +466,41 @@ function openCustomerForm(mode, customer) {
 
   document.getElementById('fldCustomerId').value = customer ? customer.id : '';
   document.getElementById('fldName').value = customer ? customer.name : '';
+  document.getElementById('fldCompany').value = customer ? (customer.company || '') : '';
   document.getElementById('fldMobile').value = customer ? customer.mobile : '';
-  document.getElementById('fldEmail').value = customer ? customer.email : '';
-  document.getElementById('fldAddress').value = customer ? customer.address : '';
-  document.getElementById('fldCity').value = customer ? customer.city : '';
-  document.getElementById('fldState').value = customer ? customer.state : '';
-  document.getElementById('fldGst').value = customer ? customer.gst : '';
-  document.getElementById('fldType').value = customer ? customer.type : 'Residential';
-  fldTypeCtrl?.setValue(customer ? customer.type : 'Residential');
-  document.getElementById('fldProject').value = customer ? customer.project : '';
-  document.getElementById('fldStatus').value = customer ? customer.status : 'Active';
-  fldStatusCtrl?.setValue(customer ? customer.status : 'Active');
-  
-  // NEW: Auto-fill Channel Partner from session
-  const channelPartnerField = document.getElementById('fldChannelPartner');
-  if (window.currentUserRole === 'SUPER_ADMIN') {
-    // For Super Admin, field is editable (for now, read-only but can be made editable later)
-    channelPartnerField.value = customer ? customer.channelPartner || '' : '';
-    channelPartnerField.readOnly = false;
-    channelPartnerField.placeholder = 'Select Channel Partner (dropdown coming soon)';
-  } else {
-    // For Channel Partner, field is read-only and auto-filled
-    const partnerName = window.currentUserPartnerName || 'CP-0001'; // fallback
-    channelPartnerField.value = partnerName;
-    channelPartnerField.readOnly = true;
-  }
+  document.getElementById('fldAltMobile').value = customer ? (customer.altMobile || '') : '';
+  document.getElementById('fldEmail').value = customer ? (customer.email || '') : '';
+  document.getElementById('fldBillingAddress').value = customer ? (customer.billingAddress || '') : '';
+  document.getElementById('fldSiteAddress').value = customer ? (customer.siteAddress || '') : '';
+  document.getElementById('fldCity').value = customer ? (customer.city || '') : '';
+  document.getElementById('fldState').value = customer ? (customer.state || '') : '';
+  document.getElementById('fldPincode').value = customer ? (customer.pincode || '') : '';
+  document.getElementById('fldGst').value = customer ? (customer.gst || '') : '';
+  document.getElementById('fldType').value = customer ? customer.type : 'Individual Buyer';
+  fldTypeCtrl?.setValue(customer ? customer.type : 'Individual Buyer');
+  document.getElementById('fldLeadSource').value = customer ? (customer.leadSource || 'Direct Enquiry') : 'Direct Enquiry';
+  fldLeadSourceCtrl?.setValue(customer ? (customer.leadSource || 'Direct Enquiry') : 'Direct Enquiry');
+  document.getElementById('fldStatus').value = customer ? customer.status : 'Prospect';
+  fldStatusCtrl?.setValue(customer ? customer.status : 'Prospect');
+  document.getElementById('fldRequirement').value = customer ? (customer.requirement || '') : '';
+  document.getElementById('fldSiteDetails').value = customer ? (customer.siteDetails || '') : '';
+  document.getElementById('fldNotes').value = customer ? (customer.notes || '') : '';
 
   customerFormModal.classList.remove('hidden');
 }
+
 function closeCustomerForm() {
   customerFormModal.classList.add('hidden');
 }
+
 function clearFormErrors() {
-  ['errName', 'errMobile', 'errEmail'].forEach(id => document.getElementById(id).textContent = '');
-  ['fldName', 'fldMobile', 'fldEmail'].forEach(id => document.getElementById(id).classList.remove('invalid'));
+  ['errName', 'errMobile', 'errEmail'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = '';
+  });
+  ['fldName', 'fldMobile', 'fldEmail'].forEach(id => {
+    document.getElementById(id)?.classList.remove('invalid');
+  });
 }
 
 document.getElementById('addCustomerBtn')?.addEventListener('click', () => openCustomerForm('add', null));
@@ -540,16 +543,22 @@ document.getElementById('customerFormSaveBtn')?.addEventListener('click', () => 
 
   const payload = {
     name: document.getElementById('fldName').value.trim(),
+    company: document.getElementById('fldCompany').value.trim(),
     mobile: document.getElementById('fldMobile').value.trim(),
+    altMobile: document.getElementById('fldAltMobile').value.trim(),
     email: document.getElementById('fldEmail').value.trim(),
-    address: document.getElementById('fldAddress').value.trim(),
+    billingAddress: document.getElementById('fldBillingAddress').value.trim(),
+    siteAddress: document.getElementById('fldSiteAddress').value.trim(),
     city: document.getElementById('fldCity').value.trim(),
     state: document.getElementById('fldState').value.trim(),
+    pincode: document.getElementById('fldPincode').value.trim(),
     gst: document.getElementById('fldGst').value.trim(),
     type: document.getElementById('fldType').value,
-    project: document.getElementById('fldProject').value.trim(),
+    leadSource: document.getElementById('fldLeadSource').value,
     status: document.getElementById('fldStatus').value,
-    channelPartner: document.getElementById('fldChannelPartner').value.trim() || (window.currentUserPartnerName || 'CP-0001'),
+    requirement: document.getElementById('fldRequirement').value.trim(),
+    siteDetails: document.getElementById('fldSiteDetails').value.trim(),
+    notes: document.getElementById('fldNotes').value.trim(),
   };
 
   if (formMode === 'add') {
@@ -558,13 +567,24 @@ document.getElementById('customerFormSaveBtn')?.addEventListener('click', () => 
       return isNaN(n) ? max : Math.max(max, n);
     }, 1000);
     const newId = `CUST-${maxNum + 1}`;
-    const newCustomer = { id: newId, created: new Date().toISOString().slice(0, 10), ...payload };
+    const today = new Date().toISOString().slice(0, 10);
+    const newCustomer = {
+      id: newId,
+      created: today,
+      lastActivity: today,
+      totalOrders: 0,
+      totalBusiness: 0,
+      ...payload,
+    };
     customers.unshift(newCustomer);
     showToast(`Customer ${newId} added`);
   } else {
     const id = document.getElementById('fldCustomerId').value;
     const c = customers.find(x => x.id === id);
-    if (c) Object.assign(c, payload);
+    if (c) {
+      Object.assign(c, payload);
+      c.lastActivity = new Date().toISOString().slice(0, 10);
+    }
     showToast(`Customer ${id} updated`);
   }
 
@@ -577,24 +597,34 @@ document.getElementById('customerFormSaveBtn')?.addEventListener('click', () => 
    View Customer modal
    ============================================================ */
 const viewCustomerModal = document.getElementById('viewCustomerModal');
+
 function openViewCustomer(customer) {
   document.getElementById('viewCustomerSubtitle').textContent = customer.id;
   document.getElementById('viewCustomerBody').innerHTML = `
     <div class="detail-item"><span class="d-label">Customer Name</span><span class="d-value">${customer.name}</span></div>
-    <div class="detail-item"><span class="d-label">Mobile Number</span><span class="d-value">${customer.mobile}</span></div>
+    <div class="detail-item"><span class="d-label">Company / Firm</span><span class="d-value">${customer.company || '—'}</span></div>
+    <div class="detail-item"><span class="d-label">Mobile</span><span class="d-value">${customer.mobile}</span></div>
+    <div class="detail-item"><span class="d-label">Alternate Mobile</span><span class="d-value">${customer.altMobile || '—'}</span></div>
     <div class="detail-item"><span class="d-label">Email</span><span class="d-value">${customer.email || '—'}</span></div>
-    <div class="detail-item"><span class="d-label">City</span><span class="d-value">${customer.city || '—'}</span></div>
-    <div class="detail-item"><span class="d-label">State</span><span class="d-value">${customer.state || '—'}</span></div>
-    <div class="detail-item"><span class="d-label">GST Number</span><span class="d-value">${customer.gst || '—'}</span></div>
+    <div class="detail-item"><span class="d-label">City / State</span><span class="d-value">${[customer.city, customer.state].filter(Boolean).join(', ') || '—'}</span></div>
+    <div class="detail-item"><span class="d-label">Pincode</span><span class="d-value">${customer.pincode || '—'}</span></div>
+    <div class="detail-item"><span class="d-label">GSTIN</span><span class="d-value">${customer.gst || '—'}</span></div>
     <div class="detail-item"><span class="d-label">Customer Type</span><span class="d-value">${customer.type}</span></div>
-    <div class="detail-item"><span class="d-label">Channel Partner</span><span class="d-value">${customer.channelPartner || '—'}</span></div>
+    <div class="detail-item"><span class="d-label">Lead Source</span><span class="d-value">${customer.leadSource || '—'}</span></div>
     <div class="detail-item"><span class="d-label">Status</span><span class="d-value">${customer.status}</span></div>
-    <div class="detail-item full"><span class="d-label">Address</span><span class="d-value">${customer.address || '—'}</span></div>
-    <div class="detail-item full"><span class="d-label">Project Location</span><span class="d-value">${customer.project || '—'}</span></div>
-    <div class="detail-item"><span class="d-label">Created Date</span><span class="d-value">${formatDateDisplay(customer.created)}</span></div>
+    <div class="detail-item"><span class="d-label">Total Orders</span><span class="d-value">${customer.totalOrders || 0}</span></div>
+    <div class="detail-item"><span class="d-label">Total Business Value</span><span class="d-value">${formatCurrency(customer.totalBusiness)}</span></div>
+    <div class="detail-item full"><span class="d-label">Billing Address</span><span class="d-value">${customer.billingAddress || '—'}</span></div>
+    <div class="detail-item full"><span class="d-label">Site / Plant Address</span><span class="d-value">${customer.siteAddress || '—'}</span></div>
+    <div class="detail-item full"><span class="d-label">Requirement / Interest</span><span class="d-value">${customer.requirement || '—'}</span></div>
+    <div class="detail-item full"><span class="d-label">Site Details</span><span class="d-value">${customer.siteDetails || '—'}</span></div>
+    <div class="detail-item full"><span class="d-label">Notes / Remarks</span><span class="d-value">${customer.notes || '—'}</span></div>
+    <div class="detail-item"><span class="d-label">Date Added</span><span class="d-value">${formatDateDisplay(customer.created)}</span></div>
+    <div class="detail-item"><span class="d-label">Last Activity</span><span class="d-value">${formatDateDisplay(customer.lastActivity)}</span></div>
   `;
   viewCustomerModal.classList.remove('hidden');
 }
+
 function closeViewCustomer() { viewCustomerModal.classList.add('hidden'); }
 document.getElementById('viewCustomerCloseBtn')?.addEventListener('click', closeViewCustomer);
 document.getElementById('viewCustomerCloseBtn2')?.addEventListener('click', closeViewCustomer);
@@ -627,7 +657,7 @@ document.getElementById('deleteConfirmBtn')?.addEventListener('click', () => {
 });
 
 /* ============================================================
-   Table row action wiring (view / edit / delete / quote)
+   Table row action wiring
    ============================================================ */
 document.getElementById('customerTbody')?.addEventListener('click', (e) => {
   const btn = e.target.closest('[data-action]');
@@ -644,7 +674,7 @@ document.getElementById('customerTbody')?.addEventListener('click', (e) => {
 });
 
 /* ============================================================
-   Customer History accordion
+   Customer History
    ============================================================ */
 function renderHistory() {
   const list = document.getElementById('historyList');
@@ -705,6 +735,7 @@ function renderFollowups() {
 }
 
 const followupModal = document.getElementById('followupModal');
+
 function openFollowupModal() {
   buildFuCustomerDropdown(customers[0] ? customers[0].id : null);
   document.getElementById('fuDate').value = new Date().toISOString().slice(0, 10);
@@ -741,8 +772,11 @@ document.getElementById('followupSaveBtn')?.addEventListener('click', () => {
     next: document.getElementById('fuNextDate').value,
     status: document.getElementById('fuStatus').value,
   });
+  const c = customers.find(x => x.id === customerId);
+  if (c) c.lastActivity = date;
   closeFollowupModal();
   renderFollowups();
+  renderTable();
   showToast('Follow-up added');
 });
 
@@ -750,32 +784,45 @@ document.getElementById('followupSaveBtn')?.addEventListener('click', () => {
    Export / Print
    ============================================================ */
 function customersToCsvRows() {
-  const showChannelPartner = window.currentUserRole === 'SUPER_ADMIN';
-  const header = ['Customer ID', 'Name', 'Mobile', 'Email', 'City', 'Type', 'Project Location', 'Status', 'Created Date'];
-  if (showChannelPartner) header.push('Channel Partner');
-  const rows = filteredCustomers().map(c => {
-    const row = [c.id, c.name, c.mobile, c.email, c.city, c.type, c.project, c.status, c.created];
-    if (showChannelPartner) row.push(c.channelPartner || '');
-    return row;
-  });
+  const header = [
+    'Customer ID', 'Name', 'Company', 'Mobile', 'Alternate Mobile', 'Email',
+    'City', 'State', 'Pincode', 'GSTIN', 'Type', 'Lead Source', 'Status',
+    'Total Orders', 'Total Business Value', 'Requirement', 'Date Added', 'Last Activity'
+  ];
+  const rows = filteredCustomers().map(c => [
+    c.id, c.name, c.company || '', c.mobile, c.altMobile || '', c.email || '',
+    c.city || '', c.state || '', c.pincode || '', c.gst || '', c.type, c.leadSource || '',
+    c.status, c.totalOrders || 0, c.totalBusiness || 0, c.requirement || '',
+    c.created, c.lastActivity
+  ]);
   return [header, ...rows];
 }
+
 function downloadDelimited(filename, mime) {
   const rows = customersToCsvRows();
   const content = rows.map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\r\n');
   const blob = new Blob([content], { type: mime });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = filename;
-  document.body.appendChild(a); a.click(); a.remove();
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
   URL.revokeObjectURL(url);
 }
 
-// NEW: Export PDF placeholder function
 function exportCustomersPDF() {
-  // TODO: backend call for PDF generation
   showToast('PDF export will be available soon');
 }
+
+document.getElementById('exportBtn')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  document.getElementById('exportMenu').classList.toggle('hidden');
+});
+document.addEventListener('click', () => {
+  document.getElementById('exportMenu')?.classList.add('hidden');
+});
 
 document.getElementById('exportCsvBtn')?.addEventListener('click', () => {
   downloadDelimited('customers.csv', 'text/csv');
@@ -791,13 +838,30 @@ document.getElementById('printBtn')?.addEventListener('click', () => {
 });
 
 /* ============================================================
+   Topbar dropdowns (notif + profile)
+   ============================================================ */
+document.getElementById('notifBtn')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  document.getElementById('notifDropdown').classList.toggle('hidden');
+  document.getElementById('profileDropdown')?.classList.add('hidden');
+});
+document.getElementById('profileBtn')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  document.getElementById('profileDropdown').classList.toggle('hidden');
+  document.getElementById('notifDropdown')?.classList.add('hidden');
+});
+document.addEventListener('click', () => {
+  document.getElementById('notifDropdown')?.classList.add('hidden');
+  document.getElementById('profileDropdown')?.classList.add('hidden');
+});
+document.getElementById('profileLogoutBtn')?.addEventListener('click', () => {
+  showToast('Logged out');
+});
+
+/* ============================================================
    Render all
    ============================================================ */
 function renderAll() {
-  // Set current user role from session
-  window.currentUserRole = window.currentUserRole || 'SUPER_ADMIN';
-  window.currentUserPartnerName = window.currentUserPartnerName || 'CP-0001';
-  
   renderSummary();
   renderTable();
   renderHistory();

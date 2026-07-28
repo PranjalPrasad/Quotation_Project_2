@@ -1,15 +1,13 @@
-// TODO: quotationsForSizeChart() / statusCounts below still use a mock array —
-// once GET /api/quotations is wired up, replace those two mock sources with
-// the real quotation list (loadDashboardData() below already pulls the
-// aggregate numbers from /api/dashboard/summary; the per-record chart inputs
-// are a separate call because the summary endpoint intentionally stays light).
+// ============================================================
+// VKM Dashboard — single admin login, no channel-partner tiers.
+// Every "loadX()" function below currently renders from a MOCK_*
+// constant. When the backend is wired up, swap the mock source
+// for a fetch() call inside that same function — the render
+// logic underneath doesn't need to change.
+// ============================================================
 
 // ============================================================
 // Sidebar collapse / expand
-// Below 1024px (phone + tablet) the expanded sidebar becomes an
-// overlay drawer with a backdrop, so it never squeezes the
-// dashboard content — matching CSS lives in the
-// "Mobile / tablet sidebar drawer" block in dashboard.css.
 // ============================================================
 const sidebar = document.getElementById("sidebar");
 const sidebarToggle = document.getElementById("sidebarToggle");
@@ -31,15 +29,12 @@ function setSidebarExpanded(next) {
 sidebarToggle.addEventListener("click", () => setSidebarExpanded(!expanded));
 sidebarBackdrop.addEventListener("click", () => setSidebarExpanded(false));
 
-// collapse the drawer automatically when resizing up to desktop
 window.addEventListener("resize", () => {
   if (!window.matchMedia("(max-width: 1023px)").matches) {
     sidebarBackdrop.classList.remove("visible");
   }
 });
 
-// tapping a nav item closes the mobile drawer (it either navigates
-// away or is a no-op item, either way the drawer shouldn't linger)
 document.querySelectorAll(".nav-list .nav-item").forEach((item) => {
   item.addEventListener("click", () => {
     if (window.matchMedia("(max-width: 1023px)").matches) setSidebarExpanded(false);
@@ -47,16 +42,132 @@ document.querySelectorAll(".nav-list .nav-item").forEach((item) => {
 });
 
 // ============================================================
-// Nav item active state
-// (Dashboard is marked active in the HTML since this is the
-// dashboard module — clicking another item navigates away, so
-// we don't need to move the active state around this page.)
+// Formatting helpers
 // ============================================================
+function formatINR(n) {
+  return '₹' + Math.round(n).toLocaleString('en-IN');
+}
+
+function formatCompactINR(n) {
+  if (n === null || n === undefined || isNaN(n)) return '—';
+  const abs = Math.abs(n);
+  if (abs >= 1e7) return '₹' + (n / 1e7).toFixed(1) + 'Cr';
+  if (abs >= 1e5) return '₹' + (n / 1e5).toFixed(1) + 'L';
+  if (abs >= 1e3) return '₹' + (n / 1e3).toFixed(1) + 'K';
+  return '₹' + n.toLocaleString('en-IN');
+}
+
+function formatDate(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+}
+
+function setText(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value;
+}
+
+function showToast(message) {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+  const toast = document.createElement('div');
+  toast.className = 'toast-animate bg-gray-800 text-white text-xs font-medium px-4 py-2.5 rounded-lg shadow-lg';
+  toast.textContent = message;
+  container.appendChild(toast);
+  setTimeout(() => toast.remove(), 2500);
+}
 
 // ============================================================
-// Quotation Status Distribution + System Size Distribution
-// — Chart.js charts, recoloured to the VKM brand
-// palette (#881144 / #FBD9E7 / #F0C3D6 / #800021)
+// Mock summary data — mirrors what a future
+// GET /api/dashboard/summary would return.
+// ============================================================
+const MOCK_DASHBOARD_SUMMARY = {
+  totalCustomers: 174,
+  totalQuotationsAllTime: 312,
+  totalQuotationsMonth: 34,
+  totalQuotationValueAllTime: 74300000,
+  totalQuotationValueMonth: 8200000,
+  pendingDecision: 47,
+  confirmedOrdersMonth: 19,
+  ordersInProductionPipeline: 23,
+  machinesDispatchedMonth: 11,
+  totalInvoicesRaised: 268,
+  totalOutstanding: 3860000,
+  overdueInvoiceCount: 6,
+  acceptedAllTime: 156,
+};
+
+function loadDashboardData() {
+  // Swap this line for a fetch('/api/dashboard/summary') call once the
+  // backend endpoint exists — renderDashboardSummary() already expects
+  // the same shape as MOCK_DASHBOARD_SUMMARY.
+  renderDashboardSummary(MOCK_DASHBOARD_SUMMARY);
+}
+
+let quotationRange = 'all'; // 'all' | 'month'
+
+function setQuotationRange(range) {
+  quotationRange = range;
+  document.getElementById('toggleAllTime').classList.toggle('active', range === 'all');
+  document.getElementById('toggleThisMonth').classList.toggle('active', range === 'month');
+  renderDashboardSummary(MOCK_DASHBOARD_SUMMARY);
+}
+
+function renderDashboardSummary(data) {
+  const isMonth = quotationRange === 'month';
+  setText('kpiTotalQuotations', isMonth ? data.totalQuotationsMonth : data.totalQuotationsAllTime);
+  setText('kpiTotalValue', formatCompactINR(isMonth ? data.totalQuotationValueMonth : data.totalQuotationValueAllTime));
+  setText('kpiPendingDecision', `${data.pendingDecision} quotations`);
+  setText('kpiOutstanding', formatCompactINR(data.totalOutstanding));
+  setText('kpiOverdueCount', data.overdueInvoiceCount);
+
+  setText('statTotalCustomers', data.totalCustomers);
+  setText('statConfirmedOrders', data.confirmedOrdersMonth);
+  setText('statInProduction', data.ordersInProductionPipeline);
+  setText('statDispatched', data.machinesDispatchedMonth);
+  setText('statTotalInvoices', data.totalInvoicesRaised);
+  const avgQuotation = data.totalQuotationValueAllTime / data.totalQuotationsAllTime;
+  setText('statAvgQuotation', formatCompactINR(avgQuotation));
+
+  const convPct = Math.round((data.acceptedAllTime / data.totalQuotationsAllTime) * 100);
+  setText('kpiConversionRate', `${convPct}% confirmed`);
+  setText('kpiConversionSub', `${data.acceptedAllTime} of ${data.totalQuotationsAllTime} quotations`);
+}
+
+// ============================================================
+// Production Pipeline — Quotation Sent → Installation Complete
+// ============================================================
+const PIPELINE_STAGES = [
+  { key: 'quotationSent', label: 'Quotation Sent', count: 47 },
+  { key: 'advanceReceived', label: 'Advance Received', count: 19 },
+  { key: 'inProduction', label: 'In Production', count: 23 },
+  { key: 'readyToDispatch', label: 'Ready to Dispatch', count: 8 },
+  { key: 'delivered', label: 'Delivered', count: 14 },
+  { key: 'installationComplete', label: 'Installation Complete', count: 11 },
+];
+
+const arrowSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"></polyline></svg>';
+
+function renderPipeline() {
+  const track = document.getElementById('pipelineTrack');
+  if (!track) return;
+  track.innerHTML = PIPELINE_STAGES.map((stage, idx) => `
+    <button class="pipeline-stage" data-stage="${stage.key}" onclick="handlePipelineClick('${stage.key}', '${stage.label.replace(/'/g, "\\'")}')">
+      <div class="pipeline-stage-count">${stage.count}</div>
+      <div class="pipeline-stage-label">${stage.label}</div>
+    </button>
+    ${idx < PIPELINE_STAGES.length - 1 ? `<div class="pipeline-arrow">${arrowSvg}</div>` : ''}
+  `).join('');
+}
+
+function handlePipelineClick(stageKey, stageLabel) {
+  // Placeholder until the orders list page supports stage filtering —
+  // will become window.location.href = `../orders/orders.html?stage=${stageKey}`
+  showToast(`Filtering orders at "${stageLabel}" stage`);
+}
+
+// ============================================================
+// Charts
 // ============================================================
 Chart.defaults.font.family = "'Poppins', sans-serif";
 Chart.defaults.font.size = 11;
@@ -65,8 +176,9 @@ const paletteBerry = "#881144";
 const paletteMaroon = "#800021";
 const paletteTan = "#F0C3D6";
 const paletteCream = "#FBD9E7";
+const paletteMid = "#C23666";
 
-const donutTooltipOpts = {
+const tooltipOpts = {
   backgroundColor: "#fff",
   titleColor: "#1F2937",
   bodyColor: "#6B7280",
@@ -80,73 +192,26 @@ const donutTooltipOpts = {
   boxPadding: 4,
 };
 
-// ---- Chart 1: Quotation Status Distribution (doughnut) ----
-const statusCounts = { Pending: 58, Accepted: 156, Rejected: 34 };
+// ---- Monthly Quotation Value Trend (bar) ----
+const monthlyTrend = [
+  { m: 'Feb', v: 5200000 },
+  { m: 'Mar', v: 6100000 },
+  { m: 'Apr', v: 5800000 },
+  { m: 'May', v: 7000000 },
+  { m: 'Jun', v: 6600000 },
+  { m: 'Jul', v: 8200000 },
+];
 
-window.statusPieChart = new Chart(document.getElementById("chartStatusDistribution"), {
-  type: "doughnut",
+new Chart(document.getElementById('chartMonthlyTrend'), {
+  type: 'bar',
   data: {
-    labels: Object.keys(statusCounts),
+    labels: monthlyTrend.map(d => d.m),
     datasets: [{
-      data: Object.values(statusCounts),
-      backgroundColor: [paletteTan, paletteBerry, paletteMaroon],
-      borderColor: "#FBD9E7",
-      borderWidth: 3,
-      hoverOffset: 6,
-    }]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    cutout: "62%",
-    plugins: {
-      legend: {
-        position: "bottom",
-        labels: { color: "#6B7280", boxWidth: 8, boxHeight: 8, padding: 8, font: { size: 10 }, usePointStyle: true, pointStyle: "circle" }
-      },
-      tooltip: donutTooltipOpts,
-    }
-  }
-});
-
-// ---- Chart 2: Quotations by System Size Category — bar/histogram ----
-function sizeCategory(sizeStr) {
-  const kw = parseFloat(sizeStr);
-  if (kw <= 5) return "Small (≤5 kW)";
-  if (kw <= 20) return "Medium (6–20 kW)";
-  return "Large (>20 kW)";
-}
-
-const sizeBuckets = {};
-quotationsForSizeChart().forEach((q) => {
-  const cat = sizeCategory(q.size);
-  sizeBuckets[cat] = (sizeBuckets[cat] || 0) + 1;
-});
-
-function quotationsForSizeChart() {
-  // Mirrors the same records used by the full quotations table below
-  return [
-    { size: '3 kW' }, { size: '10 kW' }, { size: '5 kW' }, { size: '25 kW' },
-    { size: '4 kW' }, { size: '50 kW' }, { size: '3 kW' }, { size: '7 kW' },
-    { size: '15 kW' }, { size: '30 kW' }, { size: '3 kW' }, { size: '20 kW' },
-    { size: '6 kW' }, { size: '4 kW' }, { size: '40 kW' },
-  ];
-}
-
-const sizeCategoryOrder = ["Small (≤5 kW)", "Medium (6–20 kW)", "Large (>20 kW)"];
-const sizeLabels = sizeCategoryOrder.filter((c) => c in sizeBuckets);
-const sizeValues = sizeLabels.map((c) => sizeBuckets[c]);
-
-window.sizeBarChart = new Chart(document.getElementById("chartSizeDistribution"), {
-  type: "bar",
-  data: {
-    labels: sizeLabels,
-    datasets: [{
-      label: "Quotations",
-      data: sizeValues,
-      backgroundColor: [paletteBerry, paletteTan, paletteMaroon],
-      borderRadius: 8,
-      maxBarThickness: 46,
+      label: 'Quotation Value',
+      data: monthlyTrend.map(d => d.v),
+      backgroundColor: paletteBerry,
+      borderRadius: 6,
+      maxBarThickness: 34,
     }]
   },
   options: {
@@ -154,100 +219,294 @@ window.sizeBarChart = new Chart(document.getElementById("chartSizeDistribution")
     maintainAspectRatio: false,
     plugins: {
       legend: { display: false },
-      tooltip: donutTooltipOpts,
+      tooltip: { ...tooltipOpts, callbacks: { label: (ctx) => formatCompactINR(ctx.parsed.y) } },
     },
     scales: {
-      x: {
-        grid: { display: false },
-        ticks: { color: "#6B7280" },
-      },
-      y: {
-        beginAtZero: true,
-        ticks: { color: "#6B7280", precision: 0 },
-        grid: { color: "#F8DCE8" },
-      },
+      x: { grid: { display: false }, ticks: { color: '#6B7280' } },
+      y: { beginAtZero: true, ticks: { color: '#6B7280', callback: (v) => formatCompactINR(v) }, grid: { color: '#F8DCE8' } },
+    },
+  }
+});
+
+// ---- Revenue by Machine Category (doughnut) ----
+const categoryRevenue = { 'Brick Machines': 5250000, 'Accessories': 1420000, 'Consumables': 640000 };
+
+new Chart(document.getElementById('chartCategoryRevenue'), {
+  type: 'doughnut',
+  data: {
+    labels: Object.keys(categoryRevenue),
+    datasets: [{
+      data: Object.values(categoryRevenue),
+      backgroundColor: [paletteBerry, paletteTan, paletteMaroon],
+      borderColor: '#FBD9E7',
+      borderWidth: 3,
+      hoverOffset: 6,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '62%',
+    plugins: {
+      legend: { position: 'bottom', labels: { color: '#6B7280', boxWidth: 8, boxHeight: 8, padding: 8, font: { size: 10 }, usePointStyle: true, pointStyle: 'circle' } },
+      tooltip: { ...tooltipOpts, callbacks: { label: (ctx) => `${ctx.label}: ${formatCompactINR(ctx.parsed)}` } },
+    }
+  }
+});
+
+// ---- Quotation Conversion Rate (doughnut gauge-style) ----
+const conversionAccepted = 156;
+const conversionTotal = 312;
+const conversionRest = conversionTotal - conversionAccepted;
+
+new Chart(document.getElementById('chartConversion'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Confirmed', 'Not Confirmed'],
+    datasets: [{
+      data: [conversionAccepted, conversionRest],
+      backgroundColor: [paletteBerry, paletteTan],
+      borderColor: '#FBD9E7',
+      borderWidth: 3,
+      hoverOffset: 6,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '72%',
+    plugins: {
+      legend: { position: 'bottom', labels: { color: '#6B7280', boxWidth: 8, boxHeight: 8, padding: 8, font: { size: 10 }, usePointStyle: true, pointStyle: 'circle' } },
+      tooltip: tooltipOpts,
+    }
+  },
+  plugins: [{
+    id: 'centerText',
+    afterDraw(chart) {
+      const { ctx, chartArea } = chart;
+      const pct = Math.round((conversionAccepted / conversionTotal) * 100);
+      ctx.save();
+      ctx.font = '700 18px Poppins, sans-serif';
+      ctx.fillStyle = '#800021';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const cx = (chartArea.left + chartArea.right) / 2;
+      const cy = (chartArea.top + chartArea.bottom) / 2;
+      ctx.fillText(`${pct}%`, cx, cy);
+      ctx.restore();
+    }
+  }]
+});
+
+// ---- State-wise Sales Distribution (horizontal bar) ----
+const stateSales = { 'Uttar Pradesh': 62, 'Rajasthan': 38, 'Madhya Pradesh': 27, 'Bihar': 19, 'Haryana': 10 };
+
+new Chart(document.getElementById('chartStateSales'), {
+  type: 'bar',
+  data: {
+    labels: Object.keys(stateSales),
+    datasets: [{
+      label: 'Orders',
+      data: Object.values(stateSales),
+      backgroundColor: [paletteBerry, paletteMid, paletteTan, paletteMaroon, paletteCream],
+      borderRadius: 6,
+      maxBarThickness: 20,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: tooltipOpts },
+    scales: {
+      x: { beginAtZero: true, ticks: { color: '#6B7280', precision: 0 }, grid: { color: '#F8DCE8' } },
+      y: { grid: { display: false }, ticks: { color: '#6B7280' } },
     },
   }
 });
 
 // ============================================================
-// Recent Quotations (right panel) — same records as the
-// reference Recent Quotations table, most recent first
+// Top Selling Machines
 // ============================================================
-const recentQuotations = [
-  { no: "SQ-1001", customer: "Amit Sharma", size: "3 kW", status: "Pending", date: "2026-07-15" },
-  { no: "SQ-1000", customer: "Priya Enterprises", size: "10 kW", status: "Accepted", date: "2026-07-14" },
-  { no: "SQ-0999", customer: "Ravi Constructions", size: "5 kW", status: "Rejected", date: "2026-07-14" },
-  { no: "SQ-0998", customer: "Meena Textiles", size: "25 kW", status: "Accepted", date: "2026-07-13" },
+const MOCK_TOP_MACHINES = [
+  { model: 'VK002 · 6 Brick Metal to Metal', unitsMonth: 6, unitsYtd: 29, revenue: 8400000 },
+  { model: 'VK004 · 10 Brick Fully Automatic', unitsMonth: 4, unitsYtd: 17, revenue: 7200000 },
+  { model: 'Rotary Type Machine', unitsMonth: 3, unitsYtd: 14, revenue: 4375000 },
+  { model: 'Budget Machine', unitsMonth: 5, unitsYtd: 33, revenue: 2062500 },
+  { model: 'VK001 · 4 Brick Metal to Metal', unitsMonth: 2, unitsYtd: 11, revenue: 1320000 },
 ];
 
-const statusInitial = { Pending: "P", Accepted: "A", Rejected: "R" };
-const statusBadgeBg = { Pending: "bg-amber-100 text-amber-600", Accepted: "bg-emerald-100 text-emerald-600", Rejected: "bg-rose-100 text-rose-500" };
-const statusPillClass = { Pending: "pending", Accepted: "accepted", Rejected: "rejected" };
-
-function formatDate(iso) {
-  const d = new Date(iso);
-  return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
+function renderTopMachines() {
+  const tbody = document.getElementById('topMachinesTbody');
+  if (!tbody) return;
+  if (!MOCK_TOP_MACHINES.length) {
+    tbody.innerHTML = `<tr><td colspan="5" class="text-center text-gray-400 py-3">No sales data yet</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = MOCK_TOP_MACHINES.map((m, idx) => `
+    <tr>
+      <td data-label="Rank">#${idx + 1}</td>
+      <td data-label="Machine Model" class="font-medium">${m.model}</td>
+      <td data-label="Units Sold (Month)">${m.unitsMonth}</td>
+      <td data-label="Units Sold (YTD)">${m.unitsYtd}</td>
+      <td data-label="Revenue Generated">${formatCompactINR(m.revenue)}</td>
+    </tr>
+  `).join('');
 }
 
-function renderRecentQuotations() {
-  const list = document.getElementById("recentQuotationsList");
+// ============================================================
+// Recent Activity feed
+// ============================================================
+const ACT_ICONS = {
+  quotation: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>',
+  invoice: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>',
+  payment: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>',
+  dispatch: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="7" width="15" height="13" rx="1"></rect><path d="M16 10h3l4 4v6h-7"></path></svg>',
+  stock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line></svg>',
+};
+
+const MOCK_ACTIVITY = [
+  { type: 'quotation', text: 'New quotation SQ-1024 sent to Amit Sharma', time: '10 min ago' },
+  { type: 'payment', text: '₹2,50,000 advance received from Priya Enterprises', time: '55 min ago' },
+  { type: 'dispatch', text: 'VK002 unit dispatched to Ravi Constructions', time: '2 hr ago' },
+  { type: 'invoice', text: 'Invoice INV-2026-041 raised for Meena Textiles', time: '3 hr ago' },
+  { type: 'stock', text: 'Low stock alert: Pan Mixer 500kg', time: '5 hr ago' },
+  { type: 'quotation', text: 'SQ-1020 marked Accepted by Suresh Patel', time: 'Yesterday' },
+  { type: 'payment', text: '₹4,80,000 final payment received from Global Foods', time: 'Yesterday' },
+];
+
+function renderRecentActivity() {
+  const list = document.getElementById('recentActivityList');
   if (!list) return;
-  list.innerHTML = recentQuotations
-    .map(
-      (q) => `
-      <div class="quote-row">
-        <div class="w-9 h-9 rounded-full ${statusBadgeBg[q.status]} flex items-center justify-center text-xs font-bold">${statusInitial[q.status]}</div>
-        <div class="quote-info">
-          <p>${q.no} · ${q.customer}</p>
-          <p>${q.size} · ${formatDate(q.date)}</p>
-        </div>
-        <span class="quote-pill ${statusPillClass[q.status]}">${q.status}</span>
-      </div>`
-    )
-    .join("");
+  list.innerHTML = MOCK_ACTIVITY.map(a => `
+    <div class="activity-row">
+      <div class="activity-icon act-${a.type}">${ACT_ICONS[a.type]}</div>
+      <div class="min-w-0">
+        <p class="activity-text">${a.text}</p>
+        <p class="activity-time">${a.time}</p>
+      </div>
+    </div>
+  `).join('');
 }
 
-renderRecentQuotations();
+// ============================================================
+// Payment / Receivables Alerts
+// ============================================================
+const MOCK_OVERDUE = [
+  { name: 'Star Cold Storage', sub: 'INV-2026-033 · overdue 22 days', amount: 850000, sev: 'high' },
+  { name: 'Farha Textiles', sub: 'INV-2026-037 · overdue 15 days', amount: 318000, sev: 'high' },
+  { name: 'Vikram Industries', sub: 'INV-2026-039 · overdue 9 days', amount: 620000, sev: 'med' },
+  { name: 'Deepak Motors', sub: 'INV-2026-040 · overdue 4 days', amount: 410000, sev: 'med' },
+  { name: 'Anita Deshmukh', sub: 'INV-2026-042 · overdue 2 days', amount: 158000, sev: 'low' },
+  { name: 'Nikhil Joshi', sub: 'INV-2026-044 · overdue 1 day', amount: 205000, sev: 'low' },
+];
+
+const MOCK_UPCOMING = [
+  { name: 'Kavita Rao', sub: 'INV-2026-046 · due in 3 days', amount: 162000, sev: 'low' },
+  { name: 'Sunrise Apartments', sub: 'INV-2026-047 · due in 6 days', amount: 795000, sev: 'med' },
+  { name: 'Rajesh Traders', sub: 'INV-2026-048 · due in 9 days', amount: 372000, sev: 'low' },
+  { name: 'Global Foods Pvt Ltd', sub: 'INV-2026-049 · due in 13 days', amount: 1250000, sev: 'med' },
+];
+
+let alertTab = 'overdue';
+
+function setAlertTab(tab) {
+  alertTab = tab;
+  document.getElementById('tabOverdue').classList.toggle('active', tab === 'overdue');
+  document.getElementById('tabUpcoming').classList.toggle('active', tab === 'upcoming');
+  renderAlerts();
+}
+
+function renderAlerts() {
+  const list = document.getElementById('alertsList');
+  const summary = document.getElementById('alertSummaryLine');
+  if (!list || !summary) return;
+  const data = alertTab === 'overdue' ? MOCK_OVERDUE : MOCK_UPCOMING;
+  const total = data.reduce((sum, d) => sum + d.amount, 0);
+
+  summary.textContent = alertTab === 'overdue'
+    ? `${data.length} invoices overdue · ${formatCompactINR(total)} total`
+    : `${data.length} invoices due in the next 15 days · ${formatCompactINR(total)} total`;
+
+  list.innerHTML = data.map(d => `
+    <div class="alert-item">
+      <span class="alert-dot sev-${d.sev}"></span>
+      <div class="min-w-0">
+        <p class="alert-name">${d.name}</p>
+        <p class="alert-sub">${d.sub}</p>
+      </div>
+      <span class="alert-amount">${formatINR(d.amount)}</span>
+    </div>
+  `).join('');
+}
+
+// ============================================================
+// Right panel — Recent Payments + Machines in Production
+// ============================================================
+const MOCK_RECENT_PAYMENTS = [
+  { customer: 'Priya Enterprises', amount: 250000, status: 'paid', date: '2026-07-28' },
+  { customer: 'Global Foods Pvt Ltd', amount: 480000, status: 'paid', date: '2026-07-27' },
+  { customer: 'Star Cold Storage', amount: 850000, status: 'overdue', date: '2026-07-06' },
+  { customer: 'Sunrise Apartments', amount: 795000, status: 'paid', date: '2026-07-24' },
+];
+
+function renderRecentPayments() {
+  const list = document.getElementById('recentPaymentsList');
+  if (!list) return;
+  list.innerHTML = MOCK_RECENT_PAYMENTS.map(p => `
+    <div class="quote-row">
+      <div class="w-9 h-9 rounded-full ${p.status === 'paid' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-500'} flex items-center justify-center text-xs font-bold">${p.status === 'paid' ? '✓' : '!'}</div>
+      <div class="quote-info">
+        <p>${p.customer}</p>
+        <p>${formatINR(p.amount)} · ${formatDate(p.date)}</p>
+      </div>
+      <span class="quote-pill ${p.status}">${p.status === 'paid' ? 'Paid' : 'Overdue'}</span>
+    </div>
+  `).join('');
+}
+
+function renderProductionBreakdown() {
+  const total = document.getElementById('rightInProduction');
+  const breakdown = document.getElementById('rightProductionBreakdown');
+  if (!total || !breakdown) return;
+  const items = [
+    { label: 'VK002 · 6 Brick', count: 9 },
+    { label: 'VK004 · 10 Brick', count: 6 },
+    { label: 'Rotary Type Machine', count: 5 },
+    { label: 'Budget Machine', count: 3 },
+  ];
+  total.textContent = items.reduce((s, i) => s + i.count, 0);
+  breakdown.innerHTML = items.map(i => `
+    <div class="flex items-center justify-between">
+      <span>${i.label}</span>
+      <span class="font-semibold text-gray-800">${i.count}</span>
+    </div>
+  `).join('');
+}
 
 // ============================================================
 // Recent Quotations — full table (sort, paginate, view/edit,
-// print, PDF export, duplicate) — same behaviour as the
-// reference dashboard, recoloured to the palette theme
+// print, PDF export, duplicate)
 // ============================================================
 let quotations = [
-  { no: 'SQ-1001', customer: 'Amit Sharma', size: '3 kW', amount: 165000, status: 'Pending', date: '2026-07-15', channelPartner: 'CP-0001' },
-  { no: 'SQ-1000', customer: 'Priya Enterprises', size: '10 kW', amount: 540000, status: 'Accepted', date: '2026-07-14', channelPartner: 'CP-0002' },
-  { no: 'SQ-0999', customer: 'Ravi Constructions', size: '5 kW', amount: 275000, status: 'Rejected', date: '2026-07-14', channelPartner: 'CP-0001' },
-  { no: 'SQ-0998', customer: 'Meena Textiles', size: '25 kW', amount: 1320000, status: 'Accepted', date: '2026-07-13', channelPartner: 'CP-0003' },
-  { no: 'SQ-0997', customer: 'Suresh Patel', size: '4 kW', amount: 210000, status: 'Pending', date: '2026-07-12', channelPartner: 'CP-0002' },
-  { no: 'SQ-0996', customer: 'Global Foods Pvt Ltd', size: '50 kW', amount: 2650000, status: 'Accepted', date: '2026-07-12', channelPartner: 'CP-0001' },
-  { no: 'SQ-0995', customer: 'Anita Deshmukh', size: '3 kW', amount: 158000, status: 'Rejected', date: '2026-07-11', channelPartner: 'CP-0003' },
-  { no: 'SQ-0994', customer: 'Rajesh Traders', size: '7 kW', amount: 372000, status: 'Pending', date: '2026-07-11', channelPartner: 'CP-0002' },
-  { no: 'SQ-0993', customer: 'Sunrise Apartments', size: '15 kW', amount: 795000, status: 'Accepted', date: '2026-07-10', channelPartner: 'CP-0001' },
-  { no: 'SQ-0992', customer: 'Vikram Industries', size: '30 kW', amount: 1580000, status: 'Pending', date: '2026-07-09', channelPartner: 'CP-0002' },
-  { no: 'SQ-0991', customer: 'Kavita Rao', size: '3 kW', amount: 162000, status: 'Accepted', date: '2026-07-08', channelPartner: 'CP-0003' },
-  { no: 'SQ-0990', customer: 'Deepak Motors', size: '20 kW', amount: 1050000, status: 'Pending', date: '2026-07-08', channelPartner: 'CP-0001' },
-  { no: 'SQ-0989', customer: 'Farha Textiles', size: '6 kW', amount: 318000, status: 'Rejected', date: '2026-07-07', channelPartner: 'CP-0002' },
-  { no: 'SQ-0988', customer: 'Nikhil Joshi', size: '4 kW', amount: 205000, status: 'Accepted', date: '2026-07-06', channelPartner: 'CP-0001' },
-  { no: 'SQ-0987', customer: 'Star Cold Storage', size: '40 kW', amount: 2120000, status: 'Pending', date: '2026-07-05', channelPartner: 'CP-0003' },
+  { no: 'SQ-1024', customer: 'Amit Sharma', machine: 'Budget Machine', amount: 800000, status: 'Pending', date: '2026-07-28' },
+  { no: 'SQ-1023', customer: 'Priya Enterprises', machine: 'VK002 · 6 Brick Metal to Metal', amount: 1400000, status: 'Accepted', date: '2026-07-27' },
+  { no: 'SQ-1022', customer: 'Ravi Constructions', machine: 'Double Station Nano Machine', amount: 715000, status: 'Rejected', date: '2026-07-26' },
+  { no: 'SQ-1021', customer: 'Meena Textiles', machine: 'VK004 · 10 Brick Fully Automatic', amount: 1800000, status: 'Accepted', date: '2026-07-25' },
+  { no: 'SQ-1020', customer: 'Suresh Patel', machine: 'Nano Machine', amount: 515000, status: 'Accepted', date: '2026-07-24' },
+  { no: 'SQ-1019', customer: 'Global Foods Pvt Ltd', machine: 'VK005 · 12 Brick Fully Automatic', amount: 2000000, status: 'Accepted', date: '2026-07-23' },
+  { no: 'SQ-1018', customer: 'Anita Deshmukh', machine: 'Metal to Metal Machine', amount: 1325000, status: 'Rejected', date: '2026-07-22' },
+  { no: 'SQ-1017', customer: 'Rajesh Traders', machine: 'Rotary Type Machine', amount: 1250000, status: 'Pending', date: '2026-07-21' },
+  { no: 'SQ-1016', customer: 'Sunrise Apartments', machine: 'VK003 · 8 Brick Fully Automatic', amount: 1600000, status: 'Accepted', date: '2026-07-20' },
+  { no: 'SQ-1015', customer: 'Vikram Industries', machine: 'VK001 · 4 Brick Metal to Metal', amount: 1200000, status: 'Pending', date: '2026-07-19' },
+  { no: 'SQ-1014', customer: 'Kavita Rao', machine: 'Budget Machine', amount: 800000, status: 'Accepted', date: '2026-07-18' },
+  { no: 'SQ-1013', customer: 'Deepak Motors', machine: 'VK002 · 6 Brick Metal to Metal', amount: 1400000, status: 'Pending', date: '2026-07-17' },
+  { no: 'SQ-1012', customer: 'Farha Textiles', machine: 'Double Station Nano Machine', amount: 715000, status: 'Rejected', date: '2026-07-16' },
+  { no: 'SQ-1011', customer: 'Nikhil Joshi', machine: 'Nano Machine', amount: 515000, status: 'Accepted', date: '2026-07-15' },
+  { no: 'SQ-1010', customer: 'Star Cold Storage', machine: 'VK004 · 10 Brick Fully Automatic', amount: 1800000, status: 'Pending', date: '2026-07-14' },
 ];
 
 const tableStatusPillClass = { Pending: 'pill-pending', Accepted: 'pill-accepted', Rejected: 'pill-rejected' };
-
-function formatINR(n) {
-  return '₹' + n.toLocaleString('en-IN');
-}
-
-// Compact format for big KPI numbers, e.g. 39000000 -> "₹3.9Cr", 450000 -> "₹4.5L"
-function formatCompactINR(n) {
-  if (n === null || n === undefined || isNaN(n)) return '—';
-  const abs = Math.abs(n);
-  if (abs >= 1e7) return '₹' + (n / 1e7).toFixed(1) + 'Cr';
-  if (abs >= 1e5) return '₹' + (n / 1e5).toFixed(1) + 'L';
-  if (abs >= 1e3) return '₹' + (n / 1e3).toFixed(1) + 'K';
-  return '₹' + n.toLocaleString('en-IN');
-}
 
 let sortKey = 'date';
 let sortDir = 'desc';
@@ -259,16 +518,8 @@ const paginationControls = document.getElementById('paginationControls');
 const rowsRangeLabel = document.getElementById('rowsRangeLabel');
 const rowsPerPageSelect = document.getElementById('rowsPerPage');
 
-// Channel Partner Filter (Super Admin only widget)
-let activeChannelPartnerFilter = 'all'; // 'all' or specific CP code
-
 function sortedQuotations() {
   let list = [...quotations];
-
-  if (activeChannelPartnerFilter !== 'all') {
-    list = list.filter(q => q.channelPartner === activeChannelPartnerFilter);
-  }
-
   list.sort((a, b) => {
     let av = a[sortKey], bv = b[sortKey];
     if (sortKey === 'amount') { /* numeric already */ }
@@ -309,23 +560,17 @@ function renderTable() {
   const start = (currentPage - 1) * rowsPerPage;
   const pageRows = data.slice(start, start + rowsPerPage);
 
-  const rows = pageRows.map((q) => {
-    const channelPartnerCell = `<td data-label="Channel Partner">${q.channelPartner || '—'}</td>`;
-    return `
-      <tr data-no="${q.no}">
-        <td data-label="Quotation No." class="font-medium">${q.no}</td>
-        <td data-label="Customer">${q.customer}</td>
-        ${window.currentUserRole === 'SUPER_ADMIN' ? channelPartnerCell : ''}
-        <td data-label="System Size">${q.size}</td>
-        <td data-label="Amount">${formatINR(q.amount)}</td>
-        <td data-label="Status"><span class="pill ${tableStatusPillClass[q.status]}">${q.status}</span></td>
-        <td data-label="Date">${formatDate(q.date)}</td>
-        <td data-label="Actions">${actionIconsHtml(q.no)}</td>
-      </tr>
-    `;
-  }).join('');
-
-  qTbody.innerHTML = rows;
+  qTbody.innerHTML = pageRows.map((q) => `
+    <tr data-no="${q.no}">
+      <td data-label="Quotation No." class="font-medium">${q.no}</td>
+      <td data-label="Customer">${q.customer}</td>
+      <td data-label="Machine">${q.machine}</td>
+      <td data-label="Amount">${formatINR(q.amount)}</td>
+      <td data-label="Status"><span class="pill ${tableStatusPillClass[q.status]}">${q.status}</span></td>
+      <td data-label="Date">${formatDate(q.date)}</td>
+      <td data-label="Actions">${actionIconsHtml(q.no)}</td>
+    </tr>
+  `).join('');
 
   rowsRangeLabel.textContent = totalRows === 0
     ? 'No records'
@@ -333,11 +578,6 @@ function renderTable() {
 
   renderPagination(totalPages);
   updateSortIcons();
-
-  const channelPartnerHeaders = document.querySelectorAll('#quotationsTable thead th[data-key="channelPartner"]');
-  channelPartnerHeaders.forEach(th => {
-    th.style.display = (window.currentUserRole === 'SUPER_ADMIN') ? '' : 'none';
-  });
 }
 
 function renderPagination(totalPages) {
@@ -389,19 +629,7 @@ rowsPerPageSelect?.addEventListener('change', () => {
   renderTable();
 });
 
-const channelPartnerFilter = document.getElementById('channelPartnerFilter');
-if (channelPartnerFilter) {
-  channelPartnerFilter.addEventListener('change', (e) => {
-    activeChannelPartnerFilter = e.target.value;
-    currentPage = 1;
-    renderTable();
-  });
-}
-
-/* ===========================================================
-   Row actions: View (read-only) / Edit (selective fields) /
-   Print / Download PDF / Duplicate
-   =========================================================== */
+/* ---- View / Edit modal ---- */
 const quoteModal = document.getElementById('quoteModal');
 const modalTitle = document.getElementById('modalTitle');
 const modalSubtitle = document.getElementById('modalSubtitle');
@@ -412,12 +640,12 @@ const quoteForm = document.getElementById('quoteForm');
 
 const fldNo = document.getElementById('fldNo');
 const fldCustomer = document.getElementById('fldCustomer');
-const fldSize = document.getElementById('fldSize');
+const fldMachine = document.getElementById('fldMachine');
 const fldAmount = document.getElementById('fldAmount');
 const fldStatus = document.getElementById('fldStatus');
 const fldDate = document.getElementById('fldDate');
 
-const EDITABLE_FIELD_IDS = ['fldCustomer', 'fldSize', 'fldAmount', 'fldStatus'];
+const EDITABLE_FIELD_IDS = ['fldCustomer', 'fldMachine', 'fldAmount', 'fldStatus'];
 
 let modalMode = 'view';
 let modalQuoteNo = null;
@@ -429,7 +657,7 @@ function findQuote(no) {
 function fillForm(q) {
   fldNo.value = q.no;
   fldCustomer.value = q.customer;
-  fldSize.value = q.size;
+  fldMachine.value = q.machine;
   fldAmount.value = q.amount;
   fldStatus.value = q.status;
   fldDate.value = q.date;
@@ -450,7 +678,7 @@ function openModal(no, mode) {
     modalCancelBtn.textContent = 'Close';
   } else {
     modalTitle.textContent = 'Edit Quotation';
-    modalSubtitle.textContent = `${q.no} · Customer, size, amount & status only`;
+    modalSubtitle.textContent = `${q.no} · Customer, machine, amount & status only`;
     quoteForm.querySelectorAll('.field-input').forEach(el => {
       el.disabled = !EDITABLE_FIELD_IDS.includes(el.id);
     });
@@ -475,7 +703,7 @@ modalSaveBtn?.addEventListener('click', () => {
   const q = findQuote(modalQuoteNo);
   if (!q) return;
   q.customer = fldCustomer.value.trim() || q.customer;
-  q.size = fldSize.value.trim() || q.size;
+  q.machine = fldMachine.value.trim() || q.machine;
   q.amount = parseFloat(fldAmount.value) || q.amount;
   q.status = fldStatus.value;
   renderTable();
@@ -483,13 +711,13 @@ modalSaveBtn?.addEventListener('click', () => {
   showToast(`Saved changes to ${q.no}`);
 });
 
-/* ---- Print: fills the hidden print slip and opens the browser print dialog ---- */
+/* ---- Print ---- */
 function printQuotation(no) {
   const q = findQuote(no);
   if (!q) return;
   document.getElementById('pNo').textContent = q.no;
   document.getElementById('pCustomer').textContent = q.customer;
-  document.getElementById('pSize').textContent = q.size;
+  document.getElementById('pMachine').textContent = q.machine;
   document.getElementById('pAmount').textContent = formatINR(q.amount);
   document.getElementById('pStatus').textContent = q.status;
   document.getElementById('pDate').textContent = formatDate(q.date);
@@ -497,7 +725,7 @@ function printQuotation(no) {
   window.print();
 }
 
-/* ---- Download PDF: generates a real .pdf file client-side with jsPDF ---- */
+/* ---- Download PDF ---- */
 function downloadQuotationPdf(no) {
   const q = findQuote(no);
   if (!q) return;
@@ -510,7 +738,7 @@ function downloadQuotationPdf(no) {
 
   doc.setFontSize(16);
   doc.setTextColor(136, 17, 68);
-  doc.text('VKM Solar Quotation Management', 40, 50);
+  doc.text('Vaishnokripa Mercantile Pvt. Ltd.', 40, 50);
   doc.setFontSize(11);
   doc.setTextColor(107, 114, 128);
   doc.text('Quotation Slip', 40, 68);
@@ -520,7 +748,7 @@ function downloadQuotationPdf(no) {
   const rows = [
     ['Quotation No.', q.no],
     ['Customer', q.customer],
-    ['System Size', q.size],
+    ['Machine', q.machine],
     ['Amount', formatINR(q.amount)],
     ['Status', q.status],
     ['Date', formatDate(q.date)],
@@ -544,7 +772,7 @@ function downloadQuotationPdf(no) {
   showToast(`Downloaded ${q.no}.pdf`);
 }
 
-/* ---- Duplicate: clones the quotation with a fresh number and inserts it at the top ---- */
+/* ---- Duplicate ---- */
 function duplicateQuotation(no) {
   const q = findQuote(no);
   if (!q) return;
@@ -555,19 +783,13 @@ function duplicateQuotation(no) {
   }, 0);
   const newNo = `SQ-${String(maxNum + 1).padStart(4, '0')}`;
 
-  const copy = {
-    ...q,
-    no: newNo,
-    status: 'Pending',
-    date: new Date().toISOString().slice(0, 10),
-  };
+  const copy = { ...q, no: newNo, status: 'Pending', date: new Date().toISOString().slice(0, 10) };
   quotations.unshift(copy);
   sortKey = 'date'; sortDir = 'desc'; currentPage = 1;
   renderTable();
   showToast(`Duplicated as ${newNo}`);
 }
 
-/* ---- Wire up the action icons + row click ---- */
 qTbody?.addEventListener('click', (e) => {
   const actionBtn = e.target.closest('[data-action]');
   if (actionBtn) {
@@ -582,207 +804,57 @@ qTbody?.addEventListener('click', (e) => {
     return;
   }
   const row = e.target.closest('tr[data-no]');
-  if (row) {
-    openModal(row.getAttribute('data-no'), 'view');
-  }
+  if (row) openModal(row.getAttribute('data-no'), 'view');
 });
 
-/* ---------------- Toast helper ---------------- */
-function showToast(message) {
-  const container = document.getElementById('toast-container');
-  if (!container) return;
-  const toast = document.createElement('div');
-  toast.className = 'toast-animate bg-gray-800 text-white text-xs font-medium px-4 py-2.5 rounded-lg shadow-lg';
-  toast.textContent = message;
-  container.appendChild(toast);
-  setTimeout(() => toast.remove(), 2500);
-}
-
-/* ---------------- Role helpers ---------------- */
-// currentUserRole is normally set by session.js from the JWT payload after
-// login (SUPER_ADMIN / CHANNEL_PARTNER_ADMIN / CHANNEL_PARTNER_SALES).
-// Fallback here only covers local testing before session.js exists on a page.
-window.currentUserRole = window.currentUserRole || 'SUPER_ADMIN';
-
-// Re-applies data-role visibility. session.js already runs this once on
-// DOMContentLoaded; dashboard.js calls it again after loadDashboardData()
-// populates numbers, so cards that were hidden don't flash stale content.
-function applyRoleBasedVisibility() {
-  const userRole = window.currentUserRole || 'SUPER_ADMIN';
-  document.querySelectorAll('[data-role]').forEach(el => {
-    const roles = el.getAttribute('data-role').split(',').map(r => r.trim());
-    const shouldShow = roles.includes(userRole);
-    el.style.display = shouldShow ? '' : 'none';
-  });
-}
-applyRoleBasedVisibility();
-
-// ============================================================
-// NEW: loadDashboardData() — the ONE API call this whole page needs.
-// Works for both Super Admin and Channel Partner logins: the backend
-// (DashboardService -> SecurityUtils.getCurrentPartnerId()) already
-// scopes every number correctly, so this function only has to render
-// whatever it gets back. Super-Admin-only fields (totalPartners,
-// topPartners) come back null for a Channel Partner login — the
-// data-role attributes on the HTML cards already keep those hidden,
-// this function just guards against writing into hidden/absent data.
-// ============================================================
-const API_BASE = window.API_BASE || ''; // set window.API_BASE = 'http://localhost:8080' if frontend and backend run on different ports
-
-function getAuthToken() {
-  return sessionStorage.getItem('token');
-}
-
-async function loadDashboardData() {
-  try {
-    const res = await fetch(`${API_BASE}/api/dashboard/summary`, {
-      headers: { 'Authorization': 'Bearer ' + getAuthToken() }
-    });
-    if (!res.ok) throw new Error('Dashboard summary request failed: ' + res.status);
-    const body = await res.json();
-    if (!body.success) throw new Error(body.message || 'Dashboard summary returned an error');
-    renderDashboardSummary(body.data);
-  } catch (err) {
-    // Backend not wired up yet / offline — fall back to mock numbers so the
-    // page still looks complete during frontend-only development.
-    console.warn('loadDashboardData() falling back to mock data:', err.message);
-    renderDashboardSummary(MOCK_DASHBOARD_SUMMARY);
-  }
-}
-
-// Mirrors the shape of DashboardSummaryDto on the backend — used only until
-// the real API response is available; delete once /api/dashboard/summary is live everywhere.
-const MOCK_DASHBOARD_SUMMARY = {
-  totalCustomers: 86,
-  totalProjects: 63,
-  totalQuotations: 248,
-  totalQuotationValue: 39000000,
-  pendingApprovals: 58,
-  totalReferralIncome: 214000,
-  totalPartners: 21,
-  activePartners: 18,
-  platformPendingReferralPayouts: 96000,
-  topPartners: [
-    { partnerName: 'Sunrise Solar Solutions', partnerCode: 'CP-0001', totalQuotations: 62, totalRevenue: 9800000 },
-    { partnerName: 'GreenVolt Energy',       partnerCode: 'CP-0002', totalQuotations: 54, totalRevenue: 8650000 },
-    { partnerName: 'Bright Future Power',    partnerCode: 'CP-0003', totalQuotations: 41, totalRevenue: 6200000 },
-    { partnerName: 'EcoRay Installations',   partnerCode: 'CP-0004', totalQuotations: 33, totalRevenue: 4750000 },
-    { partnerName: 'Solaris Traders',        partnerCode: 'CP-0005', totalQuotations: 28, totalRevenue: 3900000 },
-  ],
-};
-
-function renderDashboardSummary(data) {
-  // ---- Group C: common to every role ----
-  const pendingApprovalsEl = document.getElementById('kpiPendingApprovals');
-  if (pendingApprovalsEl) pendingApprovalsEl.textContent = data.pendingApprovals ?? '—';
-
-  const pendingApprovalsLabelEl = document.getElementById('kpiPendingApprovalsLabel');
-  if (pendingApprovalsLabelEl) {
-    pendingApprovalsLabelEl.textContent = window.currentUserRole === 'SUPER_ADMIN'
-      ? 'Pending Approvals (All Partners)'
-      : 'Pending Approvals';
-  }
-
-  // ---- Group A: Super Admin only ----
-  if (window.currentUserRole === 'SUPER_ADMIN') {
-    setText('kpiTotalPartners', data.totalPartners ?? '—');
-    const activeSuffix = document.getElementById('kpiActivePartnersSuffix');
-    if (activeSuffix && data.activePartners !== null && data.activePartners !== undefined) {
-      activeSuffix.textContent = `(${data.activePartners} active)`;
-    }
-    setText('kpiPlatformRevenue', formatCompactINR(data.totalQuotationValue));
-    setText('kpiReferralPayoutsPending', formatCompactINR(data.platformPendingReferralPayouts));
-
-    renderTopPartners(data.topPartners || []);
-  }
-
-  // ---- Group B: Channel Partner roles only ----
-  if (window.currentUserRole === 'CHANNEL_PARTNER_ADMIN' || window.currentUserRole === 'CHANNEL_PARTNER_SALES') {
-    setText('kpiMyCustomers', data.totalCustomers ?? '—');
-    setText('kpiMyQuotations', data.totalQuotations ?? '—');
-    // NOTE: DashboardSummaryDto currently returns all-time quotation value, not
-    // month-filtered. Swap this for a dedicated "this month" figure once the
-    // backend adds one (see README TODO) — kept as totalQuotationValue for now
-    // so the card isn't left blank.
-    setText('kpiMyRevenueMonth', formatCompactINR(data.totalQuotationValue));
-    setText('kpiMyReferralIncome', formatCompactINR(data.totalReferralIncome));
-  }
-
-  // ---- Re-apply role visibility now that content is populated ----
-  applyRoleBasedVisibility();
-}
-
-function setText(id, value) {
-  const el = document.getElementById(id);
-  if (el) el.textContent = value;
-}
-
-function renderTopPartners(topPartners) {
-  const tbody = document.getElementById('topPartnersTbody');
-  if (!tbody) return;
-
-  if (!topPartners.length) {
-    tbody.innerHTML = `<tr><td colspan="4" class="text-center text-gray-400 py-3">No partner data yet</td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = topPartners.map((p, idx) => `
-    <tr>
-      <td data-label="Rank">#${idx + 1}</td>
-      <td data-label="Partner Name" class="font-medium">${p.partnerName} <span class="text-gray-400">(${p.partnerCode})</span></td>
-      <td data-label="Total Quotations">${p.totalQuotations}</td>
-      <td data-label="Total Revenue">${formatCompactINR(p.totalRevenue)}</td>
-    </tr>
-  `).join('');
-}
-
-/* ---------------- Init table + dashboard data ---------------- */
-renderTable();
-loadDashboardData();
-
-// ============================================================
-// New Quotation button — redirects to the Quotation Management module
-// ============================================================
-const newQuotationBtn = document.getElementById('newQuotationBtn');
-newQuotationBtn?.addEventListener('click', () => {
+/* ---------------- New Quotation button ---------------- */
+document.getElementById('newQuotationBtn')?.addEventListener('click', () => {
   window.location.href = '../Quotation/quotation.html';
 });
 
-// ============================================================
-// Topbar: notification + profile dropdowns
-// ============================================================
-const notifBtn = document.getElementById("notifBtn");
-const notifDropdown = document.getElementById("notifDropdown");
-const profileBtn = document.getElementById("profileBtn");
-const profileDropdown = document.getElementById("profileDropdown");
-const profileLogoutBtn = document.getElementById("profileLogoutBtn");
+/* ---------------- Topbar: notification + profile dropdowns ---------------- */
+const notifBtn = document.getElementById('notifBtn');
+const notifDropdown = document.getElementById('notifDropdown');
+const profileBtn = document.getElementById('profileBtn');
+const profileDropdown = document.getElementById('profileDropdown');
+const profileLogoutBtn = document.getElementById('profileLogoutBtn');
 
 function closeAllTopbarDropdowns(except) {
   [notifDropdown, profileDropdown].forEach((dd) => {
-    if (dd && dd !== except) dd.classList.add("hidden");
+    if (dd && dd !== except) dd.classList.add('hidden');
   });
 }
 
-notifBtn?.addEventListener("click", (e) => {
+notifBtn?.addEventListener('click', (e) => {
   e.stopPropagation();
-  const willOpen = notifDropdown.classList.contains("hidden");
+  const willOpen = notifDropdown.classList.contains('hidden');
   closeAllTopbarDropdowns();
-  notifDropdown.classList.toggle("hidden", !willOpen);
+  notifDropdown.classList.toggle('hidden', !willOpen);
 });
 
-profileBtn?.addEventListener("click", (e) => {
+profileBtn?.addEventListener('click', (e) => {
   e.stopPropagation();
-  const willOpen = profileDropdown.classList.contains("hidden");
+  const willOpen = profileDropdown.classList.contains('hidden');
   closeAllTopbarDropdowns();
-  profileDropdown.classList.toggle("hidden", !willOpen);
+  profileDropdown.classList.toggle('hidden', !willOpen);
 });
 
-document.addEventListener("click", () => closeAllTopbarDropdowns());
+document.addEventListener('click', () => closeAllTopbarDropdowns());
+
+function handleLogout() {
+  showToast('Logged out');
+  window.location.href = '../index.html';
+}
+profileLogoutBtn?.addEventListener('click', handleLogout);
 
 // ============================================================
-// Logout — redirects to index.html
+// Init
 // ============================================================
-profileLogoutBtn?.addEventListener("click", () => {
-  showToast("Logged out");
-  window.location.href = "../index.html";
-});
+renderPipeline();
+renderTopMachines();
+renderRecentActivity();
+renderAlerts();
+renderRecentPayments();
+renderProductionBreakdown();
+renderTable();
+loadDashboardData();

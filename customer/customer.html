@@ -4,24 +4,24 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>Pocket Dashboard — Customer Management</title>
+<title>VKM Dashboard — Customer Management</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
   tailwind.config = {
     theme: {
       extend: {
         colors: {
-          peach: {
-            50:  "#FBF6EF",
-            100: "#F1E2D1",
-            200: "#E4CBAE",
-            300: "#DCC3AA",
-            400: "#A8446B",
-            500: "#810B38",
-            600: "#6B0930",
-            700: "#541A1A",
+          brand: {
+            50:  "#FFF5F7",
+            100: "#FFE4EC",
+            200: "#FFC9D9",
+            300: "#FF69B4",
+            400: "#C24366",
+            500: "#881144",
+            600: "#800021",
+            700: "#5C0018",
           },
-          cream: "#F7ECE1",
+          cream: "#FDF8F9",
         },
         fontFamily: {
           sans: ["Poppins", "ui-sans-serif", "system-ui"],
@@ -48,31 +48,31 @@
     <div id="sidebarBackdrop" class="sidebar-backdrop hidden"></div>
 
     <!-- ===================== SIDEBAR (matches dashboard.html exactly) ===================== -->
-    <aside id="sidebar" class="sidebar app-sidebar relative flex flex-col items-center py-5 gap-6 bg-cream border-r border-peach-300 transition-all duration-300 ease-in-out w-20 shrink-0">
-      <button id="sidebarToggle" aria-label="Toggle sidebar" class="absolute -right-3 top-8 w-6 h-6 rounded-full bg-cream shadow-md border border-peach-300 flex items-center justify-center text-peach-500 hover:scale-110 transition-transform">
+    <aside id="sidebar" class="sidebar app-sidebar relative flex flex-col items-center py-5 gap-6 bg-cream border-r border-brand-200 transition-all duration-300 ease-in-out w-20 shrink-0">
+      <button id="sidebarToggle" aria-label="Toggle sidebar" class="absolute -right-3 top-8 w-6 h-6 rounded-full bg-cream shadow-md border border-brand-200 flex items-center justify-center text-brand-500 hover:scale-110 transition-transform">
         <svg id="toggleIcon" class="w-3.5 h-3.5 transition-transform duration-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="15 18 9 12 15 6"></polyline>
         </svg>
       </button>
 
       <div class="flex items-center justify-center shrink-0">
-        <img src="/img/logo.webp" alt="Company Logo" class="w-auto h-10 object-contain" />
+        <img src="/img/logo.webp" alt="VKM Logo" class="w-auto h-10 object-contain" />
       </div>
 
       <nav class="nav-list w-full flex-1 flex flex-col items-center gap-1.5 mt-3 px-3">
-        <li data-role="SUPER_ADMIN,CHANNEL_PARTNER_ADMIN,CHANNEL_PARTNER_SALES" id="menuDashboard" class="nav-item" data-label="Dashboard" aria-label="Dashboard" onclick="window.location.href='dashboard.html'" style="list-style:none; width:100%;">
+        <li data-role="SUPER_ADMIN,ADMIN,SALES" id="menuDashboard" class="nav-item" data-label="Dashboard" aria-label="Dashboard" onclick="window.location.href='../dashboard/dashboard.html'" style="list-style:none; width:100%;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect></svg>
           <span>Dashboard</span>
         </li>
-        <li data-role="SUPER_ADMIN,CHANNEL_PARTNER_ADMIN,CHANNEL_PARTNER_SALES" id="menuQuotation" class="nav-item" data-label="Quotation Management" aria-label="Quotation Management" onclick="window.location.href='../Quotation/quotation.html'" style="list-style:none; width:100%;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="M9 15h1"></path><path d="M9.5 12.5c0-.83.67-1.5 1.5-1.5h.5a1.5 1.5 0 0 1 0 3H11a1.5 1.5 0 0 0 0 3h.5a1.5 1.5 0 0 0 1.5-1.5"></path><line x1="11" y1="10" x2="11" y2="10.7"></line><line x1="11" y1="17.3" x2="11" y2="18"></line></svg>
-          <span>Quotation Management</span>
-        </li>
-        <li data-role="SUPER_ADMIN,CHANNEL_PARTNER_ADMIN,CHANNEL_PARTNER_SALES" id="menuProduct" class="nav-item" data-label="Product Management" aria-label="Product Management" onclick="window.location.href='../productM/productm.html'" style="list-style:none; width:100%;">
+        <li class="nav-item" data-label="Product Management" aria-label="Product Management" onclick="window.location.href='../productM/productm.html'" style="list-style:none; width:100%;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><line x1="12" y1="2" x2="12" y2="4.5"></line><line x1="12" y1="19.5" x2="12" y2="22"></line><line x1="2" y1="12" x2="4.5" y2="12"></line><line x1="4.9" y1="4.9" x2="6.6" y2="6.6"></line><line x1="17.4" y1="17.4" x2="19.1" y2="19.1"></line><line x1="4.9" y1="19.1" x2="6.6" y2="17.4"></line><line x1="17.4" y1="6.6" x2="19.1" y2="4.9"></line></svg>
           <span>Product Management</span>
         </li>
-        <li data-role="SUPER_ADMIN,CHANNEL_PARTNER_ADMIN,CHANNEL_PARTNER_SALES" id="menuCustomer" class="nav-item active" data-label="Customer Management" aria-label="Customer Management" style="list-style:none; width:100%;">
+        <li data-role="SUPER_ADMIN,ADMIN,SALES" id="menuQuotation" class="nav-item" data-label="Quotation Management" aria-label="Quotation Management" onclick="window.location.href='../Quotation/quotation.html'" style="list-style:none; width:100%;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="M9 15h1"></path><path d="M9.5 12.5c0-.83.67-1.5 1.5-1.5h.5a1.5 1.5 0 0 1 0 3H11a1.5 1.5 0 0 0 0 3h.5a1.5 1.5 0 0 0 1.5-1.5"></path><line x1="11" y1="10" x2="11" y2="10.7"></line><line x1="11" y1="17.3" x2="11" y2="18"></line></svg>
+          <span>Quotation Management</span>
+        </li>
+        <li id="menuCustomer" class="nav-item active" data-label="Customer Management" aria-label="Customer Management" onclick="window.location.href='../productM/productm.html'" style="list-style:none; width:100%;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect>
             <circle cx="9" cy="11" r="3"></circle>
@@ -81,29 +81,13 @@
           </svg>
           <span>Customer Management</span>
         </li>
-        <li data-role="SUPER_ADMIN,CHANNEL_PARTNER_ADMIN,CHANNEL_PARTNER_SALES" id="menuReports" class="nav-item" data-label="Reports Management" aria-label="Reports Management" onclick="window.location.href='../reports/reports.html'" style="list-style:none; width:100%;">
+        <li class="nav-item"  data-label="Billing & Invoice" aria-label="Billing & Invoice" onclick="window.location.href='../billinginvoice/bill.html'" style="list-style:none; width:100%;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
+          <span>Billing & Invoice</span>
+        </li>
+        <li class="nav-item" data-label="Reports Management" aria-label="Reports Management" onclick="window.location.href='../reports/report.html'" style="list-style:none; width:100%;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="21" x2="5" y2="11"></line><line x1="12" y1="21" x2="12" y2="6"></line><line x1="19" y1="21" x2="19" y2="14"></line><line x1="3" y1="21" x2="21" y2="21"></line></svg>
           <span>Reports Management</span>
-        </li>
-        <li data-role="SUPER_ADMIN,CHANNEL_PARTNER_ADMIN,CHANNEL_PARTNER_SALES" id="menuProject" class="nav-item" data-label="Project Management" aria-label="Project Management" onclick="window.location.href='project.html'" style="list-style:none; width:100%;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-6 9 6v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-          <span>Project Management</span>
-        </li>
-        <li data-role="SUPER_ADMIN" id="menuUserManagement" class="nav-item" data-label="User Management" aria-label="User Management" onclick="window.location.href='user.html'" style="list-style:none; width:100%;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-          <span>User Management</span>
-        </li>
-        <li data-role="SUPER_ADMIN" id="menuChannelPartners" class="nav-item" data-label="Channel Partners" aria-label="Channel Partners" onclick="window.location.href='channel-partners.html'" style="list-style:none; width:100%;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-          <span>Channel Partners</span>
-        </li>
-        <li data-role="SUPER_ADMIN,CHANNEL_PARTNER_ADMIN,CHANNEL_PARTNER_SALES" id="menuCalculator" class="nav-item" data-label="Cost Calculator" aria-label="Cost Calculator" onclick="window.location.href='calc.html'" style="list-style:none; width:100%;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"></rect><line x1="8" y1="6" x2="16" y2="6"></line><line x1="8" y1="10" x2="8.01" y2="10"></line><line x1="12" y1="10" x2="12.01" y2="10"></line><line x1="16" y1="10" x2="16.01" y2="10"></line><line x1="8" y1="14" x2="8.01" y2="14"></line><line x1="12" y1="14" x2="12.01" y2="14"></line><line x1="16" y1="14" x2="16.01" y2="14"></line><line x1="8" y1="18" x2="8.01" y2="18"></line><line x1="12" y1="18" x2="12.01" y2="18"></line><line x1="16" y1="18" x2="16.01" y2="18"></line></svg>
-          <span>Cost Calculator</span>
-        </li>
-        <li data-role="SUPER_ADMIN,CHANNEL_PARTNER_ADMIN" id="menuApproval" class="nav-item" data-label="Approval Management" aria-label="Approval Management" onclick="window.location.href='approval.html'" style="list-style:none; width:100%;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
-          <span>Approval Management</span>
         </li>
       </nav>
     </aside>
@@ -115,12 +99,12 @@
       <div class="flex items-center justify-between mb-4 gap-3 flex-wrap">
         <div>
           <p class="text-sm text-gray-700">Customer Management</p>
-          <p class="text-[11px] text-gray-400">Manage all customer records, project information and follow-up activities.</p>
+          <p class="text-[11px] text-gray-400">Manage all customer records, requirements and follow-up activities.</p>
         </div>
 
         <div class="flex items-center gap-2.5 relative">
           <div class="relative">
-            <button id="notifBtn" aria-label="Notifications" class="w-8 h-8 rounded-full bg-cream shadow-sm border border-peach-300 flex items-center justify-center text-gray-500 hover:text-peach-500 transition-colors">
+            <button id="notifBtn" aria-label="Notifications" class="w-8 h-8 rounded-full bg-cream shadow-sm border border-brand-200 flex items-center justify-center text-gray-500 hover:text-brand-500 transition-colors">
               <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
                 <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
@@ -129,17 +113,16 @@
             </button>
             <div id="notifDropdown" class="topbar-dropdown hidden">
               <p class="topbar-dropdown-title">Notifications</p>
-              <div class="topbar-notif-item"><p>New customer added: Ravi Constructions</p><span>10 min ago</span></div>
-              <div class="topbar-notif-item"><p>Follow-up due today: Meena Textiles</p><span>1 hr ago</span></div>
-              <div class="topbar-notif-item"><p>Quotation approved for Amit Sharma</p><span>3 hr ago</span></div>
+              <div class="topbar-notif-item"><p>New customer added: Ravi Brick Works</p><span>10 min ago</span></div>
+              <div class="topbar-notif-item"><p>Follow-up due today: Meena Kiln</p><span>1 hr ago</span></div>
+              <div class="topbar-notif-item"><p>Quotation approved for Amit Traders</p><span>3 hr ago</span></div>
             </div>
           </div>
 
           <div class="relative">
-            <button id="profileBtn" aria-label="Profile" class="w-8 h-8 rounded-full bg-peach-500 flex items-center justify-center text-white font-semibold text-sm shadow-sm">B</button>
+            <button id="profileBtn" aria-label="Profile" class="w-8 h-8 rounded-full bg-brand-600 flex items-center justify-center text-white font-semibold text-sm shadow-sm">A</button>
             <div id="profileDropdown" class="topbar-dropdown hidden">
-              <div class="topbar-dropdown-title" id="profileRoleLabel" style="padding:4px 6px 2px;">Logged in as: -</div>
-              <div id="profilePartnerLabel" class="hidden" style="font-size:10.5px; color:#6B7280; padding:0 6px 6px; font-weight:500;"></div>
+              <div class="topbar-dropdown-title" id="profileRoleLabel" style="padding:4px 6px 2px;">Logged in as: Admin</div>
               <button id="profileLogoutBtn" class="topbar-logout-btn">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                 Logout
@@ -157,8 +140,8 @@
       <!-- Page header -->
       <div class="cm-header">
         <div>
-          <h1 class="cm-title"></h1>
-          <p class="cm-subtitle"></p>
+          <h1 class="cm-title">Customer Management</h1>
+          <p class="cm-subtitle">All customers, requirements &amp; business history</p>
         </div>
         <div class="cm-header-actions">
           <div class="export-wrap" id="exportWrap">
@@ -201,37 +184,37 @@
           <div>
             <p class="summary-title">Total Customers</p>
             <p class="summary-count" id="statTotal">0</p>
-            <p class="summary-trend up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="18 15 12 9 6 15"></polyline></svg><span id="statTotalTrend">All customer types</span></p>
+            <p class="summary-trend up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="18 15 12 9 6 15"></polyline></svg><span id="statTotalTrend">All types</span></p>
           </div>
         </div>
         <div class="summary-card">
-          <div class="summary-icon tint-residential">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"></path><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"></path></svg>
+          <div class="summary-icon tint-active">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
           </div>
           <div>
-            <p class="summary-title">Residential</p>
-            <p class="summary-count" id="statResidential">0</p>
-            <p class="summary-trend" id="statResidentialTrend">Homes &amp; apartments</p>
+            <p class="summary-title">Active</p>
+            <p class="summary-count" id="statActive">0</p>
+            <p class="summary-trend" id="statActiveTrend">Buying customers</p>
           </div>
         </div>
         <div class="summary-card">
-          <div class="summary-icon tint-commercial">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="1"></rect><line x1="8" y1="7" x2="8" y2="7.01"></line><line x1="12" y1="7" x2="12" y2="7.01"></line><line x1="16" y1="7" x2="16" y2="7.01"></line><line x1="8" y1="11" x2="8" y2="11.01"></line><line x1="12" y1="11" x2="12" y2="11.01"></line><line x1="16" y1="11" x2="16" y2="11.01"></line><line x1="9" y1="21" x2="9" y2="17"></line><line x1="15" y1="21" x2="15" y2="17"></line></svg>
+          <div class="summary-icon tint-prospect">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
           </div>
           <div>
-            <p class="summary-title">Commercial</p>
-            <p class="summary-count" id="statCommercial">0</p>
-            <p class="summary-trend" id="statCommercialTrend">Offices &amp; shops</p>
+            <p class="summary-title">Prospects</p>
+            <p class="summary-count" id="statProspect">0</p>
+            <p class="summary-trend" id="statProspectTrend">Enquiry only</p>
           </div>
         </div>
         <div class="summary-card">
-          <div class="summary-icon tint-industrial">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20"></path><path d="M4 20V10l5 3v-3l5 3v-3l5 3v7"></path><path d="M4 10 9 6"></path></svg>
+          <div class="summary-icon tint-value">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
           </div>
           <div>
-            <p class="summary-title">Industrial</p>
-            <p class="summary-count" id="statIndustrial">0</p>
-            <p class="summary-trend" id="statIndustrialTrend">Plants &amp; factories</p>
+            <p class="summary-title">Total Business</p>
+            <p class="summary-count" id="statBusiness">₹0</p>
+            <p class="summary-trend" id="statBusinessTrend">Lifetime value</p>
           </div>
         </div>
       </div>
@@ -243,7 +226,41 @@
             <label class="filter-label">Search</label>
             <div class="filter-search-wrap">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-              <input type="text" id="searchName" class="field-input" placeholder="Search by name, mobile or email">
+              <input type="text" id="searchName" class="field-input" placeholder="Search by name, company, mobile or email">
+            </div>
+          </div>
+
+          <div class="filter-group">
+            <label class="filter-label">Customer Type</label>
+            <div class="custom-select" id="filterTypeSelect">
+              <button type="button" class="custom-select-trigger field-input" aria-haspopup="listbox" aria-expanded="false">
+                <span class="cs-label">All</span>
+                <svg class="cs-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </button>
+              <div class="custom-select-panel hidden" role="listbox">
+                <div class="custom-select-option selected" data-value="All" role="option">All</div>
+                <div class="custom-select-option" data-value="Individual Buyer" role="option">Individual Buyer</div>
+                <div class="custom-select-option" data-value="Contractor" role="option">Contractor</div>
+                <div class="custom-select-option" data-value="Brick Kiln Owner" role="option">Brick Kiln Owner</div>
+                <div class="custom-select-option" data-value="Trader-Dealer" role="option">Trader-Dealer</div>
+                <div class="custom-select-option" data-value="Industrial Unit" role="option">Industrial Unit</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="filter-group">
+            <label class="filter-label">Status</label>
+            <div class="custom-select" id="filterStatusSelect">
+              <button type="button" class="custom-select-trigger field-input" aria-haspopup="listbox" aria-expanded="false">
+                <span class="cs-label">All</span>
+                <svg class="cs-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </button>
+              <div class="custom-select-panel hidden" role="listbox">
+                <div class="custom-select-option selected" data-value="All" role="option">All</div>
+                <div class="custom-select-option" data-value="Active" role="option">Active</div>
+                <div class="custom-select-option" data-value="Inactive" role="option">Inactive</div>
+                <div class="custom-select-option" data-value="Prospect" role="option">Prospect</div>
+              </div>
             </div>
           </div>
 
@@ -271,16 +288,15 @@
             <thead>
               <tr>
                 <th>Customer ID</th>
-                <th>Customer Name</th>
-                <th>Mobile Number</th>
-                <th>Email</th>
-                <th>City</th>
-                <th>Customer Type</th>
-                <th>Project Location</th>
-                <!-- NEW: Channel Partner column for Super Admin only -->
-                <th data-role="SUPER_ADMIN">Channel Partner</th>
+                <th>Name</th>
+                <th>Company</th>
+                <th>Mobile</th>
+                <th>City/State</th>
+                <th>Type</th>
+                <th>Total Orders</th>
+                <th>Total Business Value</th>
                 <th>Status</th>
-                <th>Created Date</th>
+                <th>Last Activity</th>
                 <th class="actions-th">Actions</th>
               </tr>
             </thead>
@@ -289,7 +305,7 @@
         </div>
 
         <div id="emptyState" class="empty-state hidden">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#DCC3AA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="19" y1="8" x2="19" y2="14"></line><line x1="16" y1="11" x2="22" y2="11"></line></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="#C24366" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="19" y1="8" x2="19" y2="14"></line><line x1="16" y1="11" x2="22" y2="11"></line></svg>
           <h3>No customers found</h3>
           <p>Try adjusting your filters, or add your first customer to get started.</p>
           <button class="btn-primary" id="addFirstCustomerBtn" type="button">+ Add First Customer</button>
@@ -306,7 +322,7 @@
         <div class="table-card-head">
           <div>
             <h2>Customer History</h2>
-            <p>Project and quotation activity timeline per customer</p>
+            <p>Quotation, order and activity timeline per customer</p>
           </div>
         </div>
         <div class="history-list" id="historyList"></div>
@@ -345,7 +361,7 @@
 
   <!-- ============ Add / Edit Customer Modal ============ -->
   <div id="customerFormModal" class="modal-overlay hidden">
-    <div class="modal-panel" style="max-width:560px;">
+    <div class="modal-panel" style="max-width:640px;">
       <div class="modal-header">
         <div>
           <div class="modal-title" id="customerFormTitle">Add Customer</div>
@@ -361,8 +377,13 @@
 
         <div class="field-group full">
           <label class="field-label" for="fldName">Customer Name <span class="req">*</span></label>
-          <input type="text" id="fldName" class="field-input" placeholder="e.g. Amit Sharma">
+          <input type="text" id="fldName" class="field-input" placeholder="e.g. Ramesh Kumar">
           <span class="field-error" id="errName"></span>
+        </div>
+
+        <div class="field-group full">
+          <label class="field-label" for="fldCompany">Company / Firm Name</label>
+          <input type="text" id="fldCompany" class="field-input" placeholder="Optional — e.g. Shree Brick Industries">
         </div>
 
         <div class="field-group">
@@ -372,19 +393,29 @@
         </div>
 
         <div class="field-group">
-          <label class="field-label" for="fldEmail">Email Address</label>
+          <label class="field-label" for="fldAltMobile">Alternate Mobile</label>
+          <input type="tel" id="fldAltMobile" class="field-input" placeholder="Optional">
+        </div>
+
+        <div class="field-group full">
+          <label class="field-label" for="fldEmail">Email</label>
           <input type="email" id="fldEmail" class="field-input" placeholder="name@example.com">
           <span class="field-error" id="errEmail"></span>
         </div>
 
         <div class="field-group full">
-          <label class="field-label" for="fldAddress">Address</label>
-          <input type="text" id="fldAddress" class="field-input" placeholder="House / street / area">
+          <label class="field-label" for="fldBillingAddress">Billing Address</label>
+          <input type="text" id="fldBillingAddress" class="field-input" placeholder="Full billing address">
+        </div>
+
+        <div class="field-group full">
+          <label class="field-label" for="fldSiteAddress">Site / Plant Address</label>
+          <input type="text" id="fldSiteAddress" class="field-input" placeholder="If different from billing address">
         </div>
 
         <div class="field-group">
           <label class="field-label" for="fldCity">City</label>
-          <input type="text" id="fldCity" class="field-input" placeholder="e.g. Pune">
+          <input type="text" id="fldCity" class="field-input" placeholder="e.g. Nagpur">
         </div>
 
         <div class="field-group">
@@ -393,52 +424,80 @@
         </div>
 
         <div class="field-group">
-          <label class="field-label" for="fldGst">GST Number</label>
+          <label class="field-label" for="fldPincode">Pincode</label>
+          <input type="text" id="fldPincode" class="field-input" placeholder="6-digit pincode">
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="fldGst">GSTIN</label>
           <input type="text" id="fldGst" class="field-input" placeholder="Optional">
         </div>
 
         <div class="field-group">
           <label class="field-label">Customer Type</label>
-          <input type="hidden" id="fldType" value="Residential">
+          <input type="hidden" id="fldType" value="Individual Buyer">
           <div class="custom-select" id="fldTypeSelect">
             <button type="button" class="custom-select-trigger field-input" aria-haspopup="listbox" aria-expanded="false">
-              <span class="cs-label">Residential</span>
+              <span class="cs-label">Individual Buyer</span>
               <svg class="cs-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </button>
             <div class="custom-select-panel hidden" role="listbox">
-              <div class="custom-select-option selected" data-value="Residential" role="option">Residential</div>
-              <div class="custom-select-option" data-value="Commercial" role="option">Commercial</div>
-              <div class="custom-select-option" data-value="Industrial" role="option">Industrial</div>
+              <div class="custom-select-option selected" data-value="Individual Buyer" role="option">Individual Buyer</div>
+              <div class="custom-select-option" data-value="Contractor" role="option">Contractor</div>
+              <div class="custom-select-option" data-value="Brick Kiln Owner" role="option">Brick Kiln Owner</div>
+              <div class="custom-select-option" data-value="Trader-Dealer" role="option">Trader-Dealer</div>
+              <div class="custom-select-option" data-value="Industrial Unit" role="option">Industrial Unit</div>
             </div>
           </div>
         </div>
 
-        <div class="field-group full">
-          <label class="field-label" for="fldProject">Project Location</label>
-          <input type="text" id="fldProject" class="field-input" placeholder="Site / project address">
-        </div>
-
-        <!-- NEW: Assigned Channel Partner field -->
-        <div class="field-group full">
-          <label class="field-label" for="fldChannelPartner">Assigned Channel Partner</label>
-          <input type="text" id="fldChannelPartner" class="field-input" placeholder="Auto-filled from login" readonly>
-          <!-- For Super Admin, this field will be editable via custom dropdown later -->
-          <!-- For now, it's read-only and auto-filled from session -->
+        <div class="field-group">
+          <label class="field-label">Lead Source</label>
+          <input type="hidden" id="fldLeadSource" value="Direct Enquiry">
+          <div class="custom-select" id="fldLeadSourceSelect">
+            <button type="button" class="custom-select-trigger field-input" aria-haspopup="listbox" aria-expanded="false">
+              <span class="cs-label">Direct Enquiry</span>
+              <svg class="cs-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            <div class="custom-select-panel hidden" role="listbox">
+              <div class="custom-select-option selected" data-value="Direct Enquiry" role="option">Direct Enquiry</div>
+              <div class="custom-select-option" data-value="Exhibition" role="option">Exhibition</div>
+              <div class="custom-select-option" data-value="Existing Customer Reference" role="option">Existing Customer Reference</div>
+              <div class="custom-select-option" data-value="Advertisement" role="option">Advertisement</div>
+              <div class="custom-select-option" data-value="Website" role="option">Website</div>
+            </div>
+          </div>
         </div>
 
         <div class="field-group">
           <label class="field-label">Status</label>
-          <input type="hidden" id="fldStatus" value="Active">
+          <input type="hidden" id="fldStatus" value="Prospect">
           <div class="custom-select" id="fldStatusSelect">
             <button type="button" class="custom-select-trigger field-input" aria-haspopup="listbox" aria-expanded="false">
-              <span class="cs-label">Active</span>
+              <span class="cs-label">Prospect</span>
               <svg class="cs-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </button>
             <div class="custom-select-panel hidden" role="listbox">
-              <div class="custom-select-option selected" data-value="Active" role="option">Active</div>
+              <div class="custom-select-option" data-value="Active" role="option">Active</div>
               <div class="custom-select-option" data-value="Inactive" role="option">Inactive</div>
+              <div class="custom-select-option selected" data-value="Prospect" role="option">Prospect</div>
             </div>
           </div>
+        </div>
+
+        <div class="field-group full">
+          <label class="field-label" for="fldRequirement">Requirement / Interest</label>
+          <input type="text" id="fldRequirement" class="field-input" placeholder="e.g. 10 Cavity Fully Automatic Brick Machine">
+        </div>
+
+        <div class="field-group full">
+          <label class="field-label" for="fldSiteDetails">Site Details</label>
+          <input type="text" id="fldSiteDetails" class="field-input" placeholder="Shed size, power availability (electricity / genset)">
+        </div>
+
+        <div class="field-group full">
+          <label class="field-label" for="fldNotes">Notes / Remarks</label>
+          <textarea id="fldNotes" class="field-input" rows="3" placeholder="Site visit notes, special requirements, follow-up notes"></textarea>
         </div>
       </form>
 
@@ -451,7 +510,7 @@
 
   <!-- ============ View Customer Modal ============ -->
   <div id="viewCustomerModal" class="modal-overlay hidden">
-    <div class="modal-panel" style="max-width:520px;">
+    <div class="modal-panel" style="max-width:560px;">
       <div class="modal-header">
         <div>
           <div class="modal-title">Customer Details</div>
@@ -461,26 +520,27 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
       </div>
-      <div class="detail-grid" id="viewCustomerBody" style="padding:18px 20px;"></div>
+      <div class="modal-body" id="viewCustomerBody"></div>
       <div class="modal-footer">
         <button type="button" class="btn-secondary" id="viewCustomerCloseBtn2">Close</button>
       </div>
     </div>
   </div>
 
-  <!-- ============ Delete Confirmation Modal ============ -->
+  <!-- ============ Delete Confirm Modal ============ -->
   <div id="deleteModal" class="modal-overlay hidden">
-    <div class="modal-panel" style="max-width:380px;">
+    <div class="modal-panel" style="max-width:400px;">
       <div class="modal-header">
-        <div class="modal-title">Delete Customer</div>
+        <div>
+          <div class="modal-title">Delete Customer</div>
+          <div class="modal-subtitle">This action cannot be undone</div>
+        </div>
         <button class="modal-close-btn" id="deleteModalCloseBtn" title="Close">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
       </div>
-      <div class="delete-body">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-        <p>Are you sure you want to delete this customer?</p>
-        <p class="sub" id="deleteCustomerName"></p>
+      <div class="modal-body">
+        <p style="font-size:13px;color:#4B5563;margin:0;">Are you sure you want to delete <strong id="deleteCustomerName"></strong>?</p>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn-secondary" id="deleteCancelBtn">Cancel</button>
@@ -491,19 +551,19 @@
 
   <!-- ============ Follow-up Modal ============ -->
   <div id="followupModal" class="modal-overlay hidden">
-    <div class="modal-panel" style="max-width:460px;">
+    <div class="modal-panel" style="max-width:480px;">
       <div class="modal-header">
         <div>
           <div class="modal-title">Add Follow-up</div>
-          <div class="modal-subtitle">Log a follow-up activity for a customer</div>
+          <div class="modal-subtitle">Schedule a call, visit or reminder</div>
         </div>
         <button class="modal-close-btn" id="followupCloseBtn" title="Close">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
       </div>
-      <form id="followupForm" class="modal-body" novalidate>
+      <div class="modal-body">
         <div class="field-group full">
-          <label class="field-label">Customer <span class="req">*</span></label>
+          <label class="field-label">Customer</label>
           <input type="hidden" id="fuCustomer">
           <div class="custom-select" id="fuCustomerSelect">
             <button type="button" class="custom-select-trigger field-input" aria-haspopup="listbox" aria-expanded="false">
@@ -514,18 +574,18 @@
           </div>
         </div>
         <div class="field-group">
-          <label class="field-label" for="fuDate">Date <span class="req">*</span></label>
+          <label class="field-label" for="fuDate">Follow-up Date</label>
           <input type="date" id="fuDate" class="field-input">
         </div>
         <div class="field-group">
-          <label class="field-label" for="fuNextDate">Next Follow-up</label>
+          <label class="field-label" for="fuNextDate">Next Follow-up Date</label>
           <input type="date" id="fuNextDate" class="field-input">
         </div>
         <div class="field-group full">
-          <label class="field-label" for="fuRemark">Remark</label>
-          <input type="text" id="fuRemark" class="field-input" placeholder="e.g. Discussed pricing, sent brochure">
+          <label class="field-label" for="fuRemark">Remarks</label>
+          <textarea id="fuRemark" class="field-input" rows="2" placeholder="Notes for this follow-up"></textarea>
         </div>
-        <div class="field-group full">
+        <div class="field-group">
           <label class="field-label">Status</label>
           <input type="hidden" id="fuStatus" value="Pending">
           <div class="custom-select" id="fuStatusSelect">
@@ -536,22 +596,20 @@
             <div class="custom-select-panel hidden" role="listbox">
               <div class="custom-select-option selected" data-value="Pending" role="option">Pending</div>
               <div class="custom-select-option" data-value="Completed" role="option">Completed</div>
-              <div class="custom-select-option" data-value="Overdue" role="option">Overdue</div>
+              <div class="custom-select-option" data-value="Cancelled" role="option">Cancelled</div>
             </div>
           </div>
         </div>
-      </form>
+      </div>
       <div class="modal-footer">
         <button type="button" class="btn-secondary" id="followupCancelBtn">Cancel</button>
-        <button type="button" class="btn-primary" id="followupSaveBtn">Save</button>
+        <button type="button" class="btn-primary" id="followupSaveBtn">Save Follow-up</button>
       </div>
     </div>
   </div>
 
-  <div id="toast-container" class="fixed bottom-5 right-5 z-[400] space-y-2 max-w-[calc(100vw-2.5rem)]" style="position:fixed;bottom:20px;right:20px;z-index:400;display:flex;flex-direction:column;gap:8px;max-width:calc(100vw - 40px);"></div>
+  <div id="toast" class="toast hidden"></div>
 
-<!-- IMPORTANT: load session.js first, then the module's own JS -->
-<script src="/session.js"></script>
-<script src="/customer/customer.js"></script>
+  <script src="/customer/customer.js"></script>
 </body>
 </html>

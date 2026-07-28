@@ -2,7 +2,8 @@
    Quotation Management — styles
    Sidebar / Topbar / App-shell block below is copied 1:1 from the
    Dashboard reference so both pages look and behave identically.
-   Theme updated to VKM logo + provided color palette.
+   Theme: VKM logo + provided color palette.
+   Referral / dealer / commission classes removed — single-admin app.
    ================================================================== */
 
 /* ============ Base ============ */
@@ -45,7 +46,7 @@ html, body {
 .app-sidebar {
   height: 100vh;
   height: 100dvh;
-  overflow: visible; /* toggle button pokes outside the sidebar edge — must not be clipped */
+  overflow: visible;
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
   padding-left: env(safe-area-inset-left);
@@ -82,19 +83,11 @@ html, body {
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 /* ============ Sidebar ============ */
-.sidebar {
-  width: 76px;
-}
-.sidebar.collapsed {
-  width: 76px;
-}
-.sidebar.expanded {
-  width: 208px;
-}
+.sidebar { width: 76px; }
+.sidebar.collapsed { width: 76px; }
+.sidebar.expanded { width: 208px; }
 
-.nav-list {
-  box-sizing: border-box;
-}
+.nav-list { box-sizing: border-box; }
 
 .sidebar.expanded .nav-item {
   width: 100%;
@@ -124,11 +117,7 @@ html, body {
   transition: background 0.2s ease, color 0.2s ease, width 0.2s ease, padding 0.2s ease;
   cursor: pointer;
 }
-.nav-item svg {
-  width: 16px;
-  height: 16px;
-  flex-shrink: 0;
-}
+.nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
 .nav-item span {
   display: block;
   font-size: 11.5px;
@@ -145,7 +134,7 @@ html, body {
 .nav-item:hover { background: #F6DCE8; color: #800021; }
 .nav-item.active { background: #800021; color: #fff; }
 
-/* ============ Topbar dropdowns (notification / profile) ============ */
+/* ============ Topbar dropdowns ============ */
 .topbar-dropdown {
   position: absolute;
   top: calc(100% + 8px);
@@ -204,7 +193,7 @@ html, body {
 .topbar-logout-btn svg { width: 13px; height: 13px; }
 .topbar-logout-btn:hover { background: #FEF2F2; }
 
-/* ============ Notification icon ============ */
+/* ============ Notification / profile icons ============ */
 #notifBtn {
   width: 32px; height: 32px;
   background: #FCEEF3;
@@ -219,14 +208,10 @@ html, body {
   border: 1.5px solid #FCEEF3;
   top: 6px; right: 6px;
 }
-
-/* ============ Profile icon ============ */
 #profileBtn { width: 32px; height: 32px; font-size: 12px; background: #800021; }
 
-/* ============ Small info/stat cards ("chote chote sections" like Dashboard) ============ */
-.stat-card-sm {
-  display: flex; align-items: center; gap: 9px;
-}
+/* ============ Small stat cards ============ */
+.stat-card-sm { display: flex; align-items: center; gap: 9px; }
 .stat-card-sm .stat-icon {
   width: 32px; height: 32px; border-radius: 10px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center; color: #fff;
@@ -234,7 +219,7 @@ html, body {
 .stat-card-sm .stat-value { font-size: 15px; font-weight: 700; color: var(--ink); line-height: 1.1; }
 .stat-card-sm .stat-label { font-size: 10px; color: var(--muted); margin-top: 2px; }
 
-/* ============ Recent-quotation table ============ */
+/* ============ Quotation table ============ */
 .table-scope { width: 100%; overflow: visible; }
 .data-table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
 .data-table thead th {
@@ -245,7 +230,10 @@ html, body {
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .data-table thead th:hover { color: #800021; }
-.data-table thead th.actions-th { cursor: default; }
+.data-table thead th.actions-th { 
+  cursor: default; 
+  text-align: center;
+}
 .sort-icon,
 .data-table thead th i { font-size: 9.5px; margin-left: 4px; color: #D1D5DB; }
 .data-table thead th.sorted i { color: #800021; }
@@ -253,36 +241,55 @@ html, body {
 .data-table tbody tr { transition: background-color .15s ease; cursor: default; }
 .data-table tbody tr:hover { background: #F6DCE8; }
 
-.data-table th:nth-child(1), .data-table td:nth-child(1) { width: 12%; }
+.data-table th:nth-child(1), .data-table td:nth-child(1) { width: 13%; }
 .data-table th:nth-child(2), .data-table td:nth-child(2) { width: 18%; }
-.data-table th:nth-child(3), .data-table td:nth-child(3) { width: 10%; }
-.data-table th:nth-child(4), .data-table td:nth-child(4) { width: 12%; }
-.data-table th:nth-child(5), .data-table td:nth-child(5) { width: 10%; }
-.data-table th:nth-child(6), .data-table td:nth-child(6) { width: 10%; }
-.data-table th:nth-child(7), .data-table td:nth-child(7) { width: 8%; }
-.data-table th:nth-child(8), .data-table td:nth-child(8) { width: 12%; }
+.data-table th:nth-child(3), .data-table td:nth-child(3) { width: 14%; }
+.data-table th:nth-child(4), .data-table td:nth-child(4) { width: 13%; }
+.data-table th:nth-child(5), .data-table td:nth-child(5) { width: 12%; }
+.data-table th:nth-child(6), .data-table td:nth-child(6) { width: 12%; }
+.data-table th:nth-child(7), .data-table td:nth-child(7) { width: 18%; }
 
 .badge { font-size: 10px; font-weight: 600; padding: 3px 9px; border-radius: 999px; display: inline-block; white-space: nowrap; }
 .badge-pending { background: #FEF3C7; color: #B45309; }
 .badge-accepted { background: #D1FAE5; color: #047857; }
 .badge-rejected { background: #FFE4E6; color: #E11D48; }
-.badge-referred { background: #D1FAE5; color: #047857; }
-.badge-direct { background: #F3F4F6; color: #6B7280; }
+.badge-neutral { background: #F3F4F6; color: #6B7280; }
 
-.action-icons { display: flex; align-items: center; justify-content: flex-end; gap: 4px; flex-wrap: nowrap; }
-.icon-action-btn {
-  width: 26px; height: 26px; flex-shrink: 0;
-  border-radius: 8px;
-  display: inline-flex; align-items: center; justify-content: center;
-  color: #9CA3AF; background: transparent;
-  border: none; cursor: pointer; font-size: 12px;
-  transition: background-color .15s ease, color .15s ease;
+.action-icons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: nowrap;
 }
-.icon-action-btn:hover { background: #F6DCE8; color: #374151; }
-.icon-action-btn.danger:hover { background: #FEF2F2; color: #EF4444; }
+.icon-action-btn {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #6B7280;
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.15s ease;
+}
+.icon-action-btn:hover {
+  background: #F6DCE8;
+  color: #374151;
+  border-color: #E8B9CE;
+}
+.icon-action-btn.danger:hover {
+  background: #FEF2F2;
+  color: #EF4444;
+  border-color: #FECACA;
+}
 .icon-action-btn.success:hover { background: #D1FAE5; color: #047857; }
 
-/* mobile: stack the table into cards, just like the Dashboard table */
+/* mobile: stack the table into cards */
 @media (max-width: 720px) {
   .data-table thead { display: none; }
   .data-table, .data-table tbody, .data-table tr, .data-table td { display: block; width: 100% !important; }
@@ -384,7 +391,7 @@ select.rows-select, .select-input {
   display: flex; flex-direction: column; overflow: hidden;
   animation: modalIn .18s ease-out;
 }
-.modal-box.modal-wide { max-width: 860px; }
+.modal-box.modal-wide { max-width: 880px; }
 .modal-box.modal-small { max-width: 420px; }
 @keyframes modalIn { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
 
@@ -416,6 +423,7 @@ select.rows-select, .select-input {
 .form-field.span-2 { grid-column: span 2; }
 .form-field label { font-size: 11px; font-weight: 600; color: var(--muted); }
 .req { color: #EF4444; }
+.field-hint { font-size: 9.5px; color: var(--muted); }
 .form-field input, .form-field textarea, .form-field select {
   border: 1px solid var(--line-soft); border-radius: 9px;
   padding: 8px 10px; font-size: 12.5px; color: var(--ink);
@@ -439,30 +447,6 @@ select.rows-select, .select-input {
 .sub-section:first-child { border-top: none; padding-top: 0; }
 .sub-title { font-size: 12px; font-weight: 700; color: var(--ink); display: flex; align-items: center; gap: 7px; }
 .sub-title i { color: var(--accent-dark); }
-
-/* Collapsible section */
-.collapsible-toggle {
-  cursor: pointer;
-  user-select: none;
-}
-.collapsible-toggle:hover { color: var(--accent); }
-.collapsible-body { transition: all 0.3s ease; }
-.collapsible-body.collapsed { display: none; }
-
-/* Referral specific styles */
-.referral-highlight {
-  background: #F0FDF4;
-  border-left: 3px solid #059669;
-  padding: 10px 12px;
-  border-radius: 8px;
-}
-.referral-amount-row {
-  background: #F0FDF4;
-  border-radius: 8px;
-  padding: 4px 8px;
-  font-weight: 600;
-  color: #047857;
-}
 
 /* Products / Items builder */
 .quick-add-row { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -495,16 +479,6 @@ select.rows-select, .select-input {
 .items-footer-row td { font-weight: 700; background: var(--accent-100); }
 .items-footer-row td.item-amount-cell { color: var(--accent-dark); }
 
-.radio-card-group { display: flex; flex-wrap: wrap; gap: 9px; }
-.radio-card {
-  display: flex; align-items: center; gap: 8px;
-  border: 1px solid var(--line-soft); border-radius: 12px;
-  padding: 9px 14px; cursor: pointer; font-size: 11.5px; color: var(--ink);
-  transition: all .15s ease;
-}
-.radio-card.active { background: var(--accent-soft); border-color: var(--accent); font-weight: 600; color: var(--accent-dark); }
-.radio-card input { accent-color: var(--accent); }
-
 .cost-table td { font-size: 12px; }
 .auto-tag { font-size: 9px; color: var(--muted); background: var(--accent-100); padding: 1px 6px; border-radius: 6px; margin-left: 6px; }
 .cost-input, .cost-label-input {
@@ -513,6 +487,7 @@ select.rows-select, .select-input {
   background: #fff;
 }
 .cost-label-input { text-align: left; width: 100%; border: none; background: transparent; font-weight: 500; padding: 0; }
+.cost-subtotal-row td { font-weight: 700; background: var(--accent-100); color: var(--accent-dark); }
 
 .summary-box {
   background: var(--accent-100); border-radius: 14px; padding: 12px 14px;
@@ -520,7 +495,6 @@ select.rows-select, .select-input {
 }
 .summary-box .row { display: flex; justify-content: space-between; gap: 10px; }
 .summary-box .row.total { font-weight: 700; font-size: 13.5px; color: var(--accent-dark); border-top: 1px dashed var(--accent-200); padding-top: 8px; margin-top: 4px; }
-.summary-box .row.referral-row { background: #F0FDF4; border-radius: 6px; padding: 4px 8px; color: #047857; }
 
 .share-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 
@@ -549,7 +523,7 @@ select.rows-select, .select-input {
 .step-panel.active { display: flex; }
 .panel-title { font-size: 13px; font-weight: 700; color: var(--ink); }
 
-/* invoice preview — overflow fixed */
+/* invoice preview */
 .invoice-preview {
   background: #fff; border: 1px solid var(--line-soft);
   border-radius: 14px; padding: 18px; font-size: 11px; color: #222;
@@ -587,10 +561,8 @@ select.rows-select, .select-input {
 .inv-totals-table td:first-child { color: #555; }
 .inv-totals-table td:last-child { text-align: right; font-weight: 600; }
 .inv-totals-table .total-row td { background: var(--accent-100); font-weight: 700; color: var(--accent-dark); }
-.inv-totals-table .referral-row td { background: #F0FDF4; color: #047857; }
 .inv-seal { text-align: right; margin-top: 22px; font-size: 10.5px; color: #777; font-style: italic; }
 
-/* Bank Details in invoice */
 .inv-bank-details { margin-top: 10px; }
 .inv-bank-details .inv-label { font-size: 10px; font-weight: 700; color: var(--ink); margin-bottom: 4px; }
 .inv-bank-details table { width: 100%; border-collapse: collapse; font-size: 10px; }
@@ -598,7 +570,6 @@ select.rows-select, .select-input {
 .inv-bank-details td:first-child { color: #555; font-weight: 500; width: 35%; }
 .inv-bank-details td:last-child { text-align: left; }
 
-/* Payment Terms in invoice */
 .inv-payment-terms { margin-top: 10px; }
 .inv-payment-terms .inv-label { font-size: 10px; font-weight: 700; color: var(--ink); margin-bottom: 4px; }
 .inv-payment-terms table { width: 100%; border-collapse: collapse; font-size: 10px; }
@@ -606,13 +577,12 @@ select.rows-select, .select-input {
 .inv-payment-terms td:first-child { color: #555; font-weight: 500; width: 60%; }
 .inv-payment-terms td:last-child { text-align: right; }
 
-/* Referral Info in invoice */
-.inv-referral-info { margin-top: 10px; }
-.inv-referral-info .inv-label { font-size: 10px; font-weight: 700; color: var(--ink); margin-bottom: 4px; }
-.inv-referral-info table { width: 100%; border-collapse: collapse; font-size: 10px; }
-.inv-referral-info td { padding: 3px 6px; border: 1px solid var(--line-soft); }
-.inv-referral-info td:first-child { color: #555; font-weight: 500; width: 40%; }
-.inv-referral-info td:last-child { text-align: left; }
+.inv-site-info { margin-top: 10px; }
+.inv-site-info .inv-label { font-size: 10px; font-weight: 700; color: var(--ink); margin-bottom: 4px; }
+.inv-site-info table { width: 100%; border-collapse: collapse; font-size: 10px; }
+.inv-site-info td { padding: 3px 6px; border: 1px solid var(--line-soft); }
+.inv-site-info td:first-child { color: #555; font-weight: 500; width: 45%; }
+.inv-site-info td:last-child { text-align: left; }
 
 /* toast */
 .toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 600; display: flex; flex-direction: column; gap: 8px; max-width: calc(100vw - 40px); }
@@ -687,7 +657,6 @@ html { color-scheme: light; }
   #notifBtn, #profileBtn { width: 29px; height: 29px; }
   #notifBtn svg { width: 13px; height: 13px; }
   .pagination-btn, .pagination button { min-width: 20px; height: 20px; font-size: 10px; }
-  .icon-action-btn { width: 24px; height: 24px; font-size: 10.5px; }
   .share-grid { grid-template-columns: 1fr; }
   .data-table th, .data-table td { padding: 8px 6px; }
   .modal-overlay { padding: 0; align-items: flex-end; }
@@ -701,4 +670,9 @@ html { color-scheme: light; }
   .sidebar { width: 50px; }
   .nav-item { width: 28px; height: 28px; }
   .nav-item svg { width: 12px; height: 12px; }
+}
+
+/* ============ Sidebar Logo Fix ============ */
+.sidebar .flex.items-center.justify-center.shrink-0 {
+  margin-top: 4px;
 }
