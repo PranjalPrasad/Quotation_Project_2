@@ -89,7 +89,6 @@ const MOCK_DASHBOARD_SUMMARY = {
   totalQuotationValueMonth: 8200000,
   pendingDecision: 47,
   confirmedOrdersMonth: 19,
-  ordersInProductionPipeline: 23,
   machinesDispatchedMonth: 11,
   totalInvoicesRaised: 268,
   totalOutstanding: 3860000,
@@ -123,7 +122,6 @@ function renderDashboardSummary(data) {
 
   setText('statTotalCustomers', data.totalCustomers);
   setText('statConfirmedOrders', data.confirmedOrdersMonth);
-  setText('statInProduction', data.ordersInProductionPipeline);
   setText('statDispatched', data.machinesDispatchedMonth);
   setText('statTotalInvoices', data.totalInvoicesRaised);
   const avgQuotation = data.totalQuotationValueAllTime / data.totalQuotationsAllTime;
@@ -135,48 +133,14 @@ function renderDashboardSummary(data) {
 }
 
 // ============================================================
-// Production Pipeline — Quotation Sent → Installation Complete
-// ============================================================
-const PIPELINE_STAGES = [
-  { key: 'quotationSent', label: 'Quotation Sent', count: 47 },
-  { key: 'advanceReceived', label: 'Advance Received', count: 19 },
-  { key: 'inProduction', label: 'In Production', count: 23 },
-  { key: 'readyToDispatch', label: 'Ready to Dispatch', count: 8 },
-  { key: 'delivered', label: 'Delivered', count: 14 },
-  { key: 'installationComplete', label: 'Installation Complete', count: 11 },
-];
-
-const arrowSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"></polyline></svg>';
-
-function renderPipeline() {
-  const track = document.getElementById('pipelineTrack');
-  if (!track) return;
-  track.innerHTML = PIPELINE_STAGES.map((stage, idx) => `
-    <button class="pipeline-stage" data-stage="${stage.key}" onclick="handlePipelineClick('${stage.key}', '${stage.label.replace(/'/g, "\\'")}')">
-      <div class="pipeline-stage-count">${stage.count}</div>
-      <div class="pipeline-stage-label">${stage.label}</div>
-    </button>
-    ${idx < PIPELINE_STAGES.length - 1 ? `<div class="pipeline-arrow">${arrowSvg}</div>` : ''}
-  `).join('');
-}
-
-function handlePipelineClick(stageKey, stageLabel) {
-  // Placeholder until the orders list page supports stage filtering —
-  // will become window.location.href = `../orders/orders.html?stage=${stageKey}`
-  showToast(`Filtering orders at "${stageLabel}" stage`);
-}
-
-// ============================================================
 // Charts
 // ============================================================
 Chart.defaults.font.family = "'Poppins', sans-serif";
 Chart.defaults.font.size = 11;
 
-const paletteBerry = "#881144";
-const paletteMaroon = "#800021";
-const paletteTan = "#F0C3D6";
-const paletteCream = "#FBD9E7";
-const paletteMid = "#C23666";
+const paletteBerry = "#800021";  /* peach-500 */
+const paletteMaroon = "#540016"; /* peach-700 */
+const paletteTan = "#E8B9CE";    /* peach-300 */
 
 const tooltipOpts = {
   backgroundColor: "#fff",
@@ -223,7 +187,7 @@ new Chart(document.getElementById('chartMonthlyTrend'), {
     },
     scales: {
       x: { grid: { display: false }, ticks: { color: '#6B7280' } },
-      y: { beginAtZero: true, ticks: { color: '#6B7280', callback: (v) => formatCompactINR(v) }, grid: { color: '#F8DCE8' } },
+      y: { beginAtZero: true, ticks: { color: '#6B7280', callback: (v) => formatCompactINR(v) }, grid: { color: '#F5E6EA' } },
     },
   }
 });
@@ -238,7 +202,7 @@ new Chart(document.getElementById('chartCategoryRevenue'), {
     datasets: [{
       data: Object.values(categoryRevenue),
       backgroundColor: [paletteBerry, paletteTan, paletteMaroon],
-      borderColor: '#FBD9E7',
+      borderColor: '#F6DCE8',
       borderWidth: 3,
       hoverOffset: 6,
     }]
@@ -251,77 +215,6 @@ new Chart(document.getElementById('chartCategoryRevenue'), {
       legend: { position: 'bottom', labels: { color: '#6B7280', boxWidth: 8, boxHeight: 8, padding: 8, font: { size: 10 }, usePointStyle: true, pointStyle: 'circle' } },
       tooltip: { ...tooltipOpts, callbacks: { label: (ctx) => `${ctx.label}: ${formatCompactINR(ctx.parsed)}` } },
     }
-  }
-});
-
-// ---- Quotation Conversion Rate (doughnut gauge-style) ----
-const conversionAccepted = 156;
-const conversionTotal = 312;
-const conversionRest = conversionTotal - conversionAccepted;
-
-new Chart(document.getElementById('chartConversion'), {
-  type: 'doughnut',
-  data: {
-    labels: ['Confirmed', 'Not Confirmed'],
-    datasets: [{
-      data: [conversionAccepted, conversionRest],
-      backgroundColor: [paletteBerry, paletteTan],
-      borderColor: '#FBD9E7',
-      borderWidth: 3,
-      hoverOffset: 6,
-    }]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    cutout: '72%',
-    plugins: {
-      legend: { position: 'bottom', labels: { color: '#6B7280', boxWidth: 8, boxHeight: 8, padding: 8, font: { size: 10 }, usePointStyle: true, pointStyle: 'circle' } },
-      tooltip: tooltipOpts,
-    }
-  },
-  plugins: [{
-    id: 'centerText',
-    afterDraw(chart) {
-      const { ctx, chartArea } = chart;
-      const pct = Math.round((conversionAccepted / conversionTotal) * 100);
-      ctx.save();
-      ctx.font = '700 18px Poppins, sans-serif';
-      ctx.fillStyle = '#800021';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      const cx = (chartArea.left + chartArea.right) / 2;
-      const cy = (chartArea.top + chartArea.bottom) / 2;
-      ctx.fillText(`${pct}%`, cx, cy);
-      ctx.restore();
-    }
-  }]
-});
-
-// ---- State-wise Sales Distribution (horizontal bar) ----
-const stateSales = { 'Uttar Pradesh': 62, 'Rajasthan': 38, 'Madhya Pradesh': 27, 'Bihar': 19, 'Haryana': 10 };
-
-new Chart(document.getElementById('chartStateSales'), {
-  type: 'bar',
-  data: {
-    labels: Object.keys(stateSales),
-    datasets: [{
-      label: 'Orders',
-      data: Object.values(stateSales),
-      backgroundColor: [paletteBerry, paletteMid, paletteTan, paletteMaroon, paletteCream],
-      borderRadius: 6,
-      maxBarThickness: 20,
-    }]
-  },
-  options: {
-    indexAxis: 'y',
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: { legend: { display: false }, tooltip: tooltipOpts },
-    scales: {
-      x: { beginAtZero: true, ticks: { color: '#6B7280', precision: 0 }, grid: { color: '#F8DCE8' } },
-      y: { grid: { display: false }, ticks: { color: '#6B7280' } },
-    },
   }
 });
 
@@ -540,14 +433,16 @@ const ICONS = {
   duplicate: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>',
 };
 
+// Note: tooltips use data-tooltip (rendered via the floating tooltip
+// system below) instead of the native title attribute, so they never
+// get clipped by the table's overflow/scroll container and always
+// appear above every other element.
 function actionIconsHtml(no) {
   return `
     <div class="row-actions">
-      <button class="action-icon-btn icon-view" data-action="view" data-no="${no}" title="View">${ICONS.view}</button>
-      <button class="action-icon-btn icon-edit" data-action="edit" data-no="${no}" title="Edit">${ICONS.edit}</button>
-      <button class="action-icon-btn icon-print" data-action="print" data-no="${no}" title="Print">${ICONS.print}</button>
-      <button class="action-icon-btn icon-pdf" data-action="pdf" data-no="${no}" title="Download PDF">${ICONS.pdf}</button>
-      <button class="action-icon-btn icon-duplicate" data-action="duplicate" data-no="${no}" title="Duplicate">${ICONS.duplicate}</button>
+      <button class="action-icon-btn icon-view" data-action="view" data-no="${no}" data-tooltip="View">${ICONS.view}</button>
+      <button class="action-icon-btn icon-edit" data-action="edit" data-no="${no}" data-tooltip="Edit">${ICONS.edit}</button>
+      <button class="action-icon-btn icon-duplicate" data-action="duplicate" data-no="${no}" data-tooltip="Duplicate">${ICONS.duplicate}</button>
     </div>`;
 }
 
@@ -568,7 +463,7 @@ function renderTable() {
       <td data-label="Amount">${formatINR(q.amount)}</td>
       <td data-label="Status"><span class="pill ${tableStatusPillClass[q.status]}">${q.status}</span></td>
       <td data-label="Date">${formatDate(q.date)}</td>
-      <td data-label="Actions">${actionIconsHtml(q.no)}</td>
+      <td data-label="Actions" class="actions-cell">${actionIconsHtml(q.no)}</td>
     </tr>
   `).join('');
 
@@ -794,6 +689,7 @@ qTbody?.addEventListener('click', (e) => {
   const actionBtn = e.target.closest('[data-action]');
   if (actionBtn) {
     e.stopPropagation();
+    hideActionTooltip();
     const no = actionBtn.getAttribute('data-no');
     const action = actionBtn.getAttribute('data-action');
     if (action === 'view') openModal(no, 'view');
@@ -807,30 +703,73 @@ qTbody?.addEventListener('click', (e) => {
   if (row) openModal(row.getAttribute('data-no'), 'view');
 });
 
+// ============================================================
+// Floating tooltip overlay for Recent Quotations action icons.
+// Rendered on <body> and positioned via getBoundingClientRect so
+// it always sits above the table/card and is never clipped by
+// overflow-x-auto / overflow-hidden ancestors. Works for mouse
+// hover on desktop and tap-and-hold on touch devices.
+// ============================================================
+let actionTooltipEl = null;
+
+function getActionTooltipEl() {
+  if (!actionTooltipEl) {
+    actionTooltipEl = document.createElement('div');
+    actionTooltipEl.className = 'action-tooltip';
+    document.body.appendChild(actionTooltipEl);
+  }
+  return actionTooltipEl;
+}
+
+function showActionTooltip(btn) {
+  const label = btn.getAttribute('data-tooltip');
+  if (!label) return;
+  const tip = getActionTooltipEl();
+  tip.textContent = label;
+  const rect = btn.getBoundingClientRect();
+  tip.style.left = `${rect.left + rect.width / 2}px`;
+  tip.style.top = `${rect.top}px`;
+  requestAnimationFrame(() => tip.classList.add('visible'));
+}
+
+function hideActionTooltip() {
+  if (actionTooltipEl) actionTooltipEl.classList.remove('visible');
+}
+
+qTbody?.addEventListener('mouseover', (e) => {
+  const btn = e.target.closest('.action-icon-btn');
+  if (btn) showActionTooltip(btn);
+});
+qTbody?.addEventListener('mouseout', (e) => {
+  const btn = e.target.closest('.action-icon-btn');
+  if (btn) hideActionTooltip();
+});
+qTbody?.addEventListener('focusin', (e) => {
+  const btn = e.target.closest('.action-icon-btn');
+  if (btn) showActionTooltip(btn);
+});
+qTbody?.addEventListener('focusout', (e) => {
+  const btn = e.target.closest('.action-icon-btn');
+  if (btn) hideActionTooltip();
+});
+window.addEventListener('scroll', hideActionTooltip, true);
+window.addEventListener('resize', hideActionTooltip);
+
 /* ---------------- New Quotation button ---------------- */
 document.getElementById('newQuotationBtn')?.addEventListener('click', () => {
   window.location.href = '../Quotation/quotation.html';
 });
 
-/* ---------------- Topbar: notification + profile dropdowns ---------------- */
-const notifBtn = document.getElementById('notifBtn');
-const notifDropdown = document.getElementById('notifDropdown');
+/* ---------------- Topbar: profile dropdown ---------------- */
 const profileBtn = document.getElementById('profileBtn');
 const profileDropdown = document.getElementById('profileDropdown');
 const profileLogoutBtn = document.getElementById('profileLogoutBtn');
 
 function closeAllTopbarDropdowns(except) {
-  [notifDropdown, profileDropdown].forEach((dd) => {
+  [profileDropdown].forEach((dd) => {
     if (dd && dd !== except) dd.classList.add('hidden');
   });
 }
-
-notifBtn?.addEventListener('click', (e) => {
-  e.stopPropagation();
-  const willOpen = notifDropdown.classList.contains('hidden');
-  closeAllTopbarDropdowns();
-  notifDropdown.classList.toggle('hidden', !willOpen);
-});
 
 profileBtn?.addEventListener('click', (e) => {
   e.stopPropagation();
@@ -850,7 +789,6 @@ profileLogoutBtn?.addEventListener('click', handleLogout);
 // ============================================================
 // Init
 // ============================================================
-renderPipeline();
 renderTopMachines();
 renderRecentActivity();
 renderAlerts();

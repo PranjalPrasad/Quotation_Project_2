@@ -1214,42 +1214,84 @@
       });
     });
 
+    // ---------------------------------------------------------
     // Profile & Notifications (simple toggle)
-    document.getElementById('profileBtn').addEventListener('click', function() {
-      document.getElementById('profileDropdown').classList.toggle('hidden');
-    });
+    // NOTE: these are guarded with null-checks because the
+    // notification bell markup is currently commented out in
+    // productm.html. Previously this block called
+    // document.getElementById('notifBtn').addEventListener(...)
+    // directly — since #notifBtn doesn't exist, that threw a
+    // TypeError and silently aborted the rest of bindEvents(),
+    // which meant the sidebar toggle listener (registered further
+    // down) never got attached in ANY view. Guarding every lookup
+    // here fixes that and makes this function resilient to future
+    // markup changes too.
+    // ---------------------------------------------------------
+    const profileBtn = document.getElementById('profileBtn');
+    if (profileBtn) {
+      profileBtn.addEventListener('click', function() {
+        const dropdown = document.getElementById('profileDropdown');
+        if (dropdown) dropdown.classList.toggle('hidden');
+      });
+    }
 
-    document.getElementById('notifBtn').addEventListener('click', function() {
-      document.getElementById('notifDropdown').classList.toggle('hidden');
-    });
+    const notifBtn = document.getElementById('notifBtn');
+    if (notifBtn) {
+      notifBtn.addEventListener('click', function() {
+        const dropdown = document.getElementById('notifDropdown');
+        if (dropdown) dropdown.classList.toggle('hidden');
+      });
+    }
 
     // Close dropdowns on outside click
     document.addEventListener('click', function(e) {
-      if (!e.target.closest('#profileBtn') && !e.target.closest('#profileDropdown')) {
-        document.getElementById('profileDropdown').classList.add('hidden');
+      const profileDropdown = document.getElementById('profileDropdown');
+      if (profileDropdown && !e.target.closest('#profileBtn') && !e.target.closest('#profileDropdown')) {
+        profileDropdown.classList.add('hidden');
       }
-      if (!e.target.closest('#notifBtn') && !e.target.closest('#notifDropdown')) {
-        document.getElementById('notifDropdown').classList.add('hidden');
+      const notifDropdown = document.getElementById('notifDropdown');
+      if (notifDropdown && !e.target.closest('#notifBtn') && !e.target.closest('#notifDropdown')) {
+        notifDropdown.classList.add('hidden');
       }
     });
 
+    // ---------------------------------------------------------
     // Sidebar toggle
-    document.getElementById('sidebarToggle').addEventListener('click', function() {
-      const sidebar = document.getElementById('sidebar');
-      const icon = document.getElementById('toggleIcon');
-      sidebar.classList.toggle('expanded');
-      sidebar.classList.toggle('collapsed');
-      icon.classList.toggle('rotate-180');
-      document.getElementById('sidebarBackdrop').classList.toggle('visible');
-    });
+    // Rewritten to explicitly set the expanded/collapsed state
+    // (instead of blindly toggling both classes, which could
+    // briefly leave both classes on the element at once) and to
+    // guard every element lookup so a missing node never breaks
+    // the toggle again.
+    // ---------------------------------------------------------
+    const sidebarToggleBtn = document.getElementById('sidebarToggle');
+    if (sidebarToggleBtn) {
+      sidebarToggleBtn.addEventListener('click', function() {
+        const sidebar = document.getElementById('sidebar');
+        if (!sidebar) return;
+        const icon = document.getElementById('toggleIcon');
+        const backdrop = document.getElementById('sidebarBackdrop');
+        const willExpand = !sidebar.classList.contains('expanded');
 
-    document.getElementById('sidebarBackdrop').addEventListener('click', function() {
-      const sidebar = document.getElementById('sidebar');
-      sidebar.classList.remove('expanded');
-      sidebar.classList.add('collapsed');
-      this.classList.remove('visible');
-      document.getElementById('toggleIcon').classList.remove('rotate-180');
-    });
+        sidebar.classList.toggle('expanded', willExpand);
+        sidebar.classList.toggle('collapsed', !willExpand);
+        if (icon) icon.classList.toggle('rotate-180', willExpand);
+        if (backdrop) backdrop.classList.toggle('visible', willExpand);
+      });
+    }
+
+    const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+    if (sidebarBackdrop) {
+      sidebarBackdrop.addEventListener('click', function() {
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar) {
+          sidebar.classList.remove('expanded');
+          sidebar.classList.add('collapsed');
+        }
+        this.classList.remove('visible');
+        const icon = document.getElementById('toggleIcon');
+        if (icon) icon.classList.remove('rotate-180');
+      });
+    }
 
     // Session / Logout (from session.js)
     const logoutBtn = document.getElementById('profileLogoutBtn');

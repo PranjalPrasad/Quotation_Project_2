@@ -11,16 +11,16 @@
       extend: {
         colors: {
           peach: {
-            50:  "#FDF2F7",
-            100: "#FBD9E7",
-            200: "#F6C7DC",
-            300: "#F0C3D6",
-            400: "#C23666",
-            500: "#881144",
-            600: "#7A0E36",
-            700: "#800021",
+            50:  "#FCEEF3",
+            100: "#F6DCE8",
+            200: "#EFC8DC",
+            300: "#E8B9CE",
+            400: "#B8285F",
+            500: "#800021",
+            600: "#6B001C",
+            700: "#540016",
           },
-          cream: "#FDEEF3",
+          cream: "#FCEEF3",
         },
         fontFamily: {
           sans: ["Poppins", "ui-sans-serif", "system-ui"],
@@ -51,24 +51,24 @@
         </svg>
       </button>
       <div class="flex items-center justify-center shrink-0">
-        <div class="w-10 h-10 rounded-xl bg-peach-700 flex items-center justify-center text-white font-bold text-sm">VKM</div>
+        <img src="/img/image.png" alt="VKM Logo" class="w-auto h-10 object-contain" />
       </div>
       <nav class="nav-list w-full flex-1 flex flex-col items-center gap-1.5 mt-3 px-3">
         <button class="nav-item active" id="menuDashboard" data-label="Dashboard" aria-label="Dashboard" onclick="window.location.href='dashboard.html'">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect></svg>
           <span>Dashboard</span>
         </button>
-        <button class="nav-item" id="menuProducts" data-label="Product Management" aria-label="ProductManagement" onclick="window.location.href='../productM/productm.html'">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="18" height="7" rx="1.5"></rect></svg>
+        <button class="nav-item" id="menuProducts" data-label="Product Management" aria-label="Product Management" onclick="window.location.href='../productM/productm.html'">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><line x1="12" y1="2" x2="12" y2="4.5"></line><line x1="12" y1="19.5" x2="12" y2="22"></line><line x1="2" y1="12" x2="4.5" y2="12"></line><line x1="4.9" y1="4.9" x2="6.6" y2="6.6"></line><line x1="17.4" y1="17.4" x2="19.1" y2="19.1"></line><line x1="4.9" y1="19.1" x2="6.6" y2="17.4"></line><line x1="17.4" y1="6.6" x2="19.1" y2="4.9"></line></svg>
           <span>Product Management</span>
         </button>
         <button class="nav-item" id="menuQuotation" data-label="Quotation Management" aria-label="Quotation Management" onclick="window.location.href='../Quotation/quotation.html'">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="13" y2="17"></line></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="M9 15h1"></path><path d="M9.5 12.5c0-.83.67-1.5 1.5-1.5h.5a1.5 1.5 0 0 1 0 3H11a1.5 1.5 0 0 0 0 3h.5a1.5 1.5 0 0 0 1.5-1.5"></path><line x1="11" y1="10" x2="11" y2="10.7"></line><line x1="11" y1="17.3" x2="11" y2="18"></line></svg>
           <span>Quotation Management</span>
         </button>
-        <button class="nav-item" id="menuCustomers" data-label="Customers" aria-label="Customers" onclick="window.location.href='../customers/customers.html'">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-          <span>Customers</span>
+        <button class="nav-item" id="menuCustomers" data-label="Customer Management" aria-label="Customer Management" onclick="window.location.href='../customers/customers.html'">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect><circle cx="9" cy="11" r="3"></circle><path d="M3 18.5c1.5-2.5 4-4 7-4s5.5 1.5 7 4"></path><path d="M16 9l2 2 4-4"></path></svg>
+          <span>Customer Management</span>
         </button>
         <button class="nav-item" id="menuBilling" data-label="Billing & Invoicing" aria-label="Billing & Invoicing" onclick="window.location.href='../billinginvoice/bill.html'">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line><line x1="6" y1="15" x2="10" y2="15"></line></svg>
@@ -78,7 +78,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="21" x2="5" y2="11"></line><line x1="12" y1="21" x2="12" y2="6"></line><line x1="19" y1="21" x2="19" y2="14"></line><line x1="3" y1="21" x2="21" y2="21"></line></svg>
           <span>Reports</span>
         </button>
-        
+
       </nav>
     </aside>
 
@@ -92,36 +92,11 @@
           <p class="text-[11px] text-gray-400">Here's what's happening at VKM today</p>
         </div>
         <div class="flex items-center gap-2.5 relative">
-          <!-- <div class="relative">
-            <button id="notifBtn" aria-label="Notifications" class="w-8 h-8 rounded-full bg-cream shadow-sm border border-peach-300 flex items-center justify-center text-gray-500 hover:text-peach-500 transition-colors">
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-              </svg>
-              <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full"></span>
-            </button>
-            <div id="notifDropdown" class="topbar-dropdown hidden">
-              <p class="topbar-dropdown-title">Notifications</p>
-              <div class="topbar-notif-item">
-                <p>3 invoices overdue by 15+ days</p>
-                <span>10 min ago</span>
-              </div>
-              <div class="topbar-notif-item">
-                <p>VK002 order ready to dispatch</p>
-                <span>1 hr ago</span>
-              </div>
-              <div class="topbar-notif-item">
-                <p>New quotation SQ-1024 received</p>
-                <span>2 hr ago</span>
-              </div>
-            </div>
-          </div> -->
           <div class="relative">
             <button id="profileBtn" aria-label="Profile" class="w-8 h-8 rounded-full bg-peach-500 flex items-center justify-center text-white font-semibold text-sm shadow-sm">
               A
             </button>
             <div id="profileDropdown" class="topbar-dropdown hidden">
-              <p class="topbar-dropdown-title">Logged in as: Admin</p>
               <button id="profileLogoutBtn" class="topbar-logout-btn">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                 Logout
@@ -165,7 +140,7 @@
       </div>
 
       <!-- Stat grid -->
-      <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2.5 mb-2.5">
+      <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-2.5 mb-2.5">
         <div class="bg-cream rounded-xl p-3 shadow-sm border border-peach-300 flex items-center gap-2.5">
           <div class="w-8 h-8 rounded-lg bg-peach-500 flex items-center justify-center shrink-0">
             <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
@@ -182,15 +157,6 @@
           <div class="min-w-0">
             <p class="text-sm font-semibold text-gray-800 truncate" id="statConfirmedOrders">—</p>
             <p class="text-[10px] text-gray-400">Confirmed Orders (Month)</p>
-          </div>
-        </div>
-        <div class="bg-cream rounded-xl p-3 shadow-sm border border-peach-300 flex items-center gap-2.5">
-          <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
-            <svg class="w-4 h-4 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="7" width="15" height="13" rx="1"></rect><path d="M16 10h3l4 4v6h-7"></path><circle cx="5.5" cy="20.5" r="1.5"></circle><circle cx="17.5" cy="20.5" r="1.5"></circle></svg>
-          </div>
-          <div class="min-w-0">
-            <p class="text-sm font-semibold text-gray-800 truncate" id="statInProduction">—</p>
-            <p class="text-[10px] text-gray-400">Orders in Production Pipeline</p>
           </div>
         </div>
         <div class="bg-cream rounded-xl p-3 shadow-sm border border-peach-300 flex items-center gap-2.5">
@@ -222,18 +188,7 @@
         </div>
       </div>
 
-      <!-- Production Pipeline -->
-      <div class="bg-cream rounded-xl p-3.5 shadow-sm border border-peach-300 mb-2.5">
-        <div class="mb-2.5 flex items-center justify-between flex-wrap gap-2">
-          <div>
-            <h2 class="text-xs font-semibold text-gray-700">Order / Production Pipeline</h2>
-            <p class="text-[10px] text-gray-400">Click a stage to view orders at that step</p>
-          </div>
-        </div>
-        <div class="pipeline-track" id="pipelineTrack"></div>
-      </div>
-
-      <!-- Charts 2x2 -->
+      <!-- Charts -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5 mb-2.5">
         <div class="bg-cream rounded-xl p-3.5 shadow-sm border border-peach-300">
           <div class="mb-1">
@@ -248,20 +203,6 @@
             <p class="chart-card-sub">Brick machines vs. components vs. consumables</p>
           </div>
           <div class="pie-wrap"><canvas id="chartCategoryRevenue"></canvas></div>
-        </div>
-        <div class="bg-cream rounded-xl p-3.5 shadow-sm border border-peach-300">
-          <div class="mb-1">
-            <h2 class="chart-card-title">Quotation Conversion Rate</h2>
-            <p class="chart-card-sub">Sent → Confirmed, all time</p>
-          </div>
-          <div class="pie-wrap"><canvas id="chartConversion"></canvas></div>
-        </div>
-        <div class="bg-cream rounded-xl p-3.5 shadow-sm border border-peach-300">
-          <div class="mb-1">
-            <h2 class="chart-card-title">State-wise Sales Distribution</h2>
-            <p class="chart-card-sub">Confirmed orders by state</p>
-          </div>
-          <div class="pie-wrap"><canvas id="chartStateSales"></canvas></div>
         </div>
       </div>
 
