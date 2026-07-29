@@ -26,20 +26,35 @@
 }
 
 /* ============================================================
+   GLOBAL SAFETY RESET
+   Guarantees box-sizing + prevents any child from pushing the
+   page (or a modal) into horizontal scroll, regardless of what
+   dashboard.css does earlier in the cascade.
+   ============================================================ */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/* ============================================================
    APP SHELL / SIDEBAR / TOPBAR CHROME
    Self-contained so this page matches Quotation Management even
    if dashboard.css differs — customer.css loads last and wins.
    ============================================================ */
 html, body {
   height: 100%;
+  width: 100%;
+  max-width: 100%;
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
+  background: var(--cream) !important;
 }
 
 .app-shell {
   height: 100vh;
   height: 100dvh;
+  max-width: 100%;
   overflow: hidden;
+  background: var(--cream) !important;
 }
 
 .app-sidebar {
@@ -49,15 +64,19 @@ html, body {
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
   padding-left: env(safe-area-inset-left);
+  background: var(--cream) !important;
 }
 
 .app-main {
   height: 100vh;
   height: 100dvh;
+  max-width: 100%;
   overflow-y: auto;
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
   padding-bottom: calc(1.25rem + env(safe-area-inset-bottom)) !important;
+  background: var(--cream) !important;
 }
 
 /* Mobile / tablet sidebar drawer */
@@ -81,7 +100,7 @@ html, body {
 .sidebar-backdrop { display: none; }
 @keyframes cmFadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-.sidebar { width: 76px; }
+.sidebar { width: 76px; background: var(--cream) !important; }
 .sidebar.collapsed { width: 76px; }
 .sidebar.expanded { width: 208px; }
 
@@ -136,7 +155,7 @@ html, body {
   top: calc(100% + 8px);
   right: 0;
   min-width: 200px;
-  background: var(--card);
+  background: var(--card) !important;
   border-radius: 13px;
   box-shadow: var(--shadow-md);
   border: 1px solid var(--brand-200);
@@ -251,7 +270,7 @@ html, body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: #fff;
+  background: var(--surface);
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -288,7 +307,7 @@ html, body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: #fff;
+  background: var(--surface);
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -311,7 +330,7 @@ html, body {
   top: calc(100% + 6px);
   right: 0;
   min-width: 180px;
-  background: var(--card);
+  background: var(--card) !important;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow-md);
@@ -350,7 +369,7 @@ html, body {
   .summary-grid { grid-template-columns: 1fr; }
 }
 .summary-card {
-  background: var(--card);
+  background: var(--card) !important;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius);
   padding: 16px;
@@ -358,6 +377,7 @@ html, body {
   align-items: flex-start;
   gap: 12px;
   box-shadow: var(--shadow);
+  min-width: 0;
 }
 .summary-icon {
   width: 40px;
@@ -400,7 +420,7 @@ html, body {
 
 /* ---------- Filter card ---------- */
 .filter-card {
-  background: var(--card);
+  background: var(--card) !important;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius);
   padding: 14px 16px;
@@ -429,6 +449,7 @@ html, body {
   position: relative;
   display: flex;
   align-items: center;
+  min-width: 0;
 }
 .filter-search-wrap svg {
   position: absolute;
@@ -445,12 +466,14 @@ html, body {
 /* ---------- Field inputs ---------- */
 .field-input {
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   padding: 8px 11px;
   font-size: 12.5px;
   color: var(--text);
-  background: var(--surface);
+  background: var(--surface) !important;
   font-family: inherit;
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s;
@@ -470,6 +493,7 @@ textarea.field-input { resize: vertical; min-height: 64px; }
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
 }
 .field-group.full { grid-column: 1 / -1; }
 .field-label {
@@ -485,7 +509,7 @@ textarea.field-input { resize: vertical; min-height: 64px; }
 }
 
 /* ---------- Custom select ---------- */
-.custom-select { position: relative; }
+.custom-select { position: relative; min-width: 0; }
 .custom-select-trigger {
   display: flex;
   align-items: center;
@@ -493,7 +517,7 @@ textarea.field-input { resize: vertical; min-height: 64px; }
   gap: 8px;
   cursor: pointer;
   text-align: left;
-  background: var(--surface);
+  background: var(--surface) !important;
 }
 .cs-chevron {
   width: 14px;
@@ -510,7 +534,7 @@ textarea.field-input { resize: vertical; min-height: 64px; }
   top: calc(100% + 4px);
   left: 0;
   right: 0;
-  background: var(--card);
+  background: var(--card) !important;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow-md);
@@ -535,12 +559,13 @@ textarea.field-input { resize: vertical; min-height: 64px; }
 
 /* ---------- Table card ---------- */
 .table-card {
-  background: var(--card);
+  background: var(--card) !important;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius);
   margin-bottom: 16px;
   box-shadow: var(--shadow);
   overflow: hidden;
+  max-width: 100%;
 }
 .table-card-head {
   display: flex;
@@ -548,6 +573,9 @@ textarea.field-input { resize: vertical; min-height: 64px; }
   justify-content: space-between;
   padding: 14px 16px 10px;
   border-bottom: 1px solid var(--border);
+  background: var(--card) !important;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 .table-card-head h2 {
   font-size: 14px;
@@ -562,6 +590,7 @@ textarea.field-input { resize: vertical; min-height: 64px; }
 }
 .table-scroll {
   overflow-x: auto;
+  max-width: 100%;
 }
 .data-table {
   width: 100%;
@@ -574,19 +603,19 @@ textarea.field-input { resize: vertical; min-height: 64px; }
   font-size: 11px;
   font-weight: 600;
   color: var(--muted);
-  background: var(--brand-100);
+  background: var(--brand-100) !important;
   border-bottom: 1px solid var(--border);
   white-space: nowrap;
 }
 .data-table tbody td {
   padding: 11px 12px;
   border-bottom: 1px solid var(--border);
-  background: var(--surface);
+  background: var(--surface) !important;
   color: var(--text);
   vertical-align: middle;
 }
 .data-table tbody tr:last-child td { border-bottom: none; }
-.data-table tbody tr:hover { background: #FFF9FA; }
+.data-table tbody tr:hover td { background: #FFF9FA !important; }
 .data-table .font-medium { font-weight: 600; }
 .actions-th { width: 120px; text-align: right; }
 
@@ -613,6 +642,7 @@ textarea.field-input { resize: vertical; min-height: 64px; }
   align-items: center;
   justify-content: flex-end;
   gap: 4px;
+  flex-wrap: wrap;
 }
 .action-icon-btn {
   width: 30px;
@@ -626,6 +656,7 @@ textarea.field-input { resize: vertical; min-height: 64px; }
   align-items: center;
   justify-content: center;
   transition: background 0.12s, color 0.12s;
+  flex-shrink: 0;
 }
 .action-icon-btn svg { width: 15px; height: 15px; }
 .action-icon-btn:hover { background: var(--brand-50); color: var(--brand-600); }
@@ -635,6 +666,7 @@ textarea.field-input { resize: vertical; min-height: 64px; }
 .empty-state {
   text-align: center;
   padding: 48px 20px;
+  background: var(--card) !important;
 }
 .empty-state svg {
   width: 48px;
@@ -660,6 +692,7 @@ textarea.field-input { resize: vertical; min-height: 64px; }
   justify-content: space-between;
   padding: 10px 16px;
   border-top: 1px solid var(--border);
+  background: var(--card) !important;
   flex-wrap: wrap;
   gap: 8px;
 }
@@ -695,13 +728,18 @@ textarea.field-input { resize: vertical; min-height: 64px; }
 }
 
 /* ---------- History ---------- */
-.history-list { padding: 8px 12px 14px; }
+.history-list {
+  padding: 8px 12px 14px;
+  background: var(--card) !important;
+  max-width: 100%;
+}
 .history-card {
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
   margin-bottom: 8px;
   overflow: hidden;
-  background: var(--surface);
+  background: var(--surface) !important;
+  max-width: 100%;
 }
 .history-card-head {
   display: flex;
@@ -709,10 +747,12 @@ textarea.field-input { resize: vertical; min-height: 64px; }
   justify-content: space-between;
   padding: 10px 12px;
   cursor: pointer;
-  background: var(--surface);
+  background: var(--surface) !important;
   transition: background 0.12s;
+  gap: 8px;
+  flex-wrap: wrap;
 }
-.history-card-head:hover { background: var(--brand-50); }
+.history-card-head:hover { background: var(--brand-50) !important; }
 .history-card-name {
   font-size: 13px;
   font-weight: 600;
@@ -729,12 +769,14 @@ textarea.field-input { resize: vertical; min-height: 64px; }
   height: 16px;
   color: var(--muted);
   transition: transform 0.2s;
+  flex-shrink: 0;
 }
 .history-card.open .history-chevron { transform: rotate(180deg); }
 .history-card-body {
   display: none;
   padding: 0 12px 12px;
   border-top: 1px solid var(--border);
+  background: var(--surface) !important;
 }
 .history-card.open .history-card-body { display: block; }
 .history-timeline {
@@ -774,6 +816,7 @@ textarea.field-input { resize: vertical; min-height: 64px; }
   border-bottom: 1px solid var(--border);
   gap: 12px;
   flex-wrap: wrap;
+  background: var(--card) !important;
 }
 
 /* ---------- Modal ---------- */
@@ -789,14 +832,16 @@ textarea.field-input { resize: vertical; min-height: 64px; }
 }
 .modal-overlay.hidden { display: none; }
 .modal-panel {
-  background: var(--card);
+  background: var(--card) !important;
   border-radius: 14px;
   width: 100%;
+  max-width: 100%;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
   box-shadow: 0 20px 40px rgba(128,0,33,0.15);
   overflow: hidden;
+  box-sizing: border-box;
 }
 .modal-header {
   display: flex;
@@ -804,6 +849,8 @@ textarea.field-input { resize: vertical; min-height: 64px; }
   justify-content: space-between;
   padding: 16px 18px 12px;
   border-bottom: 1px solid var(--border);
+  background: var(--card) !important;
+  gap: 10px;
 }
 .modal-title {
   font-size: 15px;
@@ -826,15 +873,20 @@ textarea.field-input { resize: vertical; min-height: 64px; }
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 .modal-close-btn:hover { background: var(--brand-50); color: var(--brand-600); }
 .modal-body {
   padding: 16px 18px;
   overflow-y: auto;
+  overflow-x: hidden;
+  max-width: 100%;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px 14px;
+  background: var(--card) !important;
 }
+.modal-body > * { min-width: 0; }
 .modal-footer {
   display: flex;
   align-items: center;
@@ -842,6 +894,8 @@ textarea.field-input { resize: vertical; min-height: 64px; }
   gap: 8px;
   padding: 12px 18px 16px;
   border-top: 1px solid var(--border);
+  background: var(--card) !important;
+  flex-wrap: wrap;
 }
 
 /* View detail items */
@@ -849,6 +903,7 @@ textarea.field-input { resize: vertical; min-height: 64px; }
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
 }
 .detail-item.full { grid-column: 1 / -1; }
 .d-label {
@@ -860,6 +915,7 @@ textarea.field-input { resize: vertical; min-height: 64px; }
   font-size: 13px;
   color: var(--text);
   font-weight: 500;
+  word-break: break-word;
 }
 
 /* ---------- Toast ---------- */
@@ -877,6 +933,8 @@ textarea.field-input { resize: vertical; min-height: 64px; }
   z-index: 200;
   box-shadow: var(--shadow-md);
   transition: opacity 0.2s, transform 0.2s;
+  max-width: calc(100% - 32px);
+  text-align: center;
 }
 .toast.hidden {
   opacity: 0;
@@ -907,8 +965,11 @@ textarea.field-input { resize: vertical; min-height: 64px; }
   .data-table tbody td {
     display: flex;
     justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
     padding: 4px 12px;
     border: none;
+    text-align: right;
   }
   .data-table tbody td::before {
     content: attr(data-label);
@@ -916,16 +977,26 @@ textarea.field-input { resize: vertical; min-height: 64px; }
     color: var(--muted);
     font-size: 11px;
     margin-right: 12px;
+    text-align: left;
+    flex-shrink: 0;
   }
-  .row-actions { justify-content: flex-start; }
+  .row-actions { justify-content: flex-end; }
 }
 
 /* ============================================================
    RESPONSIVE — Customer Management specific components
    (tablet / phone / small phone, matching Quotation granularity)
    ============================================================ */
-@media (min-width: 768px) and (max-width: 1023px) {
+@media (min-width: 900px) and (max-width: 1023px) {
   .modal-panel { max-width: 92vw !important; }
+}
+
+/* Switch every modal form to a single column earlier (tablet) so
+   fields never get squeezed and cause horizontal overflow. */
+@media (max-width: 900px) {
+  .modal-body { grid-template-columns: 1fr; }
+  .field-group.full { grid-column: 1 / -1; }
+  .detail-item.full { grid-column: 1 / -1; }
 }
 
 @media (max-width: 767px) {
@@ -939,6 +1010,8 @@ textarea.field-input { resize: vertical; min-height: 64px; }
   .filter-group,
   .filter-group.grow { min-width: 0; width: 100%; }
 
+  .modal-overlay { padding: 10px; }
+  .modal-panel { width: 100%; max-width: 100% !important; }
   .modal-body { grid-template-columns: 1fr; }
   .field-group.full { grid-column: 1 / -1; }
 
@@ -947,6 +1020,8 @@ textarea.field-input { resize: vertical; min-height: 64px; }
 
   .followup-head-row { flex-direction: column; align-items: stretch; }
   .followup-head-row .btn-primary { justify-content: center; }
+
+  .table-card-head { flex-direction: column; align-items: flex-start; }
 }
 
 @media (max-width: 480px) {
@@ -962,13 +1037,15 @@ textarea.field-input { resize: vertical; min-height: 64px; }
   .summary-count { font-size: 18px; }
   .table-card-head { padding: 12px 14px 8px; }
   .modal-overlay { align-items: flex-end; padding: 0; }
-  .modal-panel { max-height: 96vh; border-radius: 16px 16px 0 0; }
+  .modal-panel { max-height: 96vh; border-radius: 16px 16px 0 0; width: 100%; }
   .modal-header { padding: 14px 14px 10px; }
   .modal-body { padding: 14px; }
   .modal-footer { padding: 10px 14px 14px; }
+  .modal-title { font-size: 14px; }
 }
 
 @media (max-width: 360px) {
   .summary-grid { gap: 10px; }
   .field-input { font-size: 12px; padding: 7px 10px; }
+  .modal-body { padding: 12px; gap: 10px; }
 }
