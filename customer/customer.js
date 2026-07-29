@@ -1,6 +1,43 @@
 /* ============ customer.js ============ */
 
 /* ============================================================
+   SIDEBAR / TOPBAR CHROME
+   (matches Quotation Management behavior — toggle expand/collapse,
+   mobile drawer backdrop, close-on-outside-click)
+   ============================================================ */
+const sidebar = document.getElementById('sidebar');
+const sidebarToggle = document.getElementById('sidebarToggle');
+const toggleIcon = document.getElementById('toggleIcon');
+const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+
+function isDrawerBreakpoint() { return window.innerWidth < 1024; }
+
+function setSidebarExpanded(expand) {
+  sidebar?.classList.toggle('expanded', expand);
+  sidebar?.classList.toggle('collapsed', !expand);
+  toggleIcon?.classList.toggle('rotate-180', expand);
+  if (isDrawerBreakpoint()) {
+    sidebarBackdrop?.classList.toggle('visible', expand);
+  } else {
+    sidebarBackdrop?.classList.remove('visible');
+  }
+}
+
+setSidebarExpanded(false);
+sidebarToggle?.addEventListener('click', () => setSidebarExpanded(!sidebar.classList.contains('expanded')));
+sidebarBackdrop?.addEventListener('click', () => setSidebarExpanded(false));
+
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', () => {
+    if (isDrawerBreakpoint() && sidebar?.classList.contains('expanded')) setSidebarExpanded(false);
+  });
+});
+
+window.addEventListener('resize', () => {
+  if (!isDrawerBreakpoint()) sidebarBackdrop?.classList.remove('visible');
+});
+
+/* ============================================================
    Sample data (replace with API later)
    ============================================================ */
 let customers = [
@@ -838,20 +875,13 @@ document.getElementById('printBtn')?.addEventListener('click', () => {
 });
 
 /* ============================================================
-   Topbar dropdowns (notif + profile)
+   Topbar dropdowns (profile)
    ============================================================ */
-document.getElementById('notifBtn')?.addEventListener('click', (e) => {
-  e.stopPropagation();
-  document.getElementById('notifDropdown').classList.toggle('hidden');
-  document.getElementById('profileDropdown')?.classList.add('hidden');
-});
 document.getElementById('profileBtn')?.addEventListener('click', (e) => {
   e.stopPropagation();
   document.getElementById('profileDropdown').classList.toggle('hidden');
-  document.getElementById('notifDropdown')?.classList.add('hidden');
 });
 document.addEventListener('click', () => {
-  document.getElementById('notifDropdown')?.classList.add('hidden');
   document.getElementById('profileDropdown')?.classList.add('hidden');
 });
 document.getElementById('profileLogoutBtn')?.addEventListener('click', () => {

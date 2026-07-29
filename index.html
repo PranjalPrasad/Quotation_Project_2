@@ -336,6 +336,14 @@
             font-weight: 500;
         }
 
+        /* --- responsive breakpoints: tablet --- */
+        @media (max-width: 991px) {
+            .login-card {
+                max-width: 640px;
+            }
+        }
+
+        /* --- responsive breakpoints: stack to single column below 768px --- */
         @media (max-width: 768px) {
             .login-card {
                 flex-direction: column;
@@ -351,6 +359,27 @@
             }
             .form-side {
                 padding: 30px;
+            }
+        }
+
+        /* --- responsive breakpoints: small mobile phones --- */
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 12px;
+            }
+            .brand-side {
+                min-height: 180px;
+                padding: 20px;
+            }
+            .form-side {
+                padding: 24px 20px;
+            }
+            .form-side h2 {
+                font-size: 20px;
+            }
+            .form-control {
+                /* 16px prevents iOS Safari from auto-zooming the page on input focus */
+                font-size: 16px;
             }
         }
 

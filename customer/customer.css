@@ -1,6 +1,6 @@
 /* ============ customer.css ============ */
 
-/* ---------- Brand tokens (VKM palette) ---------- */
+/* ---------- Brand tokens (VKM palette — matches Quotation "peach" theme) ---------- */
 :root {
   --brand-50:  #FFF5F7;
   --brand-100: #FFE4EC;
@@ -10,7 +10,7 @@
   --brand-500: #881144;
   --brand-600: #800021;
   --brand-700: #5C0018;
-  --cream:     #FDF8F9;
+  --cream:     #FCEEF3;
   --text:      #1F2937;
   --muted:     #6B7280;
   --border:    #E5E7EB;
@@ -21,6 +21,180 @@
   --radius-sm: 8px;
   --shadow:    0 1px 3px rgba(128,0,33,0.06), 0 1px 2px rgba(128,0,33,0.04);
   --shadow-md: 0 4px 12px rgba(128,0,33,0.08);
+}
+
+/* ============================================================
+   APP SHELL / SIDEBAR / TOPBAR CHROME
+   Self-contained so this page matches Quotation Management even
+   if dashboard.css differs — customer.css loads last and wins.
+   ============================================================ */
+html, body {
+  height: 100%;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app-shell {
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.app-sidebar {
+  height: 100vh;
+  height: 100dvh;
+  overflow: visible;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+}
+
+.app-main {
+  height: 100vh;
+  height: 100dvh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding-bottom: calc(1.25rem + env(safe-area-inset-bottom)) !important;
+}
+
+/* Mobile / tablet sidebar drawer */
+@media (max-width: 1023px) {
+  .sidebar.expanded {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 410;
+    box-shadow: 0 16px 40px rgba(90,0,24,0.28);
+  }
+  .sidebar-backdrop.visible {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(31,17,17,0.38);
+    z-index: 400;
+    animation: cmFadeIn .15s ease-out;
+  }
+}
+.sidebar-backdrop { display: none; }
+@keyframes cmFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.sidebar { width: 76px; }
+.sidebar.collapsed { width: 76px; }
+.sidebar.expanded { width: 208px; }
+
+.nav-list { box-sizing: border-box; }
+.sidebar.expanded .nav-item {
+  width: 100%;
+  justify-content: flex-start;
+  padding-left: 12px;
+  padding-right: 8px;
+}
+.sidebar.expanded .nav-item span {
+  opacity: 1;
+  width: auto;
+  flex: 1 1 auto;
+  margin-left: 9px;
+}
+.nav-item {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  border-radius: 11px;
+  color: #9CA3AF;
+  background: transparent;
+  text-decoration: none;
+  transition: background 0.2s ease, color 0.2s ease, width 0.2s ease, padding 0.2s ease;
+  cursor: pointer;
+}
+.nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+.nav-item span {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+  opacity: 0;
+  width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
+  transition: opacity 0.2s ease, width 0.2s ease, margin 0.2s ease;
+}
+.nav-item:hover { background: var(--brand-100); color: var(--brand-600); }
+.nav-item.active { background: var(--brand-600); color: #fff; }
+
+/* Topbar dropdowns (profile / notifications) */
+.topbar-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 200px;
+  background: #fff;
+  border-radius: 13px;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--brand-200);
+  padding: 7px;
+  z-index: 300;
+}
+.topbar-dropdown.hidden { display: none; }
+.topbar-dropdown-title {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #9CA3AF;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+  padding: 4px 6px 6px;
+}
+.topbar-logout-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #EF4444;
+  background: transparent;
+  border: none;
+  padding: 8px 7px;
+  border-radius: 9px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.topbar-logout-btn svg { width: 13px; height: 13px; }
+.topbar-logout-btn:hover { background: #FEF2F2; }
+
+/* Sidebar / app-main responsive sizing (matches Quotation breakpoints) */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .app-main { padding-left: 20px !important; padding-right: 20px !important; }
+  .sidebar.expanded { width: 226px; }
+}
+@media (max-width: 767px) {
+  .app-main { padding-left: 14px !important; padding-right: 14px !important; padding-top: 14px !important; }
+  .sidebar { width: 64px; }
+  .sidebar.expanded { width: 216px; }
+  .nav-item { width: 34px; height: 34px; }
+  .nav-item svg { width: 15px; height: 15px; }
+  #sidebarToggle { top: 20px; }
+}
+@media (max-width: 480px) {
+  .app-main { padding-left: 10px !important; padding-right: 10px !important; }
+  .sidebar { width: 56px; }
+  .sidebar.expanded { width: 196px; }
+  .nav-item { width: 30px; height: 30px; border-radius: 9px; }
+  .nav-item svg { width: 13px; height: 13px; }
+  .nav-list { gap: 6px !important; }
+  #sidebarToggle { width: 22px; height: 22px; right: -10px; }
+}
+@media (max-width: 360px) {
+  .app-main { padding-left: 8px !important; padding-right: 8px !important; }
+  .sidebar { width: 50px; }
+  .nav-item { width: 28px; height: 28px; }
+  .nav-item svg { width: 12px; height: 12px; }
 }
 
 /* ---------- Page header ---------- */
@@ -65,6 +239,7 @@
   cursor: pointer;
   transition: background 0.15s, transform 0.1s;
   font-family: inherit;
+  white-space: nowrap;
 }
 .btn-primary:hover { background: var(--brand-500); }
 .btn-primary:active { transform: scale(0.98); }
@@ -84,6 +259,7 @@
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
   font-family: inherit;
+  white-space: nowrap;
 }
 .btn-secondary:hover { border-color: var(--brand-300); background: var(--brand-50); }
 .btn-secondary svg { width: 14px; height: 14px; }
@@ -119,6 +295,7 @@
   font-weight: 500;
   cursor: pointer;
   font-family: inherit;
+  white-space: nowrap;
 }
 .btn-export:hover { border-color: var(--brand-300); }
 .btn-export svg { width: 14px; height: 14px; }
@@ -599,7 +776,7 @@ textarea.field-input { resize: vertical; min-height: 64px; }
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 10, 12, 0.45);
+  background: rgba(90, 0, 24, 0.35);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -706,6 +883,15 @@ textarea.field-input { resize: vertical; min-height: 64px; }
 /* ---------- Utility ---------- */
 .hidden { display: none !important; }
 
+/* ---------- Scrollbars (matches Quotation) ---------- */
+* { scrollbar-width: thin; scrollbar-color: var(--brand-200) transparent; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--brand-200); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: var(--brand-600); }
+.app-main::-webkit-scrollbar { width: 5px; }
+.app-main::-webkit-scrollbar-thumb { background: var(--brand-300); border-radius: 10px; }
+
 /* ---------- Responsive table cards on mobile ---------- */
 @media (max-width: 720px) {
   .data-table thead { display: none; }
@@ -728,4 +914,57 @@ textarea.field-input { resize: vertical; min-height: 64px; }
     margin-right: 12px;
   }
   .row-actions { justify-content: flex-start; }
+}
+
+/* ============================================================
+   RESPONSIVE — Customer Management specific components
+   (tablet / phone / small phone, matching Quotation granularity)
+   ============================================================ */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .modal-panel { max-width: 92vw !important; }
+}
+
+@media (max-width: 767px) {
+  .cm-header { flex-direction: column; align-items: stretch; }
+  .cm-header-actions { width: 100%; justify-content: space-between; }
+  .cm-header-actions .btn-primary { flex: 1; justify-content: center; }
+  .export-wrap { flex: 1; }
+  .export-wrap .btn-export { width: 100%; justify-content: center; }
+
+  .filter-row { flex-direction: column; align-items: stretch; }
+  .filter-group,
+  .filter-group.grow { min-width: 0; width: 100%; }
+
+  .modal-body { grid-template-columns: 1fr; }
+  .field-group.full { grid-column: 1 / -1; }
+
+  .table-footer { flex-direction: column; align-items: stretch; text-align: center; }
+  #paginationControls { justify-content: center; }
+
+  .followup-head-row { flex-direction: column; align-items: stretch; }
+  .followup-head-row .btn-primary { justify-content: center; }
+}
+
+@media (max-width: 480px) {
+  .cm-title { font-size: 16px; }
+  .cm-subtitle { font-size: 11px; }
+  .btn-primary, .btn-secondary, .btn-export, .btn-danger {
+    padding: 7px 11px;
+    font-size: 12px;
+  }
+  .summary-card { padding: 12px; gap: 10px; }
+  .summary-icon { width: 34px; height: 34px; }
+  .summary-icon svg { width: 17px; height: 17px; }
+  .summary-count { font-size: 18px; }
+  .table-card-head { padding: 12px 14px 8px; }
+  .modal-overlay { align-items: flex-end; padding: 0; }
+  .modal-panel { max-height: 96vh; border-radius: 16px 16px 0 0; }
+  .modal-header { padding: 14px 14px 10px; }
+  .modal-body { padding: 14px; }
+  .modal-footer { padding: 10px 14px 14px; }
+}
+
+@media (max-width: 360px) {
+  .summary-grid { gap: 10px; }
+  .field-input { font-size: 12px; padding: 7px 10px; }
 }
