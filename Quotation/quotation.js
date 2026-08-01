@@ -1,20 +1,29 @@
 /* ============================================================
    Quotation Management — Complete Module
    VKM Brick & Block Machinery (Vaishnokripa Mercantile)
-   Solar/referral module fully removed. Calculations verified
-   against the real invoice (Flyash Bricks Machine order, 22-06-2026):
-     Items Subtotal ₹51,60,000  → GST18% ₹9,28,800 → Grand Total ₹60,88,800
 
-   UPDATED: Product catalog now also includes the full machine range
-   from the two rate-card references supplied by VKM:
-     - "Machine Specification" sheet (Nano / Double Station Nano /
-       Budget / Metal-to-Metal machines)
-     - "Flyash Brick Machine Specification" sheet (Budget, Rotary,
-       VK001–VK005 fully-automatic range)
-   Each machine entry now also carries production capacity, pressure,
-   power, shed size and labor requirement so the wizard can show a
-   live "Site Requirements" check in Step 2 against what the customer
-   told us about their site in Step 1.
+   UPDATED (frontend-fix pass):
+   - Product catalog now synced live from Product Management via
+     localStorage key PRODUCT_CATALOG_STORAGE_KEY (Task 1). Product
+     Management must write the same key using
+     syncProductCatalogToStorage() after every Add/Edit/Delete/Stock
+     change so this module always reflects the latest catalog with
+     no page refresh beyond reopening the wizard.
+   - Step 1 trimmed to Customer Name, Primary/Secondary Mobile,
+     optional Email, Address/City/State/Pincode, optional-but-
+     validated GSTIN. Company Name, Customer Type, "How Did They
+     Find Us?" and the whole Site Readiness sub-section were removed.
+   - Step 3 cost breakdown is exactly Transport / Loading / Other.
+   - GST calc now switches CGST+SGST vs IGST based on customer state
+     vs company state, and returns an explicit gstBreakup object.
+   - Quote numbering persists in localStorage (stopgap until a
+     backend issues sequential numbers — see nextQuoteNo()).
+   - Terms & Conditions are pulled from terms-config.js
+     (TERMS_CONFIG / buildTermsText) instead of being retyped per
+     quotation; only { templateVersion, categoriesApplied } is
+     stored on the record.
+   - Generated PDF includes a product image gallery at the end,
+     built from each item's linked catalog product's imageUrl.
    ============================================================ */
 
 (function () {
@@ -41,122 +50,41 @@
     }
   };
 
-  const DEFAULT_TERMS = `GST : Extra.\nDelivery After Full and Final Payment.\nAll Cheques & Drafts in favour of Vaishnokripa Mercantile.\nJurisdiction Agra only.\nFreight Extra.`;
-
   // ============================================================
-  // PRODUCT CATALOG — synced from Product Management (localStorage)
-  // Fallback list uses the exact rates from the real VKM invoice,
-  // PLUS the full machine range from the two rate-card PDFs
-  // ("Machine Specification" + "Flyash Brick Machine Specification").
-  //
-  // Extra fields on machine entries (all optional / display-only):
-  //   production : output per 8-hour shift
-  //   pressure   : hydraulic pressure rating
-  //   power      : connected load (HP)
-  //   oilTank    : hydraulic oil tank capacity
-  //   shedSize   : shed / open-yard space the machine needs
-  //   labor      : number of laborers required to run it
-  //   vibration  : whether the model has a vibration table (Yes/No)
+  // PRODUCT CATALOG — synced live from Product Management
+  // (Task 1: Product Management writes this same key via
+  // syncProductCatalogToStorage() after every mutation.)
   // ============================================================
   const PRODUCT_CATALOG_STORAGE_KEY = 'vkmProductCatalog';
 
   const FALLBACK_PRODUCTS = [
-    // ---- Items from the real reference invoice (SQ-1001) ----
-    { id: 'fb1',  name: 'FLYASH BRICKS MACHINE 10 CAVITY', category: 'Machine',   brand: 'VKM', spec: '180T Pressure, Auto Feed, PLC', unit: 'Nos',  price: 1900000, status: 'Active' },
-    { id: 'fb2',  name: 'PAN MIXER 500 KG',                category: 'Component', brand: 'VKM', spec: '1-Stage Gear Box, Replaceable Rollers', unit: 'Nos', price: 500000, status: 'Active' },
-    { id: 'fb3',  name: 'CONVEYOR BELT 22 Feet',            category: 'Component', brand: 'VKM', spec: 'JK Make, 450mm width, 2HP Motor', unit: 'Nos', price: 350000, status: 'Active' },
-    { id: 'fb4',  name: 'POWER PACK SYSTEM',                category: 'Component', brand: 'VKM', spec: '450 Ltr, 10 HP, Yuken/Polyhydron pump', unit: 'Nos', price: 450000, status: 'Active' },
-    { id: 'fb5',  name: 'PLC PANEL FULLY AI BASED',         category: 'Component', brand: 'VKM', spec: 'Hydraulic speed & vibrator control', unit: 'Nos', price: 400000, status: 'Active' },
-    { id: 'fb6',  name: 'BRICK TROLLY',                     category: 'Accessory', brand: 'VKM', spec: '', unit: 'Nos', price: 7500, status: 'Active' },
-    { id: 'fb7',  name: 'MATERIAL TROLLY',                  category: 'Accessory', brand: 'VKM', spec: '', unit: 'Nos', price: 9000, status: 'Active' },
-    { id: 'fb8',  name: 'VIBRATOR TABLE',                   category: 'Accessory', brand: 'VKM', spec: '', unit: 'Nos', price: 90000, status: 'Active' },
-    { id: 'fb9',  name: 'MIXER MACHINE WITH MOTOR',         category: 'Machine',   brand: 'VKM', spec: '', unit: 'Nos', price: 150000, status: 'Active' },
-    { id: 'fb10', name: 'COLOUR MIXER',                     category: 'Machine',   brand: 'VKM', spec: '', unit: 'Nos', price: 90000, status: 'Active' },
-    { id: 'fb11', name: 'MOULD ZIG ZAG WITH DUMBLE',        category: 'Accessory', brand: 'VKM', spec: '', unit: 'Piece', price: 55, status: 'Active' },
-    { id: 'fb12', name: 'CHEMICAL DRUM',                    category: 'Accessory', brand: 'VKM', spec: '', unit: 'Drum', price: 12000, status: 'Active' },
-    { id: 'fb13', name: 'COLOUR BAG RED & YELLOW',          category: 'Accessory', brand: 'VKM', spec: '', unit: 'Bag', price: 7500, status: 'Active' },
-    { id: 'fb14', name: 'PLY BOARD 8X4',                    category: 'Accessory', brand: 'VKM', spec: '', unit: 'Sheet', price: 2500, status: 'Active' },
+    { id: 'fb1',  name: 'FLYASH BRICKS MACHINE 10 CAVITY', category: 'Brick Machine', brand: 'VKM', spec: '180T Pressure, Auto Feed, PLC', unit: 'Nos',  price: 1900000, status: 'Active', hsnCode: '84743100', gstRate: 18, sectionCode: 'A', imageUrl: '' },
+    { id: 'fb2',  name: 'PAN MIXER 500 KG',                category: 'Component', brand: 'VKM', spec: '1-Stage Gear Box, Replaceable Rollers', unit: 'Nos', price: 500000, status: 'Active', hsnCode: '84743100', gstRate: 18, sectionCode: 'B', imageUrl: '' },
+    { id: 'fb3',  name: 'CONVEYOR BELT 22 Feet',            category: 'Component', brand: 'VKM', spec: 'JK Make, 450mm width, 2HP Motor', unit: 'Nos', price: 350000, status: 'Active', hsnCode: '84283900', gstRate: 18, sectionCode: 'B', imageUrl: '' },
+    { id: 'fb4',  name: 'POWER PACK SYSTEM',                category: 'Component', brand: 'VKM', spec: '450 Ltr, 10 HP, Yuken/Polyhydron pump', unit: 'Nos', price: 450000, status: 'Active', hsnCode: '84129000', gstRate: 18, sectionCode: 'A', powerHP: 10, imageUrl: '' },
+    { id: 'fb5',  name: 'PLC PANEL FULLY AI BASED',         category: 'Component', brand: 'VKM', spec: 'Hydraulic speed & vibrator control', unit: 'Nos', price: 400000, status: 'Active', hsnCode: '85371000', gstRate: 18, sectionCode: 'A', imageUrl: '' },
+    { id: 'fb6',  name: 'BRICK TROLLY',                     category: 'Accessory', brand: 'VKM', spec: '', unit: 'Nos', price: 7500, status: 'Active', hsnCode: '', gstRate: 18, sectionCode: 'D', imageUrl: '' },
+    { id: 'fb7',  name: 'MATERIAL TROLLY',                  category: 'Accessory', brand: 'VKM', spec: '', unit: 'Nos', price: 9000, status: 'Active', hsnCode: '', gstRate: 18, sectionCode: 'D', imageUrl: '' },
+    { id: 'fb8',  name: 'VIBRATOR TABLE',                   category: 'Accessory', brand: 'VKM', spec: '', unit: 'Nos', price: 90000, status: 'Active', hsnCode: '', gstRate: 18, sectionCode: 'D', imageUrl: '' },
+    { id: 'fb9',  name: 'MIXER MACHINE WITH MOTOR',         category: 'Brick Machine', brand: 'VKM', spec: '', unit: 'Nos', price: 150000, status: 'Active', hsnCode: '', gstRate: 18, sectionCode: 'B', imageUrl: '' },
+    { id: 'fb10', name: 'COLOUR MIXER',                     category: 'Brick Machine', brand: 'VKM', spec: '', unit: 'Nos', price: 90000, status: 'Active', hsnCode: '', gstRate: 18, sectionCode: 'B', imageUrl: '' },
+    { id: 'fb11', name: 'MOULD ZIG ZAG WITH DUMBLE',        category: 'Mould', brand: 'VKM', spec: '', unit: 'Piece', price: 55, status: 'Active', hsnCode: '', gstRate: 18, sectionCode: 'E', imageUrl: '' },
+    { id: 'fb12', name: 'CHEMICAL DRUM',                    category: 'Accessory', brand: 'VKM', spec: '', unit: 'Drum', price: 12000, status: 'Active', hsnCode: '', gstRate: 18, sectionCode: 'D', imageUrl: '' },
+    { id: 'fb13', name: 'COLOUR BAG RED & YELLOW',          category: 'Accessory', brand: 'VKM', spec: '', unit: 'Bag', price: 7500, status: 'Active', hsnCode: '', gstRate: 18, sectionCode: 'D', imageUrl: '' },
+    { id: 'fb14', name: 'PLY BOARD 8X4',                    category: 'Accessory', brand: 'VKM', spec: '', unit: 'Sheet', price: 2500, status: 'Active', hsnCode: '', gstRate: 18, sectionCode: 'D', imageUrl: '' },
 
-    // ---- "Machine Specification" rate card (Nano range) ----
-    {
-      id: 'ms1', name: 'NANO MACHINE', category: 'Machine', brand: 'VKM',
-      spec: '1200-1400 blocks/8hr, 25T pressure, 100L oil tank, 10HP (5+5), incl. 300kg Pan Mixer',
-      unit: 'Nos', price: 515000, status: 'Active',
-      production: '1200-1400 blocks / 8 hr', pressure: '25 Ton', power: '10 HP (5+5)',
-      oilTank: '100 Ltr', shedSize: '15x20 ft', labor: 4
-    },
-    {
-      id: 'ms2', name: 'DOUBLE STATION NANO MACHINE', category: 'Machine', brand: 'VKM',
-      spec: '2400-2800 blocks/8hr, 25T pressure, 170L oil tank, 17.5HP (10+7.5), incl. 500kg Pan Mixer',
-      unit: 'Nos', price: 715000, status: 'Active',
-      production: '2400-2800 blocks / 8 hr', pressure: '25 Ton', power: '17.5 HP (10+7.5)',
-      oilTank: '170 Ltr', shedSize: '15x20 ft', labor: 6
-    },
-    {
-      id: 'ms3', name: 'BUDGET MACHINE (NANO RANGE)', category: 'Machine', brand: 'VKM',
-      spec: '2500-2800 blocks/8hr, 40T pressure, 170L oil tank, 10HP (5+5), incl. 500kg Pan Mixer',
-      unit: 'Nos', price: 800000, status: 'Active',
-      production: '2500-2800 blocks / 8 hr', pressure: '40 Ton', power: '10 HP (5+5)',
-      oilTank: '170 Ltr', shedSize: '12x15 ft', labor: 5
-    },
-    {
-      id: 'ms4', name: 'METAL TO METAL MACHINE', category: 'Machine', brand: 'VKM',
-      spec: '3500-3800 blocks/8hr, 60T pressure, 300L oil tank, 17HP (7.5+7.5+2), incl. 500kg Pan Mixer + 20ft Conveyor',
-      unit: 'Nos', price: 1325000, status: 'Active',
-      production: '3500-3800 blocks / 8 hr', pressure: '60 Ton', power: '17 HP (7.5+7.5+2)',
-      oilTank: '300 Ltr', shedSize: '30x20 ft', labor: 6
-    },
+    { id: 'ms1', name: 'NANO MACHINE', category: 'Brick Machine', brand: 'VKM', spec: '1200-1400 blocks/8hr, 25T pressure, 100L oil tank, 10HP (5+5), incl. 300kg Pan Mixer', unit: 'Nos', price: 515000, status: 'Active', production: '1200-1400 blocks / 8 hr', pressure: '25 Ton', power: '10 HP (5+5)', powerHP: 10, oilTank: '100 Ltr', shedSize: '15x20 ft', labor: 4, hsnCode: '84743100', gstRate: 18, sectionCode: 'A', imageUrl: '' },
+    { id: 'ms2', name: 'DOUBLE STATION NANO MACHINE', category: 'Brick Machine', brand: 'VKM', spec: '2400-2800 blocks/8hr, 25T pressure, 170L oil tank, 17.5HP (10+7.5), incl. 500kg Pan Mixer', unit: 'Nos', price: 715000, status: 'Active', production: '2400-2800 blocks / 8 hr', pressure: '25 Ton', power: '17.5 HP (10+7.5)', powerHP: 17.5, oilTank: '170 Ltr', shedSize: '15x20 ft', labor: 6, hsnCode: '84743100', gstRate: 18, sectionCode: 'A', imageUrl: '' },
+    { id: 'ms3', name: 'BUDGET MACHINE (NANO RANGE)', category: 'Brick Machine', brand: 'VKM', spec: '2500-2800 blocks/8hr, 40T pressure, 170L oil tank, 10HP (5+5), incl. 500kg Pan Mixer', unit: 'Nos', price: 800000, status: 'Active', production: '2500-2800 blocks / 8 hr', pressure: '40 Ton', power: '10 HP (5+5)', powerHP: 10, oilTank: '170 Ltr', shedSize: '12x15 ft', labor: 5, hsnCode: '84743100', gstRate: 18, sectionCode: 'A', imageUrl: '' },
+    { id: 'ms4', name: 'METAL TO METAL MACHINE', category: 'Brick Machine', brand: 'VKM', spec: '3500-3800 blocks/8hr, 60T pressure, 300L oil tank, 17HP (7.5+7.5+2), incl. 500kg Pan Mixer + 20ft Conveyor', unit: 'Nos', price: 1325000, status: 'Active', production: '3500-3800 blocks / 8 hr', pressure: '60 Ton', power: '17 HP (7.5+7.5+2)', powerHP: 17, oilTank: '300 Ltr', shedSize: '30x20 ft', labor: 6, hsnCode: '84743100', gstRate: 18, sectionCode: 'A', imageUrl: '' },
 
-    // ---- "Flyash Brick Machine Specification" rate card ----
-    {
-      id: 'fbm1', name: 'FLYASH BRICK BUDGET MACHINE', category: 'Machine', brand: 'VKM',
-      spec: '4500-5000 bricks/8hr, 40T pressure, 22 sec/stock cycle, 160L oil tank, 10HP, Full Set Up incl.',
-      unit: 'Nos', price: 625000, status: 'Active',
-      production: '4500-5000 bricks / 8 hr', pressure: '40 Ton', power: '10 HP',
-      oilTank: '160 Ltr', shedSize: '20x15 ft', labor: 5, vibration: 'No'
-    },
-    {
-      id: 'fbm2', name: 'ROTARY TYPE MACHINE', category: 'Machine', brand: 'VKM',
-      spec: '14000-15000 bricks/8hr, 40T pressure, 200L oil tank, 20.5HP, 30 KVA genset, incl. 500kg Pan Mixer',
-      unit: 'Nos', price: 1250000, status: 'Active',
-      production: '14000-15000 bricks / 8 hr', pressure: '40 Ton', power: '20.5 HP',
-      oilTank: '200 Ltr', shedSize: '15x35 ft', labor: 7, vibration: 'No'
-    },
-    {
-      id: 'fbm3', name: 'VK001 — 4 BRICK METAL TO METAL', category: 'Machine', brand: 'VKM',
-      spec: '8000+ bricks/8hr, 120T pressure, 300L oil tank, 17HP, 25 KVA genset, incl. 500kg Pan Mixer + 20ft Conveyor, Pallet 14x24',
-      unit: 'Nos', price: 1200000, status: 'Active',
-      production: '8000+ bricks / 8 hr', pressure: '120 Ton', power: '17 HP',
-      oilTank: '300 Ltr', shedSize: '40x60 ft (Height 15 ft)', labor: 7, vibration: 'No'
-    },
-    {
-      id: 'fbm4', name: 'VK002 — 6 BRICK METAL TO METAL', category: 'Machine', brand: 'VKM',
-      spec: '12000+ bricks/8hr, 140T pressure, 400L oil tank, 21HP, 30 KVA genset, incl. 700kg Pan Mixer + 20ft Conveyor, Pallet 14x32',
-      unit: 'Nos', price: 1400000, status: 'Active',
-      production: '12000+ bricks / 8 hr', pressure: '140 Ton', power: '21 HP',
-      oilTank: '400 Ltr', shedSize: '40x60 ft (Height 15 ft)', labor: 7, vibration: 'No'
-    },
-    {
-      id: 'fbm5', name: 'VK003 — 8 BRICK FULLY AUTOMATIC', category: 'Machine', brand: 'VKM',
-      spec: '12000+ bricks/8hr, 150T pressure, 400L oil tank, 26.5HP, 45 KVA genset, incl. 500kg (2 Pcs) Pan Mixer + 20ft Conveyor, Pallet 24x24, Vibration Yes',
-      unit: 'Nos', price: 1600000, status: 'Active',
-      production: '12000+ bricks / 8 hr', pressure: '150 Ton', power: '26.5 HP',
-      oilTank: '400 Ltr', shedSize: '40x60 ft (Height 15 ft)', labor: 7, vibration: 'Yes'
-    },
-    {
-      id: 'fbm6', name: 'VK004 — 10 BRICK FULLY AUTOMATIC', category: 'Machine', brand: 'VKM',
-      spec: '14000+ bricks/8hr, 170T pressure, 400L oil tank, 27.5HP, 45 KVA genset, incl. 700kg (2 Pcs) Pan Mixer + 28ft Conveyor, Pallet 24x28, Vibration Yes',
-      unit: 'Nos', price: 1800000, status: 'Active',
-      production: '14000+ bricks / 8 hr', pressure: '170 Ton', power: '27.5 HP',
-      oilTank: '400 Ltr', shedSize: '40x60 ft (Height 15 ft)', labor: 7, vibration: 'Yes'
-    },
-    {
-      id: 'fbm7', name: 'VK005 — 12 BRICK FULLY AUTOMATIC', category: 'Machine', brand: 'VKM',
-      spec: '16000+ bricks/8hr, 200T pressure, 450L oil tank, 30HP, 62 KVA genset, incl. 700kg (2 Pcs) Pan Mixer + 28ft Conveyor, Pallet 32x24, Vibration Yes',
-      unit: 'Nos', price: 2000000, status: 'Active',
-      production: '16000+ bricks / 8 hr', pressure: '200 Ton', power: '30 HP',
-      oilTank: '450 Ltr', shedSize: '40x60 ft (Height 15 ft)', labor: 7, vibration: 'Yes'
-    }
+    { id: 'fbm1', name: 'FLYASH BRICK BUDGET MACHINE', category: 'Brick Machine', brand: 'VKM', spec: '4500-5000 bricks/8hr, 40T pressure, 22 sec/stock cycle, 160L oil tank, 10HP, Full Set Up incl.', unit: 'Nos', price: 625000, status: 'Active', production: '4500-5000 bricks / 8 hr', pressure: '40 Ton', power: '10 HP', powerHP: 10, oilTank: '160 Ltr', shedSize: '20x15 ft', labor: 5, vibration: 'No', hsnCode: '84743100', gstRate: 18, sectionCode: 'A', imageUrl: '' },
+    { id: 'fbm2', name: 'ROTARY TYPE MACHINE', category: 'Brick Machine', brand: 'VKM', spec: '14000-15000 bricks/8hr, 40T pressure, 200L oil tank, 20.5HP, 30 KVA genset, incl. 500kg Pan Mixer', unit: 'Nos', price: 1250000, status: 'Active', production: '14000-15000 bricks / 8 hr', pressure: '40 Ton', power: '20.5 HP', powerHP: 20.5, oilTank: '200 Ltr', shedSize: '15x35 ft', labor: 7, vibration: 'No', hsnCode: '84743100', gstRate: 18, sectionCode: 'A', imageUrl: '' },
+    { id: 'fbm3', name: 'VK001 — 4 BRICK METAL TO METAL', category: 'Brick Machine', brand: 'VKM', spec: '8000+ bricks/8hr, 120T pressure, 300L oil tank, 17HP, 25 KVA genset, incl. 500kg Pan Mixer + 20ft Conveyor, Pallet 14x24', unit: 'Nos', price: 1200000, status: 'Active', production: '8000+ bricks / 8 hr', pressure: '120 Ton', power: '17 HP', powerHP: 17, oilTank: '300 Ltr', shedSize: '40x60 ft (Height 15 ft)', labor: 7, vibration: 'No', hsnCode: '84743100', gstRate: 18, sectionCode: 'A', imageUrl: '' },
+    { id: 'fbm4', name: 'VK002 — 6 BRICK METAL TO METAL', category: 'Brick Machine', brand: 'VKM', spec: '12000+ bricks/8hr, 140T pressure, 400L oil tank, 21HP, 30 KVA genset, incl. 700kg Pan Mixer + 20ft Conveyor, Pallet 14x32', unit: 'Nos', price: 1400000, status: 'Active', production: '12000+ bricks / 8 hr', pressure: '140 Ton', power: '21 HP', powerHP: 21, oilTank: '400 Ltr', shedSize: '40x60 ft (Height 15 ft)', labor: 7, vibration: 'No', hsnCode: '84743100', gstRate: 18, sectionCode: 'A', imageUrl: '' },
+    { id: 'fbm5', name: 'VK003 — 8 BRICK FULLY AUTOMATIC', category: 'Brick Machine', brand: 'VKM', spec: '12000+ bricks/8hr, 150T pressure, 400L oil tank, 26.5HP, 45 KVA genset, incl. 500kg (2 Pcs) Pan Mixer + 20ft Conveyor, Pallet 24x24, Vibration Yes', unit: 'Nos', price: 1600000, status: 'Active', production: '12000+ bricks / 8 hr', pressure: '150 Ton', power: '26.5 HP', powerHP: 26.5, oilTank: '400 Ltr', shedSize: '40x60 ft (Height 15 ft)', labor: 7, vibration: 'Yes', hsnCode: '84743100', gstRate: 18, sectionCode: 'A', imageUrl: '' },
+    { id: 'fbm6', name: 'VK004 — 10 BRICK FULLY AUTOMATIC', category: 'Brick Machine', brand: 'VKM', spec: '14000+ bricks/8hr, 170T pressure, 400L oil tank, 27.5HP, 45 KVA genset, incl. 700kg (2 Pcs) Pan Mixer + 28ft Conveyor, Pallet 24x28, Vibration Yes', unit: 'Nos', price: 1800000, status: 'Active', production: '14000+ bricks / 8 hr', pressure: '170 Ton', power: '27.5 HP', powerHP: 27.5, oilTank: '400 Ltr', shedSize: '40x60 ft (Height 15 ft)', labor: 7, vibration: 'Yes', hsnCode: '84743100', gstRate: 18, sectionCode: 'A', imageUrl: '' },
+    { id: 'fbm7', name: 'VK005 — 12 BRICK FULLY AUTOMATIC', category: 'Brick Machine', brand: 'VKM', spec: '16000+ bricks/8hr, 200T pressure, 450L oil tank, 30HP, 62 KVA genset, incl. 700kg (2 Pcs) Pan Mixer + 28ft Conveyor, Pallet 32x24, Vibration Yes', unit: 'Nos', price: 2000000, status: 'Active', production: '16000+ bricks / 8 hr', pressure: '200 Ton', power: '30 HP', powerHP: 30, oilTank: '450 Ltr', shedSize: '40x60 ft (Height 15 ft)', labor: 7, vibration: 'Yes', hsnCode: '84743100', gstRate: 18, sectionCode: 'A', imageUrl: '' }
   ];
 
   function getProductCatalog() {
@@ -171,6 +99,10 @@
       }
     } catch (_) { /* fall through to fallback list */ }
     return FALLBACK_PRODUCTS;
+  }
+
+  function findCatalogProduct(catalog, productId) {
+    return catalog.find(c => String(c.id) === String(productId));
   }
 
   // ============================================================
@@ -221,40 +153,103 @@
     setTimeout(() => { if (toast.parentNode) toast.remove(); }, 4000);
   }
 
+  // Normalizes a state name for comparison (case/whitespace insensitive)
+  function normState(s) { return String(s || '').trim().toLowerCase(); }
+
   /**
    * Core money math — kept in one place so every screen (wizard preview,
    * saved list, edit modal, invoice) uses the identical formula.
-   *   subtotal  = items + installation + transport + other charges
-   *   discount  = % of subtotal OR a flat ₹ amount
-   *   taxable   = subtotal - discount        (never negative)
-   *   SGST/CGST = taxable * (gst% / 2) / 100  each
-   *   total     = taxable + SGST + CGST
+   *   subtotal   = items + transport + loading + other charges
+   *   discount   = % of subtotal OR a flat ₹ amount
+   *   taxable    = subtotal - discount        (never negative)
+   *   Same state  -> CGST + SGST split (half rate each)
+   *   Diff state  -> IGST (full rate), CGST/SGST = 0
+   *   total      = taxable + tax
    */
-  function computeTotals(itemsTotal, costs, gstPercent, discountType, discountValue) {
+  function computeTotals(itemsTotal, costs, gstPercent, discountType, discountValue, customerState) {
     const itemsTotalN = Number(itemsTotal) || 0;
-    const installation = Number(costs.installation) || 0;
     const transport = Number(costs.transport) || 0;
+    const loading = Number(costs.loading) || 0;
     const other = Number(costs.other) || 0;
     const gst = Number(gstPercent) || 0;
     const discVal = Number(discountValue) || 0;
 
-    const subtotal = itemsTotalN + installation + transport + other;
+    const subtotal = itemsTotalN + transport + loading + other;
     const discountAmount = discountType === 'percent'
       ? subtotal * (Math.min(Math.max(discVal, 0), 100) / 100)
       : Math.min(Math.max(discVal, 0), subtotal);
     const taxable = Math.max(0, subtotal - discountAmount);
-    const sgst = taxable * (gst / 2 / 100);
-    const cgst = taxable * (gst / 2 / 100);
-    const total = taxable + sgst + cgst;
 
-    return { subtotal, discountAmount, taxable, sgst, cgst, total };
+    const isInterState = normState(customerState) !== normState(COMPANY.state) && !!normState(customerState);
+
+    let cgstPercent = 0, sgstPercent = 0, igstPercent = 0;
+    let cgstAmount = 0, sgstAmount = 0, igstAmount = 0;
+
+    if (isInterState) {
+      igstPercent = gst;
+      igstAmount = taxable * (gst / 100);
+    } else {
+      cgstPercent = gst / 2;
+      sgstPercent = gst / 2;
+      cgstAmount = taxable * (cgstPercent / 100);
+      sgstAmount = taxable * (sgstPercent / 100);
+    }
+
+    const totalTax = cgstAmount + sgstAmount + igstAmount;
+    const total = taxable + totalTax;
+
+    return {
+      subtotal, discountAmount, taxable,
+      isInterState,
+      sgst: sgstAmount, cgst: cgstAmount, // kept for backward-compat display
+      gstBreakup: { cgstPercent, cgstAmount, sgstPercent, sgstAmount, igstPercent, igstAmount },
+      total
+    };
+  }
+
+  // ============================================================
+  // TERMS & CONDITIONS (Task 3 — terms-config.js)
+  // ============================================================
+  function buildTermsText(items) {
+    const cfg = window.TERMS_CONFIG || { version: 'DEFAULT_TC_V1', base: { english: [], hindi: [] }, categoryExtras: {} };
+    const catalog = getProductCatalog();
+
+    const categories = [...new Set((items || []).map(it => {
+      if (it.category) return it.category;
+      const p = findCatalogProduct(catalog, it.productId);
+      return p ? p.category : null;
+    }).filter(Boolean))];
+
+    let english = [...(cfg.base?.english || [])];
+    let hindi = [...(cfg.base?.hindi || [])];
+
+    categories.forEach(cat => {
+      const extra = cfg.categoryExtras?.[cat];
+      if (extra) {
+        if (extra.english) english = english.concat(extra.english);
+        if (extra.hindi) hindi = hindi.concat(extra.hindi);
+      }
+    });
+
+    return { version: cfg.version || 'DEFAULT_TC_V1', english, hindi, categoriesApplied: categories };
   }
 
   // ============================================================
   // QUOTATION DATA MODEL
   // ============================================================
-  let quoteCounter = 1000;
-  function nextQuoteNo() { quoteCounter += 1; return `SQ-${quoteCounter}`; }
+  const QUOTE_COUNTER_STORAGE_KEY = 'quoteCounter';
+
+  // NOTE: localStorage-based counter is a STOPGAP ONLY. Once a backend
+  // exists, quote numbers must be generated server-side (sequential,
+  // race-condition-safe) — this client-side version can still collide
+  // across two browsers/tabs used at the same time.
+  function nextQuoteNo() {
+    let counter = parseInt(localStorage.getItem(QUOTE_COUNTER_STORAGE_KEY), 10);
+    if (!Number.isFinite(counter)) counter = 1000;
+    counter += 1;
+    try { localStorage.setItem(QUOTE_COUNTER_STORAGE_KEY, String(counter)); } catch (_) { /* ignore quota errors */ }
+    return `SQ-${counter}`;
+  }
 
   let quotations = [];
   let wizardItems = [];
@@ -270,17 +265,14 @@
       quoteNo: nextQuoteNo(),
       date: new Date().toISOString().slice(0, 10),
       status: 'Pending',
-      customer: { name: '', company: '', mobile: '', email: '', address: '', city: '', state: '', pincode: '', gst: '' },
-       customerType: '',
-      siteType: '',
+      customer: { name: '', mobilePrimary: '', mobileSecondary: '', email: '', address: '', city: '', state: '', pincode: '', gst: '' },
       deliveryTimeline: '45 days from advance payment',
       items: [],
-      costs: { installation: 0, transport: 0, otherLabel: 'Other Charges', other: 0 },
+      costs: { transport: 0, loading: 0, otherLabel: 'Other Charges', other: 0 },
       gstPercent: 18,
       discountType: 'percent',
       discountValue: 0,
       bank: { ...COMPANY.bank },
-      terms: DEFAULT_TERMS,
       paymentTerms: { advance: 50, material: 25, installation: 15, balance: 10 },
       paymentType: 'full',
       validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
@@ -293,123 +285,117 @@
     if (overrides?.paymentTerms) merged.paymentTerms = { ...base.paymentTerms, ...overrides.paymentTerms };
 
     const itTotal = itemsSubtotal(merged.items);
-    const totals = computeTotals(itTotal, merged.costs, merged.gstPercent, merged.discountType, merged.discountValue);
+    const totals = computeTotals(itTotal, merged.costs, merged.gstPercent, merged.discountType, merged.discountValue, merged.customer.state);
     Object.assign(merged, totals);
     merged.itemsTotal = itTotal;
     merged.amount = Math.round(totals.total);
+    merged.termsAndConditions = merged.termsAndConditions || buildTermsText(merged.items);
 
     return merged;
   }
 
   // ============================================================
-  // SAMPLE QUOTATIONS (matches the real reference invoice for SQ-1001)
+  // SAMPLE QUOTATIONS
   // ============================================================
- // In generateSampleQuotations function, REPLACE the entire function with this:
+  function generateSampleQuotations() {
+    const q1 = makeQuotation({
+      customer: {
+        name: 'YASHPAL SINGH',
+        mobilePrimary: '6395840394',
+        mobileSecondary: '',
+        email: 'yashpal@example.com',
+        address: 'Shamshabad',
+        city: 'Agra',
+        state: 'Uttar Pradesh',
+        pincode: '282001'
+      },
+      items: [
+        { id: newItemId(), name: 'FLYASH BRICKS MACHINE 10 CAVITY', category: 'Brick Machine', qty: 1, rate: 1900000 },
+        { id: newItemId(), name: 'PAN MIXER 500 KG', category: 'Component', qty: 2, rate: 500000 },
+        { id: newItemId(), name: 'CONVEYOR BELT 22 Feet', category: 'Component', qty: 1, rate: 350000 },
+        { id: newItemId(), name: 'POWER PACK SYSTEM', category: 'Component', qty: 1, rate: 450000 },
+        { id: newItemId(), name: 'PLC PANEL FULLY AI BASED', category: 'Component', qty: 1, rate: 400000 },
+        { id: newItemId(), name: 'BRICK TROLLY', category: 'Accessory', qty: 6, rate: 7500 },
+        { id: newItemId(), name: 'MATERIAL TROLLY', category: 'Accessory', qty: 10, rate: 9000 },
+        { id: newItemId(), name: 'VIBRATOR TABLE', category: 'Accessory', qty: 1, rate: 90000 },
+        { id: newItemId(), name: 'MIXER MACHINE WITH MOTOR', category: 'Brick Machine', qty: 1, rate: 150000 },
+        { id: newItemId(), name: 'COLOUR MIXER', category: 'Brick Machine', qty: 1, rate: 90000 },
+        { id: newItemId(), name: 'MOULD ZIG ZAG WITH DUMBLE', category: 'Mould', qty: 5000, rate: 55 },
+        { id: newItemId(), name: 'CHEMICAL DRUM', category: 'Accessory', qty: 10, rate: 12000 },
+        { id: newItemId(), name: 'COLOUR BAG RED & YELLOW', category: 'Accessory', qty: 10, rate: 7500 },
+        { id: newItemId(), name: 'PLY BOARD 8X4', category: 'Accessory', qty: 50, rate: 2500 }
+      ],
+      status: 'Pending',
+      date: '2026-06-22',
+      deliveryTimeline: '45 days from advance payment'
+    });
+    q1.quoteNo = 'SQ-1001';
 
-function generateSampleQuotations() {
-  const q1 = makeQuotation({
-    customer: { 
-      name: 'YASHPAL SINGH', 
-      mobile: '6395840394', 
-      email: 'yashpal@example.com', 
-      address: 'Shamshabad', 
-      city: 'Agra', 
-      state: 'Uttar Pradesh', 
-      pincode: '282001',
-      customerType: 'Individual'
-    },
-    items: [
-      { id: newItemId(), name: 'FLYASH BRICKS MACHINE 10 CAVITY', qty: 1, rate: 1900000 },
-      { id: newItemId(), name: 'PAN MIXER 500 KG', qty: 2, rate: 500000 },
-      { id: newItemId(), name: 'CONVEYOR BELT 22 Feet', qty: 1, rate: 350000 },
-      { id: newItemId(), name: 'POWER PACK SYSTEM', qty: 1, rate: 450000 },
-      { id: newItemId(), name: 'PLC PANEL FULLY AI BASED', qty: 1, rate: 400000 },
-      { id: newItemId(), name: 'BRICK TROLLY', qty: 6, rate: 7500 },
-      { id: newItemId(), name: 'MATERIAL TROLLY', qty: 10, rate: 9000 },
-      { id: newItemId(), name: 'VIBRATOR TABLE', qty: 1, rate: 90000 },
-      { id: newItemId(), name: 'MIXER MACHINE WITH MOTOR', qty: 1, rate: 150000 },
-      { id: newItemId(), name: 'COLOUR MIXER', qty: 1, rate: 90000 },
-      { id: newItemId(), name: 'MOULD ZIG ZAG WITH DUMBLE', qty: 5000, rate: 55 },
-      { id: newItemId(), name: 'CHEMICAL DRUM', qty: 10, rate: 12000 },
-      { id: newItemId(), name: 'COLOUR BAG RED & YELLOW', qty: 10, rate: 7500 },
-      { id: newItemId(), name: 'PLY BOARD 8X4', qty: 50, rate: 2500 }
-    ],
-    status: 'Pending',
-    date: '2026-06-22',
-    siteType: 'Factory',
-    deliveryTimeline: '45 days from advance payment'
-  });
-  q1.quoteNo = 'SQ-1001';
+    const q2 = makeQuotation({
+      customer: {
+        name: 'Ramesh Traders',
+        mobilePrimary: '9876500001',
+        mobileSecondary: '',
+        email: 'ramesh@example.com',
+        address: 'MG Road',
+        city: 'Ahmedabad',
+        state: 'Gujarat',
+        pincode: '380001',
+        gst: '24ABCDE5678F1Z2'
+      },
+      items: [
+        { id: newItemId(), name: 'FLYASH BRICKS MACHINE 10 CAVITY', category: 'Brick Machine', qty: 1, rate: 1900000 },
+        { id: newItemId(), name: 'PAN MIXER 500 KG', category: 'Component', qty: 1, rate: 500000 }
+      ],
+      status: 'Accepted',
+      date: '2026-07-14'
+    });
+    q2.quoteNo = 'SQ-1002';
 
-  const q2 = makeQuotation({
-    customer: { 
-      name: 'Ramesh Traders', 
-      company: 'Ramesh Traders', 
-      mobile: '9876500001', 
-      email: 'ramesh@example.com', 
-      address: 'MG Road', 
-      city: 'Ahmedabad', 
-      state: 'Gujarat', 
-      pincode: '380001', 
-      gst: '24ABCDE5678F1Z2',
-      customerType: 'Company'
-    },
-    items: [
-      { id: newItemId(), name: 'FLYASH BRICKS MACHINE 10 CAVITY', qty: 1, rate: 1900000 },
-      { id: newItemId(), name: 'PAN MIXER 500 KG', qty: 1, rate: 500000 }
-    ],
-    status: 'Accepted',
-    date: '2026-07-14',
-    siteType: 'Own Land'
-  });
-  q2.quoteNo = 'SQ-1002';
+    const q3 = makeQuotation({
+      customer: {
+        name: 'Priya Nair',
+        mobilePrimary: '9876500002',
+        mobileSecondary: '',
+        email: 'priya@example.com',
+        address: 'Marine Drive',
+        city: 'Kochi',
+        state: 'Kerala',
+        pincode: '682001'
+      },
+      items: [
+        { id: newItemId(), name: 'CONVEYOR BELT 22 Feet', category: 'Component', qty: 2, rate: 350000 },
+        { id: newItemId(), name: 'VIBRATOR TABLE', category: 'Accessory', qty: 1, rate: 90000 }
+      ],
+      status: 'Rejected',
+      date: '2026-07-13'
+    });
+    q3.quoteNo = 'SQ-1003';
 
-  const q3 = makeQuotation({
-    customer: { 
-      name: 'Priya Nair', 
-      mobile: '9876500002', 
-      email: 'priya@example.com', 
-      address: 'Marine Drive', 
-      city: 'Kochi', 
-      state: 'Kerala', 
-      pincode: '682001',
-      customerType: 'Individual'
-    },
-    items: [
-      { id: newItemId(), name: 'CONVEYOR BELT 22 Feet', qty: 2, rate: 350000 },
-      { id: newItemId(), name: 'VIBRATOR TABLE', qty: 1, rate: 90000 }
-    ],
-    status: 'Rejected',
-    date: '2026-07-13',
-    siteType: 'Open Yard'
-  });
-  q3.quoteNo = 'SQ-1003';
+    const q4 = makeQuotation({
+      customer: {
+        name: 'Suresh Patel',
+        mobilePrimary: '9876500003',
+        mobileSecondary: '',
+        email: 'suresh@example.com',
+        address: 'Ring Road',
+        city: 'Rajkot',
+        state: 'Gujarat',
+        pincode: '360001'
+      },
+      items: [
+        { id: newItemId(), name: 'FLYASH BRICKS MACHINE 10 CAVITY', category: 'Brick Machine', qty: 1, rate: 1900000 },
+        { id: newItemId(), name: 'PAN MIXER 500 KG', category: 'Component', qty: 1, rate: 500000 },
+        { id: newItemId(), name: 'CONVEYOR BELT 22 Feet', category: 'Component', qty: 1, rate: 350000 },
+        { id: newItemId(), name: 'PLC PANEL FULLY AI BASED', category: 'Component', qty: 1, rate: 400000 }
+      ],
+      status: 'Pending',
+      date: '2026-07-12'
+    });
+    q4.quoteNo = 'SQ-1004';
 
-  const q4 = makeQuotation({
-    customer: { 
-      name: 'Suresh Patel', 
-      mobile: '9876500003', 
-      email: 'suresh@example.com', 
-      address: 'Ring Road', 
-      city: 'Rajkot', 
-      state: 'Gujarat', 
-      pincode: '360001',
-      customerType: 'Individual'
-    },
-    items: [
-      { id: newItemId(), name: 'FLYASH BRICKS MACHINE 10 CAVITY', qty: 1, rate: 1900000 },
-      { id: newItemId(), name: 'PAN MIXER 500 KG', qty: 1, rate: 500000 },
-      { id: newItemId(), name: 'CONVEYOR BELT 22 Feet', qty: 1, rate: 350000 },
-      { id: newItemId(), name: 'PLC PANEL FULLY AI BASED', qty: 1, rate: 400000 }
-    ],
-    status: 'Pending',
-    date: '2026-07-12',
-    siteType: 'Rented Shed'
-  });
-  q4.quoteNo = 'SQ-1004';
-
-  return [q1, q2, q3, q4];
-}
+    return [q1, q2, q3, q4];
+  }
 
   // ============================================================
   // DOM SHORTCUTS
@@ -496,24 +482,13 @@ function generateSampleQuotations() {
     return 'badge-pending';
   }
 
-  function refreshSiteTypeFilterOptions() {
-    const sel = $('#filter-sitetype');
-    if (!sel) return;
-    const current = sel.value;
-    const types = [...new Set(quotations.map(q => q.siteType).filter(Boolean))];
-    sel.innerHTML = `<option value="">All Site Types</option>` + types.map(t => `<option value="${escapeAttr(t)}">${escapeHtml(t)}</option>`).join('');
-    sel.value = types.includes(current) ? current : '';
-  }
-
   function getFiltered() {
     const q = $('#search-input')?.value.trim().toLowerCase() || '';
     const status = $('#filter-status')?.value || '';
-    const siteType = $('#filter-sitetype')?.value || '';
     let list = quotations.filter(row => {
       const matchesSearch = !q || row.customer.name.toLowerCase().includes(q) || row.quoteNo.toLowerCase().includes(q);
       const matchesStatus = !status || row.status === status;
-      const matchesSiteType = !siteType || row.siteType === siteType;
-      return matchesSearch && matchesStatus && matchesSiteType;
+      return matchesSearch && matchesStatus;
     });
     if (sortKey) {
       list = [...list].sort((a, b) => {
@@ -557,7 +532,6 @@ function generateSampleQuotations() {
 
   function renderTable() {
     updateStats();
-    refreshSiteTypeFilterOptions();
     const filtered = getFiltered();
     const totalPages = Math.max(1, Math.ceil(filtered.length / rowsPerPage));
     if (currentPage > totalPages) currentPage = totalPages;
@@ -571,10 +545,10 @@ function generateSampleQuotations() {
       <tr>
         <td data-label="Quotation No."><b>${escapeHtml(row.quoteNo)}</b></td>
         <td data-label="Customer">${escapeHtml(row.customer.name || '—')}</td>
-        <td data-label="Type">${escapeHtml(row.customer.customerType || '—')}</td>
         <td data-label="Amount">${formatINR(row.amount)}</td>
         <td data-label="Status"><span class="badge ${badgeClass(row.status)}">${row.status}</span></td>
-<td data-label="Date">${row.date ? new Date(row.date).toLocaleDateString('en-GB') : '—'}</td>        <td data-label="Actions" class="text-right">
+        <td data-label="Date">${row.date ? new Date(row.date).toLocaleDateString('en-GB') : '—'}</td>
+        <td data-label="Actions" class="text-right">
           <div class="action-icons">
             <button class="icon-action-btn" title="View" data-action="view" data-quote="${escapeAttr(row.quoteNo)}"><i class="fas fa-eye"></i></button>
             <button class="icon-action-btn" title="Edit" data-action="edit" data-quote="${escapeAttr(row.quoteNo)}"><i class="fas fa-pen"></i></button>
@@ -618,44 +592,199 @@ function generateSampleQuotations() {
   }
 
   // ============================================================
+  // PRODUCT IMAGE GALLERY (Task 3 — Step 5)
+  // ============================================================
+  function collectProductImages(items) {
+    const catalog = getProductCatalog();
+    const seen = new Set();
+    const images = [];
+    (items || []).forEach(it => {
+      const p = findCatalogProduct(catalog, it.productId);
+      const imageUrl = it.imageUrl || p?.imageUrl;
+      const productId = it.productId || p?.id;
+      if (imageUrl && productId && !seen.has(productId)) {
+        seen.add(productId);
+        images.push({ productId, productName: it.name || p?.name || '', imageUrl });
+      }
+    });
+    return images;
+  }
+
+  /* ============================================================
+   QUOTATION.JS — REPLACEMENT PATCH
+   ============================================================
+   WHAT TO DO:
+   1. Open your existing quotation.js
+   2. DELETE the old `buildInvoiceMarkup(q)` function entirely
+      (it's the big function that starts with:
+        function buildInvoiceMarkup(q) { ... }
+      and builds the <div class="inv-header"> ... markup)
+   3. PASTE everything below (from "function groupItemsBySection"
+      down to the end of "function buildInvoiceMarkup") in its place.
+   4. Nothing else in quotation.js needs to change — it still calls
+      buildInvoiceMarkup(q) exactly the same way from openViewModal,
+      renderWizardPreview, etc. so no other function needs editing.
+   ============================================================ */
+
+  // ------------------------------------------------------------
+  // Groups the quotation's items into "Sections" (A, B, C, ...)
+  // by their product category — same idea as Section A / B / C /
+  // D / E in the ENDEAVOUR-i sample quotation, but built
+  // dynamically from whatever categories are actually present in
+  // THIS quotation (so it always matches what was picked in the
+  // wizard, in the order items were first added).
+  // ------------------------------------------------------------
+  function groupItemsBySection(items) {
+    const letters = 'ABCDEFGHIJ';
+    const order = [];
+    const map = {};
+    (items || []).forEach(it => {
+      const cat = it.category || 'Other';
+      if (!map[cat]) { map[cat] = []; order.push(cat); }
+      map[cat].push(it);
+    });
+    return order.map((cat, idx) => ({
+      code: letters[idx] || String(idx + 1),
+      title: cat,
+      items: map[cat]
+    }));
+  }
+
+  // ============================================================
   // INVOICE MARKUP (shared by wizard preview + view modal)
+  // Section-wise breakdown (A/B/C...) + Price Summary + bilingual
+  // Terms & Conditions + product image gallery — matches the
+  // ENDEAVOUR-i sample quotation layout, built from the actual
+  // items/categories picked in this quotation.
   // ============================================================
   function buildInvoiceMarkup(q) {
-    const items = (q.items || []).map(it => ({
-      name: it.name || '—',
-      qty: it.qty,
-      rate: it.rate,
-      amount: (Number(it.qty) || 0) * (Number(it.rate) || 0)
-    }));
-    if (q.costs.installation) items.push({ name: 'Installation Charges', qty: 1, rate: q.costs.installation, amount: q.costs.installation });
-    if (q.costs.transport) items.push({ name: 'Transportation Charges', qty: 1, rate: q.costs.transport, amount: q.costs.transport });
-    if (q.costs.other) items.push({ name: q.costs.otherLabel || 'Other Charges', qty: 1, rate: q.costs.other, amount: q.costs.other });
-
-    const rowsHtml = items.map((item, i) => `
-      <tr>
-        <td>${i + 1}</td>
-        <td>${escapeHtml(item.name)}</td>
-        <td class="num">${item.qty}</td>
-        <td class="num">${formatINR(item.rate)}</td>
-        <td class="num">0</td>
-        <td class="num">${q.gstPercent}%</td>
-        <td class="num">${formatINR(item.amount)}</td>
-      </tr>
-    `).join('');
-
+    const sections = groupItemsBySection(q.items || []);
     const badgeCls = badgeClass(q.status);
+
+    // ---- Section tables: one per product category ----
+    let sectionsHtml = '';
+    sections.forEach(sec => {
+      let secTotal = 0;
+      let secPower = 0;
+
+      const rows = sec.items.map((it, i) => {
+        const amount = (Number(it.qty) || 0) * (Number(it.rate) || 0);
+        if (!it.inCustomerScope) secTotal += amount;
+        const powerHP = Number(it.powerHP) || 0;
+        secPower += powerHP * (Number(it.qty) || 0);
+
+        const specBits = [
+          it.production ? it.production : '',
+          it.power ? `Power: ${it.power}` : '',
+          it.shedSize ? `Shed: ${it.shedSize}` : '',
+          it.labor ? `Labour: ${it.labor}` : ''
+        ].filter(Boolean).join(' • ');
+
+        return `
+          <tr>
+            <td>${i + 1}</td>
+            <td class="section-particulars">
+              <b>${escapeHtml(it.name || '—')}</b>
+              ${specBits ? `<div class="section-spec">${escapeHtml(specBits)}</div>` : ''}
+            </td>
+            <td class="num">${it.qty}</td>
+            <td class="num">${powerHP ? powerHP : '—'}</td>
+            <td class="num">${it.inCustomerScope ? 'In Customer Scope' : formatINR(amount)}</td>
+          </tr>`;
+      }).join('');
+
+      sectionsHtml += `
+        <div class="section-block">
+          <div class="section-header">Section: ${sec.code} <span>${escapeHtml(sec.title)}</span></div>
+          <table class="inv-items-table section-table">
+            <thead>
+              <tr><th>Sr.No</th><th>Particulars</th><th class="num">Qty</th><th class="num">Power HP</th><th class="num">Price</th></tr>
+            </thead>
+            <tbody>${rows}</tbody>
+            <tfoot>
+              <tr class="section-subtotal-row">
+                <td colspan="2">Total: Section ${sec.code} Value INR</td>
+                <td class="num"></td>
+                <td class="num">${secPower ? secPower.toFixed(2) + ' HP' : '—'}</td>
+                <td class="num">${formatINR(secTotal)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>`;
+    });
+
+    // ---- Additional Charges block (Transport / Loading / Other) ----
+    const extraRows = [];
+    if (q.costs.transport) extraRows.push(['Transportation / Freight Charges', q.costs.transport]);
+    if (q.costs.loading) extraRows.push(['Loading Charges', q.costs.loading]);
+    if (q.costs.other) extraRows.push([q.costs.otherLabel || 'Other Charges', q.costs.other]);
+
+    const extraHtml = extraRows.length ? `
+      <div class="section-block">
+        <div class="section-header">Additional Charges</div>
+        <table class="inv-items-table section-table">
+          <thead><tr><th>Particulars</th><th class="num">Amount</th></tr></thead>
+          <tbody>
+            ${extraRows.map(r => `<tr><td>${escapeHtml(r[0])}</td><td class="num">${formatINR(r[1])}</td></tr>`).join('')}
+          </tbody>
+        </table>
+      </div>` : '';
+
+    // ---- Price Summary table ----
+    let summaryRows = sections.map(sec => {
+      const secTotal = sec.items.reduce((s, it) => s + (it.inCustomerScope ? 0 : (Number(it.qty) || 0) * (Number(it.rate) || 0)), 0);
+      return `<tr><td>Section ${sec.code}: ${escapeHtml(sec.title)}</td><td class="num">${formatINR(secTotal)}</td></tr>`;
+    }).join('');
+    const extraTotal = (q.costs.transport || 0) + (q.costs.loading || 0) + (q.costs.other || 0);
+    if (extraTotal) summaryRows += `<tr><td>Additional Charges</td><td class="num">${formatINR(extraTotal)}</td></tr>`;
+
+    const gb = q.gstBreakup || { cgstPercent: (q.gstPercent || 0) / 2, cgstAmount: q.cgst || 0, sgstPercent: (q.gstPercent || 0) / 2, sgstAmount: q.sgst || 0, igstPercent: 0, igstAmount: 0 };
+    const taxRowsSummary = q.isInterState
+      ? `<tr><td>IGST (${gb.igstPercent}%)</td><td class="num">${formatINR(gb.igstAmount)}</td></tr>`
+      : `<tr><td>SGST (${gb.sgstPercent}%)</td><td class="num">${formatINR(gb.sgstAmount)}</td></tr>
+         <tr><td>CGST (${gb.cgstPercent}%)</td><td class="num">${formatINR(gb.cgstAmount)}</td></tr>`;
+
+    const priceSummaryHtml = `
+      <div class="section-block">
+        <div class="section-header">Price Summary</div>
+        <table class="inv-totals-table price-summary-table">
+          ${summaryRows}
+          <tr><td>Sub Total</td><td class="num">${formatINR(q.subtotal)}</td></tr>
+          <tr><td>Discount</td><td class="num">- ${formatINR(q.discountAmount)}</td></tr>
+          ${taxRowsSummary}
+          <tr class="total-row"><td>Grand Total</td><td class="num">${formatINR(q.total)}</td></tr>
+        </table>
+      </div>`;
+
+    // ---- Bilingual Terms & Conditions (English + Hindi, side by side) ----
+    const terms = buildTermsText(q.items);
+    const termsEnglishHtml = terms.english.map(line => `<div>• ${escapeHtml(line)}</div>`).join('');
+    const termsHindiHtml = terms.hindi.map(line => `<div>• ${escapeHtml(line)}</div>`).join('');
+    const additionalNotes = (q.additionalNotes || '').trim();
+
+    // ---- Product image gallery (last section of the PDF) ----
+    const productImages = q.productImages && q.productImages.length ? q.productImages : collectProductImages(q.items);
+    const galleryHtml = productImages.length ? `
+      <div class="product-gallery">
+        <div class="inv-label">Product Images</div>
+        <div class="gallery-grid">
+          ${productImages.map(img => `
+            <div class="gallery-item">
+              <img src="${escapeAttr(img.imageUrl)}" alt="${escapeAttr(img.productName)}" crossorigin="anonymous">
+              <div class="gallery-caption">${escapeHtml(img.productName)}</div>
+            </div>`).join('')}
+        </div>
+      </div>` : '';
+
     const bank = q.bank || COMPANY.bank;
     const paymentTerms = q.paymentTerms || { advance: 50, material: 25, installation: 15, balance: 10 };
     const paymentType = q.paymentType || 'full';
-
-    let paymentScheduleHtml = paymentType === 'full'
+    const paymentScheduleHtml = paymentType === 'full'
       ? `<tr><td>Full Advance</td><td>100%</td></tr>`
-      : `
-        <tr><td>Advance</td><td>${paymentTerms.advance || 0}%</td></tr>
-        <tr><td>Before Dispatch</td><td>${paymentTerms.material || 0}%</td></tr>
-        <tr><td>On Delivery</td><td>${paymentTerms.installation || 0}%</td></tr>
-        <tr><td>Balance</td><td>${paymentTerms.balance || 0}%</td></tr>
-      `;
+      : `<tr><td>Advance</td><td>${paymentTerms.advance || 0}%</td></tr>
+         <tr><td>Before Dispatch</td><td>${paymentTerms.material || 0}%</td></tr>
+         <tr><td>On Delivery</td><td>${paymentTerms.installation || 0}%</td></tr>
+         <tr><td>Balance</td><td>${paymentTerms.balance || 0}%</td></tr>`;
 
     return `
       <div class="inv-header">
@@ -675,10 +804,10 @@ function generateSampleQuotations() {
           <div class="inv-label">Bill To:</div>
           <div>Name: ${escapeHtml(q.customer.name || '—')}</div>
           <div>Address: ${escapeHtml(q.customer.address || '—')}${q.customer.city ? ', ' + escapeHtml(q.customer.city) : ''}</div>
-          <div>Contact No.: ${escapeHtml(q.customer.mobile || '—')}</div>
+          <div>Contact No.: ${escapeHtml(q.customer.mobilePrimary || '—')}${q.customer.mobileSecondary ? ' / ' + escapeHtml(q.customer.mobileSecondary) : ''}</div>
+          ${q.customer.email ? `<div>Email: ${escapeHtml(q.customer.email)}</div>` : ''}
           <div>GSTIN No.: ${escapeHtml(q.customer.gst || '—')}</div>
-          <div>State: ${escapeHtml(q.customer.state || '—')}</div>
-          ${q.siteType ? `<div>Site Type: ${escapeHtml(q.siteType)}</div>` : ''}
+          <div>State: ${escapeHtml(q.customer.state || '—')} ${q.isInterState ? '(Inter-State)' : '(Intra-State)'}</div>
           ${q.deliveryTimeline ? `<div>Delivery Timeline: ${escapeHtml(q.deliveryTimeline)}</div>` : ''}
           <span class="badge ${badgeCls} inv-status">${q.status}</span>
         </div>
@@ -688,45 +817,49 @@ function generateSampleQuotations() {
           <div><span>Valid Until:</span> <b>${q.validUntil ? new Date(q.validUntil).toLocaleDateString('en-GB') : '—'}</b></div>
         </div>
       </div>
-      <table class="inv-items-table">
-        <thead><tr><th>#</th><th>Equipment Name</th><th>Qty</th><th>Rate</th><th>Dis</th><th>GST</th><th>Amount</th></tr></thead>
-        <tbody>${rowsHtml}</tbody>
-      </table>
-      <div class="inv-totals">
-        <div class="inv-words">
-          <div class="inv-label">Amount in Words:</div>
-          <div>${numberToWordsIndian(q.total)}</div>
 
-          <div class="inv-bank-details">
-            <div class="inv-label">Bank Details:</div>
-            <table>
-              <tr><td>Account Name</td><td>${escapeHtml(bank.accountName || '—')}</td></tr>
-              <tr><td>Bank Name</td><td>${escapeHtml(bank.bankName || '—')}</td></tr>
-              <tr><td>Account Number</td><td>${escapeHtml(bank.accountNumber || '—')}</td></tr>
-              <tr><td>IFSC Code</td><td>${escapeHtml(bank.ifscCode || '—')}</td></tr>
-              <tr><td>Branch</td><td>${escapeHtml(bank.branch || '—')}</td></tr>
-            </table>
-          </div>
+      ${sectionsHtml}
+      ${extraHtml}
+      ${priceSummaryHtml}
 
-          <div class="inv-payment-terms">
-            <div class="inv-label">Payment Schedule:</div>
-            <table>${paymentScheduleHtml}</table>
-          </div>
+      <div class="inv-words">
+        <div class="inv-label">Amount in Words:</div>
+        <div>${numberToWordsIndian(q.total)}</div>
+      </div>
 
-          <div class="inv-terms">
-            <div class="inv-label">Terms & Conditions</div>
-            <div class="terms-text">${escapeHtml(q.terms || '').replace(/\n/g, '<br>')}</div>
-          </div>
-        </div>
-        <table class="inv-totals-table">
-          <tr><td>Sub Total</td><td>${formatINR(q.subtotal)}</td></tr>
-          <tr><td>Discount</td><td>${formatINR(q.discountAmount)}</td></tr>
-          <tr><td>SGST</td><td>${formatINR(q.sgst)}</td></tr>
-          <tr><td>CGST</td><td>${formatINR(q.cgst)}</td></tr>
-          <tr class="total-row"><td>Grand Total</td><td>${formatINR(q.total)}</td></tr>
+      <div class="inv-bank-details">
+        <div class="inv-label">Bank Details:</div>
+        <table>
+          <tr><td>Account Name</td><td>${escapeHtml(bank.accountName || '—')}</td></tr>
+          <tr><td>Bank Name</td><td>${escapeHtml(bank.bankName || '—')}</td></tr>
+          <tr><td>Account Number</td><td>${escapeHtml(bank.accountNumber || '—')}</td></tr>
+          <tr><td>IFSC Code</td><td>${escapeHtml(bank.ifscCode || '—')}</td></tr>
+          <tr><td>Branch</td><td>${escapeHtml(bank.branch || '—')}</td></tr>
         </table>
       </div>
-      <div class="inv-seal">Company Seal & Signature</div>
+
+      <div class="inv-payment-terms">
+        <div class="inv-label">Payment Schedule:</div>
+        <table>${paymentScheduleHtml}</table>
+      </div>
+
+      <div class="inv-terms">
+        <div class="inv-label">Terms &amp; Conditions / नियम और शर्तें</div>
+        <div class="terms-columns">
+          <div class="terms-col">
+            <div class="terms-col-title">English</div>
+            <div class="terms-text">${termsEnglishHtml}</div>
+          </div>
+          <div class="terms-col">
+            <div class="terms-col-title">हिन्दी</div>
+            <div class="terms-text">${termsHindiHtml}</div>
+          </div>
+        </div>
+        ${additionalNotes ? `<div class="terms-text" style="margin-top:6px;"><b>Additional Notes:</b><br>${escapeHtml(additionalNotes).replace(/\n/g, '<br>')}</div>` : ''}
+      </div>
+
+      <div class="inv-seal">Company Seal &amp; Signature</div>
+      ${galleryHtml}
     `;
   }
 
@@ -772,10 +905,8 @@ function generateSampleQuotations() {
     editingQuoteNo = q.quoteNo;
     $('#edit-quoteno').textContent = q.quoteNo;
     $('#edit-customerName').value = q.customer.name || '';
-    $('#edit-mobile').value = q.customer.mobile || '';
+    $('#edit-mobile').value = q.customer.mobilePrimary || '';
     $('#edit-email').value = q.customer.email || '';
-    $('#edit-installation').value = q.costs?.installation || 0;
-    $('#edit-transport').value = q.costs?.transport || 0;
     $('#edit-discountValue').value = q.discountValue || 0;
     $('#edit-status').value = q.status || 'Pending';
     ['err-edit-customerName', 'err-edit-mobile', 'err-edit-email'].forEach(id => {
@@ -789,24 +920,22 @@ function generateSampleQuotations() {
   function updateEditSummary() {
     const q = quotations.find(x => x.quoteNo === editingQuoteNo);
     if (!q) return;
-    const installation = parseFloat($('#edit-installation')?.value) || 0;
-    const transport = parseFloat($('#edit-transport')?.value) || 0;
     const discountValue = parseFloat($('#edit-discountValue')?.value) || 0;
-    const costs = { ...q.costs, installation, transport };
-    const totals = computeTotals(q.itemsTotal, costs, q.gstPercent, q.discountType, discountValue);
+    const totals = computeTotals(q.itemsTotal, q.costs, q.gstPercent, q.discountType, discountValue, q.customer.state);
     const el = $('#edit-summary');
     if (el) {
+      const taxLine = totals.isInterState
+        ? `<div class="row"><span>IGST</span><b>${formatINR(totals.gstBreakup.igstAmount)}</b></div>`
+        : `<div class="row"><span>SGST + CGST</span><b>${formatINR(totals.gstBreakup.sgstAmount + totals.gstBreakup.cgstAmount)}</b></div>`;
       el.innerHTML = `
         <div class="row"><span>Sub Total</span><b>${formatINR(totals.subtotal)}</b></div>
         <div class="row"><span>Discount</span><b>- ${formatINR(totals.discountAmount)}</b></div>
-        <div class="row"><span>SGST + CGST</span><b>${formatINR(totals.sgst + totals.cgst)}</b></div>
+        ${taxLine}
         <div class="row total"><span>New Total</span><b>${formatINR(totals.total)}</b></div>
       `;
     }
   }
-  ['edit-installation', 'edit-transport', 'edit-discountValue'].forEach(id => {
-    document.getElementById(id)?.addEventListener('input', updateEditSummary);
-  });
+  document.getElementById('edit-discountValue')?.addEventListener('input', updateEditSummary);
 
   $('#btn-save-edit')?.addEventListener('click', () => {
     const q = quotations.find(x => x.quoteNo === editingQuoteNo);
@@ -823,20 +952,18 @@ function generateSampleQuotations() {
     if (!/^[6-9]\d{9}$/.test(mobile)) { $('#err-edit-mobile').textContent = 'Enter valid 10-digit mobile'; valid = false; }
     else { $('#err-edit-mobile').textContent = ''; }
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { $('#err-edit-email').textContent = 'Enter valid email'; valid = false; }
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { $('#err-edit-email').textContent = 'Enter valid email'; valid = false; }
     else { $('#err-edit-email').textContent = ''; }
 
     if (!valid) { showToast('Please fix the highlighted fields.', 'error'); return; }
 
     q.customer.name = name;
-    q.customer.mobile = mobile;
+    q.customer.mobilePrimary = mobile;
     q.customer.email = email;
-    q.costs.installation = parseFloat($('#edit-installation')?.value) || 0;
-    q.costs.transport = parseFloat($('#edit-transport')?.value) || 0;
     q.discountValue = parseFloat($('#edit-discountValue')?.value) || 0;
     q.status = $('#edit-status')?.value || 'Pending';
 
-    const totals = computeTotals(q.itemsTotal, q.costs, q.gstPercent, q.discountType, q.discountValue);
+    const totals = computeTotals(q.itemsTotal, q.costs, q.gstPercent, q.discountType, q.discountValue, q.customer.state);
     Object.assign(q, totals);
     q.amount = Math.round(totals.total);
 
@@ -870,31 +997,30 @@ function generateSampleQuotations() {
   const totalWizardSteps = 5;
   let draftQuoteNo = null;
 
-// REPLACE the populateProductPicker function with this version:
-function populateProductPicker() {
-  const select = $('#product-catalog-select');
-  if (!select) return;
-  const catalog = getProductCatalog();
-  window.__quotationProductCatalog = catalog;
+  function populateProductPicker() {
+    const select = $('#product-catalog-select');
+    if (!select) return;
+    const catalog = getProductCatalog();
+    window.__quotationProductCatalog = catalog;
 
-  if (!catalog.length) {
-    select.innerHTML = `<option value="">No products found — add some in Product Management</option>`;
-    return;
+    if (!catalog.length) {
+      select.innerHTML = `<option value="">No products found — add some in Product Management</option>`;
+      return;
+    }
+
+    const byCategory = {};
+    catalog.forEach(p => {
+      const cat = p.category || 'Other';
+      (byCategory[cat] = byCategory[cat] || []).push(p);
+    });
+
+    select.innerHTML = `<option value="">Select a product to add…</option>` +
+      Object.keys(byCategory).sort().map(cat => `
+        <optgroup label="${escapeAttr(cat)}">
+          ${byCategory[cat].map(p => `<option value="${escapeAttr(p.id)}">${escapeAttr(p.name)}${p.brand ? ' — ' + escapeAttr(p.brand) : ''}</option>`).join('')}
+        </optgroup>
+      `).join('');
   }
-
-  const byCategory = {};
-  catalog.forEach(p => {
-    const cat = p.category || 'Other';
-    (byCategory[cat] = byCategory[cat] || []).push(p);
-  });
-
-  select.innerHTML = `<option value="">Select a product to add…</option>` +
-    Object.keys(byCategory).sort().map(cat => `
-      <optgroup label="${escapeAttr(cat)}">
-        ${byCategory[cat].map(p => `<option value="${escapeAttr(p.id)}">${escapeAttr(p.name)}${p.brand ? ' — ' + escapeAttr(p.brand) : ''}</option>`).join('')}
-      </optgroup>
-    `).join('');
-}
 
   $('#btn-add-catalog-product')?.addEventListener('click', () => {
     const select = $('#product-catalog-select');
@@ -903,17 +1029,34 @@ function populateProductPicker() {
     if (!select || !select.value) { showToast('Select a product first.', 'error'); return; }
 
     const catalog = window.__quotationProductCatalog || [];
-    const p = catalog.find(c => String(c.id) === select.value);
+    const p = findCatalogProduct(catalog, select.value);
     if (!p) return;
 
     const qty = parseFloat(qtyInput?.value) || 1;
-    const rate = parseFloat(rateInput?.value) || Number(p.price) || 0;
+    const rate = parseFloat(rateInput?.value) || Number(p.pricing?.sellingPrice ?? p.price) || 0;
+    const inCustomerScope = !!(p.pricing?.inCustomerScope ?? p.inCustomerScope);
+
+    // Snapshot the catalog product's fields into the item at add-time —
+    // this is a point-in-time copy, not a live reference, so later
+    // catalog edits never retroactively change an already-added item.
     wizardItems.push({
-      id: newItemId(), name: p.name, qty: qty, rate: rate,
-      // carry the machine's site-requirement metadata along so Step 2
-      // can show a live comparison against what was entered in Step 1
-      category: p.category || '', shedSize: p.shedSize || '', labor: p.labor || 0,
-      production: p.production || '', power: p.power || ''
+      id: newItemId(),
+      productId: p.id,
+      name: p.name,
+      qty: qty,
+      rate: inCustomerScope ? 0 : rate,
+      category: p.category || '',
+      sectionCode: p.sectionCode || '',
+      hsnCode: p.hsnCode || '',
+      gstRate: p.gstRate ?? 18,
+      powerHP: p.machineInfo?.powerHP ?? p.powerHP ?? null,
+      powerKW: p.machineInfo?.powerKW ?? p.powerKW ?? null,
+      inCustomerScope: inCustomerScope,
+      imageUrl: p.imageUrl || '',
+      shedSize: p.machineInfo?.shedRequired || p.shedSize || '',
+      labor: p.machineInfo?.labourRequired || p.labor || 0,
+      production: p.production || '',
+      power: p.power || ''
     });
     renderItemsTable();
 
@@ -921,7 +1064,9 @@ function populateProductPicker() {
     if (qtyInput) qtyInput.value = 1;
     if (rateInput) rateInput.value = 0;
 
-    if (p.category === 'Machine' && (p.shedSize || p.labor)) {
+    if (inCustomerScope) {
+      showToast(`${p.name} added — price is In Customer Scope`, 'info');
+    } else if (p.category === 'Brick Machine' && (p.shedSize || p.labor)) {
       showToast(`${p.name} added — needs ${p.shedSize || 'N/A'} shed & ~${p.labor || 'N/A'} laborers`, 'info');
     } else {
       showToast(`${p.name} added to quotation`, 'success');
@@ -945,8 +1090,10 @@ function populateProductPicker() {
           <td>${i + 1}</td>
           <td class="item-name-cell"><input type="text" class="item-name" value="${escapeAttr(it.name)}" placeholder="Equipment name"></td>
           <td><input type="number" class="item-qty" value="${it.qty}" min="0" step="any"></td>
-          <td><input type="number" class="item-rate" value="${it.rate}" min="0" step="any"></td>
-          <td class="item-amount-cell" id="amt-${it.id}">${formatINR((Number(it.qty) || 0) * (Number(it.rate) || 0))}</td>
+          <td>${it.inCustomerScope
+              ? `<span style="font-size:10.5px; color:var(--accent-dark); font-weight:600;">In Customer Scope</span>`
+              : `<input type="number" class="item-rate" value="${it.rate}" min="0" step="any">`}</td>
+          <td class="item-amount-cell" id="amt-${it.id}">${it.inCustomerScope ? '—' : formatINR((Number(it.qty) || 0) * (Number(it.rate) || 0))}</td>
           <td class="item-remove-cell"><button type="button" class="btn-icon-sm item-remove" title="Remove"><i class="fas fa-trash"></i></button></td>
         </tr>
       `).join('');
@@ -970,20 +1117,19 @@ function populateProductPicker() {
   }
 
   // ------------------------------------------------------------
-  // Site Requirements check (Step 2) — cross-references the
-  // shed/labor needs of the machines picked here against what the
-  // customer told us in Step 1 (Site Readiness section).
+  // Site Requirements hint (Step 2) — surfaces shed/labor needs of
+  // the machines picked so far, so the team knows what to confirm
+  // with the customer before dispatch.
   // ------------------------------------------------------------
   function updateSiteRequirementsBox() {
     const box = $('#site-requirements-box');
     if (!box) return;
 
-    const machineItems = wizardItems.filter(it => it.category === 'Machine' && (it.shedSize || it.labor || it.production));
+    const machineItems = wizardItems.filter(it => it.category === 'Brick Machine' && (it.shedSize || it.labor || it.production));
     if (!machineItems.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
 
     const totalLabor = machineItems.reduce((s, it) => s + (Number(it.labor) || 0), 0);
     const shedList = [...new Set(machineItems.map(it => it.shedSize).filter(Boolean))];
-    const enteredShed = $('#f-shedDimensions')?.value.trim();
 
     box.classList.remove('hidden');
     box.innerHTML = `
@@ -992,7 +1138,6 @@ function populateProductPicker() {
         <b>Site Requirements for selected machine(s):</b><br>
         Shed / space needed: ${shedList.length ? escapeHtml(shedList.join(', ')) : 'N/A'}<br>
         Estimated labor required: ${totalLabor || 'N/A'} worker(s)
-        ${enteredShed ? `<br>Customer's available space (Step 1): ${escapeHtml(enteredShed)} — please confirm it fits.` : `<br><span style="opacity:.8;">Tip: go back to Step 1 to record the customer's available space for comparison.</span>`}
       </div>
     `;
   }
@@ -1000,7 +1145,7 @@ function populateProductPicker() {
   function updateItemAmount(item) {
     const amt = (Number(item.qty) || 0) * (Number(item.rate) || 0);
     const cell = document.getElementById('amt-' + item.id);
-    if (cell) cell.textContent = formatINR(amt);
+    if (cell) cell.textContent = item.inCustomerScope ? '—' : formatINR(amt);
     updateItemsSubtotalDisplay();
     if (currentStep === 3) computeCosts();
     if (currentStep === 4) computeGstSummary();
@@ -1015,13 +1160,11 @@ function populateProductPicker() {
   }
 
   function resetWizardForm() {
-    ['f-customerName', 'f-companyName', 'f-mobile', 'f-email', 'f-address', 'f-city', 'f-state', 'f-pincode', 'f-gst'].forEach(id => {
+    ['f-customerName', 'f-mobilePrimary', 'f-mobileSecondary', 'f-email', 'f-address', 'f-city', 'f-state', 'f-pincode', 'f-gst'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = '';
     });
 
-    const siteTypeEl = $('#f-siteType');
-    if (siteTypeEl) siteTypeEl.value = '';
     $('#f-deliveryTimeline').value = '45 days from advance payment';
 
     $('#f-accountName').value = COMPANY.bank.accountName;
@@ -1038,7 +1181,7 @@ function populateProductPicker() {
     const validUntilEl = $('#f-validUntil');
     if (validUntilEl) validUntilEl.value = date.toISOString().slice(0, 10);
 
-    $('#edit-terms').value = DEFAULT_TERMS;
+    $('#edit-terms').value = '';
 
     wizardItems = [];
     renderItemsTable();
@@ -1047,14 +1190,12 @@ function populateProductPicker() {
     $('#product-picker-qty').value = 1;
     $('#product-picker-rate').value = 0;
 
-    ['cost-erection', 'cost-commissioning', 'cost-trialrun', 'cost-training-days', 'cost-training-amount', 'cost-travelstay', 'cost-transport', 'cost-loading', 'cost-other'].forEach(id => {
+    ['cost-transport', 'cost-loading', 'cost-other'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = 0;
     });
     const costOtherLabelEl = $('#cost-other-label');
     if (costOtherLabelEl) costOtherLabelEl.value = 'Other Charges';
-    const trainingTag = $('#training-days-tag');
-    if (trainingTag) trainingTag.textContent = '0 days';
     $('#f-gstPercent').value = 18;
     $('#f-discountType').value = 'percent';
     $('#f-discountValue').value = 0;
@@ -1117,16 +1258,31 @@ function populateProductPicker() {
     field?.classList.remove('invalid'); if (err) err.textContent = ''; return true;
   }
 
+  const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+
   function validateStep1() {
     let ok = true;
     const name = $('#f-customerName')?.value.trim() || '';
     ok = markError('f-customerName', 'err-customerName', name ? '' : 'Customer name is required') && ok;
 
-    const mobile = $('#f-mobile')?.value.trim() || '';
-    ok = markError('f-mobile', 'err-mobile', /^[6-9]\d{9}$/.test(mobile) ? '' : 'Enter a valid 10-digit mobile number') && ok;
+    const mobilePrimary = $('#f-mobilePrimary')?.value.trim() || '';
+    ok = markError('f-mobilePrimary', 'err-mobilePrimary', /^[6-9]\d{9}$/.test(mobilePrimary) ? '' : 'Enter a valid 10-digit mobile number') && ok;
+
+    const mobileSecondary = $('#f-mobileSecondary')?.value.trim() || '';
+    if (mobileSecondary) {
+      ok = markError('f-mobileSecondary', 'err-mobileSecondary', /^[6-9]\d{9}$/.test(mobileSecondary) ? '' : 'Enter a valid 10-digit mobile number') && ok;
+    } else {
+      document.getElementById('err-mobileSecondary').textContent = '';
+      document.getElementById('f-mobileSecondary')?.classList.remove('invalid');
+    }
 
     const email = $('#f-email')?.value.trim() || '';
-    ok = markError('f-email', 'err-email', /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? '' : 'Enter a valid email address') && ok;
+    if (email) {
+      ok = markError('f-email', 'err-email', /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? '' : 'Enter a valid email address') && ok;
+    } else {
+      document.getElementById('err-email').textContent = '';
+      document.getElementById('f-email')?.classList.remove('invalid');
+    }
 
     const address = $('#f-address')?.value.trim() || '';
     ok = markError('f-address', 'err-address', address ? '' : 'Installation address is required') && ok;
@@ -1137,18 +1293,13 @@ function populateProductPicker() {
     const pincode = $('#f-pincode')?.value.trim() || '';
     ok = markError('f-pincode', 'err-pincode', /^\d{6}$/.test(pincode) ? '' : 'Enter a valid 6-digit pincode') && ok;
 
-    const gst = $('#f-gst')?.value.trim() || '';
-    if (gst && !/^[0-9A-Z]{15}$/i.test(gst)) {
-      ok = markError('f-gst', 'err-gst', 'Enter a valid 15-character GSTIN') && ok;
+    const gst = $('#f-gst')?.value.trim().toUpperCase() || '';
+    if (gst) {
+      ok = markError('f-gst', 'err-gst', GSTIN_REGEX.test(gst) ? '' : 'Enter a valid GSTIN (e.g. 09AMXPS4725R1ZO)') && ok;
     } else {
       document.getElementById('err-gst').textContent = '';
+      document.getElementById('f-gst')?.classList.remove('invalid');
     }
-
-    const shedAvailable = $('#f-shedAvailable')?.value || '';
-    ok = markError('f-shedAvailable', 'err-shedAvailable', shedAvailable ? '' : 'Please tell us if a shed/space is available') && ok;
-
-    const powerAvailability = $('#f-powerAvailability')?.value || '';
-    ok = markError('f-powerAvailability', 'err-powerAvailability', powerAvailability ? '' : 'Please select power availability at site') && ok;
 
     if (!ok) showToast('Please fix the highlighted fields.', 'error');
     return ok;
@@ -1161,7 +1312,7 @@ function populateProductPicker() {
       if (errEl) errEl.textContent = 'Add at least one product to this quotation.';
       ok = false;
     } else {
-      const invalidRow = wizardItems.some(it => !it.name || !it.name.trim() || !(Number(it.qty) > 0) || !(Number(it.rate) >= 0));
+      const invalidRow = wizardItems.some(it => !it.name || !it.name.trim() || !(Number(it.qty) > 0) || (!it.inCustomerScope && !(Number(it.rate) >= 0)));
       if (invalidRow) {
         if (errEl) errEl.textContent = 'Every product needs a name, quantity > 0, and rate >= 0.';
         ok = false;
@@ -1182,40 +1333,21 @@ function populateProductPicker() {
     return ok;
   }
 
+  // Task 3 — Step 3 cost breakdown is exactly Transport / Loading / Other
   function getCostTotalsFromForm() {
-    const erection = parseFloat($('#cost-erection')?.value) || 0;
-    const commissioning = parseFloat($('#cost-commissioning')?.value) || 0;
-    const trialrun = parseFloat($('#cost-trialrun')?.value) || 0;
-    const trainingDays = parseFloat($('#cost-training-days')?.value) || 0;
-    const trainingAmount = parseFloat($('#cost-training-amount')?.value) || 0;
-    const travelstay = parseFloat($('#cost-travelstay')?.value) || 0;
     const transport = parseFloat($('#cost-transport')?.value) || 0;
     const loading = parseFloat($('#cost-loading')?.value) || 0;
     const otherLabel = $('#cost-other-label')?.value || 'Other Charges';
-    const otherRaw = parseFloat($('#cost-other')?.value) || 0;
+    const other = parseFloat($('#cost-other')?.value) || 0;
 
-    const installation = erection + commissioning + trialrun + trainingAmount + travelstay;
-    const other = loading + otherRaw;
-
-    return {
-      installation, transport, other, otherLabel,
-      // raw breakdown kept for reference / future editing
-      erection, commissioning, trialrun, trainingDays, trainingAmount, travelstay, loading, otherRaw
-    };
+    return { transport, loading, otherLabel, other };
   }
 
   function computeCosts() {
     const el = $('#cost-items');
     if (el) el.textContent = formatINR(itemsSubtotal(wizardItems));
-
-    const costs = getCostTotalsFromForm();
-    const installTotalEl = $('#cost-installation-total');
-    if (installTotalEl) installTotalEl.textContent = formatINR(costs.installation);
-
-    const trainingTag = $('#training-days-tag');
-    if (trainingTag) trainingTag.textContent = `${costs.trainingDays || 0} day${costs.trainingDays === 1 ? '' : 's'}`;
   }
-  ['cost-erection', 'cost-commissioning', 'cost-trialrun', 'cost-training-days', 'cost-training-amount', 'cost-travelstay', 'cost-transport', 'cost-loading', 'cost-other'].forEach(id => {
+  ['cost-transport', 'cost-loading', 'cost-other'].forEach(id => {
     document.getElementById(id)?.addEventListener('input', () => {
       if (currentStep === 3) computeCosts();
       if (currentStep === 4) computeGstSummary();
@@ -1228,21 +1360,25 @@ function populateProductPicker() {
     const gstPercent = parseFloat($('#f-gstPercent')?.value) || 0;
     const discountType = $('#f-discountType')?.value || 'percent';
     const discountValue = parseFloat($('#f-discountValue')?.value) || 0;
-    const totals = computeTotals(itTotal, costs, gstPercent, discountType, discountValue);
+    const customerState = $('#f-state')?.value.trim() || '';
+    const totals = computeTotals(itTotal, costs, gstPercent, discountType, discountValue, customerState);
 
     const el = $('#summary-gst');
     if (el) {
+      const taxLine = totals.isInterState
+        ? `<div class="row"><span>IGST (${totals.gstBreakup.igstPercent}%)</span><b>${formatINR(totals.gstBreakup.igstAmount)}</b></div>`
+        : `<div class="row"><span>SGST (${totals.gstBreakup.sgstPercent}%)</span><b>${formatINR(totals.gstBreakup.sgstAmount)}</b></div>
+           <div class="row"><span>CGST (${totals.gstBreakup.cgstPercent}%)</span><b>${formatINR(totals.gstBreakup.cgstAmount)}</b></div>`;
       el.innerHTML = `
         <div class="row"><span>Items Subtotal</span><b>${formatINR(itTotal)}</b></div>
-        <div class="row"><span>Additional Charges</span><b>${formatINR(costs.installation + costs.transport + costs.other)}</b></div>
+        <div class="row"><span>Additional Charges</span><b>${formatINR(costs.transport + costs.loading + costs.other)}</b></div>
         <div class="row"><span>Discount</span><b>- ${formatINR(totals.discountAmount)}</b></div>
-        <div class="row"><span>SGST (${(gstPercent / 2).toFixed(1)}%)</span><b>${formatINR(totals.sgst)}</b></div>
-        <div class="row"><span>CGST (${(gstPercent / 2).toFixed(1)}%)</span><b>${formatINR(totals.cgst)}</b></div>
+        ${taxLine}
         <div class="row total"><span>Grand Total</span><b>${formatINR(totals.total)}</b></div>
       `;
     }
   }
-  ['f-gstPercent', 'f-discountType', 'f-discountValue'].forEach(id => {
+  ['f-gstPercent', 'f-discountType', 'f-discountValue', 'f-state'].forEach(id => {
     document.getElementById(id)?.addEventListener('input', computeGstSummary);
   });
 
@@ -1288,13 +1424,18 @@ function populateProductPicker() {
     document.getElementById(id)?.addEventListener('input', validatePaymentTerms);
   });
 
+  // ============================================================
+  // collectWizardRecord() — matches the Task 4 Quotation payload
+  // shape field-for-field.
+  // ============================================================
   function collectWizardRecord(quoteNo) {
     const costs = getCostTotalsFromForm();
     const itTotal = itemsSubtotal(wizardItems);
     const gstPercent = parseFloat($('#f-gstPercent')?.value) || 0;
     const discountType = $('#f-discountType')?.value || 'percent';
     const discountValue = parseFloat($('#f-discountValue')?.value) || 0;
-    const totals = computeTotals(itTotal, costs, gstPercent, discountType, discountValue);
+    const customerState = $('#f-state')?.value.trim() || '';
+    const totals = computeTotals(itTotal, costs, gstPercent, discountType, discountValue, customerState);
 
     const bank = {
       accountName: $('#f-accountName')?.value.trim() || COMPANY.bank.accountName,
@@ -1315,28 +1456,39 @@ function populateProductPicker() {
       paymentTerms.balance = parseFloat($('#f-payment-balance')?.value) || 0;
     }
 
+    // Items already carry their catalog snapshot (productId, hsnCode,
+    // gstRate, sectionCode, powerHP, powerKW, inCustomerScope) from the
+    // moment they were added in Step 2 — see btn-add-catalog-product.
+    const items = wizardItems.map(it => ({ ...it }));
+
+    const terms = buildTermsText(items);
+    const productImages = collectProductImages(items);
+
+    const totalPowerHP = items.reduce((s, it) => s + (Number(it.powerHP) || 0) * (Number(it.qty) || 0), 0);
+    const totalPowerKW = items.reduce((s, it) => s + (Number(it.powerKW) || 0) * (Number(it.qty) || 0), 0);
+
     return {
       quoteNo: quoteNo,
+      quoteDate: new Date().toISOString().slice(0, 10),
       date: new Date().toISOString().slice(0, 10),
       status: 'Pending',
       customer: {
         name: $('#f-customerName')?.value.trim() || '',
-        company: $('#f-companyName')?.value.trim() || '',
-        mobile: $('#f-mobile')?.value.trim() || '',
+        mobilePrimary: $('#f-mobilePrimary')?.value.trim() || '',
+        mobileSecondary: $('#f-mobileSecondary')?.value.trim() || '',
         email: $('#f-email')?.value.trim() || '',
         address: $('#f-address')?.value.trim() || '',
         city: $('#f-city')?.value.trim() || '',
-        state: $('#f-state')?.value.trim() || '',
+        state: customerState,
         pincode: $('#f-pincode')?.value.trim() || '',
-        gst: $('#f-gst')?.value.trim() || ''
+        gst: $('#f-gst')?.value.trim().toUpperCase() || ''
       },
-      siteType: $('#f-siteType')?.value || '',
-      shedAvailable: $('#f-shedAvailable')?.value || '',
-      shedDimensions: $('#f-shedDimensions')?.value.trim() || '',
-      powerAvailability: $('#f-powerAvailability')?.value || '',
+      isInterState: totals.isInterState,
       deliveryTimeline: $('#f-deliveryTimeline')?.value.trim() || '',
-      items: wizardItems.map(it => ({ ...it })),
+      items: items,
       itemsTotal: itTotal,
+      totalPowerHP: totalPowerHP,
+      totalPowerKW: Math.round(totalPowerKW * 100) / 100,
       costs: costs,
       gstPercent: gstPercent,
       discountType: discountType,
@@ -1346,7 +1498,9 @@ function populateProductPicker() {
       bank: bank,
       paymentTerms: paymentTerms,
       paymentType: paymentType,
-      terms: $('#edit-terms')?.value.trim() || DEFAULT_TERMS,
+      termsAndConditions: { templateVersion: terms.version, categoriesApplied: terms.categoriesApplied },
+      additionalNotes: $('#edit-terms')?.value.trim() || '',
+      productImages: productImages,
       validUntil: (() => {
         const days = parseInt($('#f-validityDays')?.value, 10) || 30;
         const d = new Date();
@@ -1403,18 +1557,17 @@ function populateProductPicker() {
   // ============================================================
   function exportToCSV() {
     const filtered = getFiltered();
-const headers = ['Quotation No.', 'Customer', 'Type', 'Company', 'Mobile', 'Email', 'Amount', 'Status', 'Date'];
-const rows = filtered.map(q => [
-  q.quoteNo, 
-  q.customer.name || '', 
-  q.customer.customerType || '',  
-  q.customer.company || '', 
-  q.customer.mobile || '', 
-  q.customer.email || '', 
-  q.amount || 0, 
-  q.status || '', 
-  q.date || ''
-]);    const csvContent = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
+    const headers = ['Quotation No.', 'Customer', 'Primary Mobile', 'Email', 'Amount', 'Status', 'Date'];
+    const rows = filtered.map(q => [
+      q.quoteNo,
+      q.customer.name || '',
+      q.customer.mobilePrimary || '',
+      q.customer.email || '',
+      q.amount || 0,
+      q.status || '',
+      q.date || ''
+    ]);
+    const csvContent = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
@@ -1423,82 +1576,33 @@ const rows = filtered.map(q => [
     showToast('CSV exported successfully', 'success');
   }
 
-//   function exportToExcel() {
-//     const filtered = getFiltered();
-//     const headers = ['Quotation No.', 'Customer', 'Company', 'Mobile', 'Email', 'Amount', 'Status', 'Date'];
-//     const rows = filtered.map(q => [q.quoteNo, q.customer.name || '', q.customer.company || '', q.customer.mobile || '', q.customer.email || '', q.amount || 0, q.status || '', q.date || '']);
-//     const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
-//     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-//     const link = document.createElement('a');
-//     link.href = URL.createObjectURL(blob);
-//     link.download = `quotations_${new Date().toISOString().slice(0, 10)}.xls`;
-//     link.click();
-//     showToast('Excel exported successfully', 'success');
-//   }
+  $('#btn-export-csv')?.addEventListener('click', exportToCSV);
 
-//   function exportToPDF() {
-//     const table = document.querySelector('.data-table');
-//     if (!table || typeof html2pdf === 'undefined') {
-//       showToast('PDF library failed to load.', 'error');
-//       return;
-//     }
-//     const printArea = document.createElement('div');
-//     printArea.style.padding = '20px';
-//     printArea.style.background = '#fff';
-//     printArea.innerHTML = `
-//       <h2 style="font-family: Poppins, sans-serif; margin-bottom: 20px;">Quotation List</h2>
-//       <p style="font-family: Poppins, sans-serif; color: #666; margin-bottom: 15px;">Generated: ${new Date().toLocaleString()}</p>
-//       ${table.outerHTML}
-//     `;
-//     document.body.appendChild(printArea);
-//     html2pdf().set({
-//       margin: 10,
-//       filename: `quotations_${new Date().toISOString().slice(0, 10)}.pdf`,
-//       image: { type: 'jpeg', quality: 0.98 },
-//       html2canvas: { scale: 2, backgroundColor: '#ffffff' },
-//       jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
-//     }).from(printArea).save().then(() => {
-//       document.body.removeChild(printArea);
-//       showToast('PDF exported successfully', 'success');
-//     }).catch(() => {
-//       document.body.removeChild(printArea);
-//       showToast('PDF export failed', 'error');
-//     });
-//   }
-
-//   function printQuotations() { window.print(); }
-
-//   $('#btn-export-excel')?.addEventListener('click', exportToExcel);
-//   $('#btn-export-csv')?.addEventListener('click', exportToCSV);
-//   $('#btn-export-pdf')?.addEventListener('click', exportToPDF);
-//   $('#btn-print')?.addEventListener('click', printQuotations);
-
-//   // ============================================================
-//   // FILTER EVENTS
-//   // ============================================================
-//   ['search-input', 'filter-status', 'filter-sitetype'].forEach(id => {
-//     document.getElementById(id)?.addEventListener('input', () => { currentPage = 1; renderTable(); });
-//   });
-//   $('#rows-per-page')?.addEventListener('change', (e) => {
-//     rowsPerPage = Number(e.target.value);
-//     currentPage = 1;
-//     renderTable();
-//   });
-//   document.querySelectorAll('.data-table th[data-sort]').forEach(th => {
-//     th.addEventListener('click', () => {
-//       const key = th.dataset.sort;
-//       sortDir = (sortKey === key) ? -sortDir : 1;
-//       sortKey = key;
-//       renderTable();
-//     });
-//   });
-//   $('#btn-reset-filters')?.addEventListener('click', () => {
-//     if ($('#search-input')) $('#search-input').value = '';
-//     if ($('#filter-status')) $('#filter-status').value = '';
-//     if ($('#filter-sitetype')) $('#filter-sitetype').value = '';
-//     currentPage = 1;
-//     renderTable();
-//   });
+  // ============================================================
+  // FILTER EVENTS
+  // ============================================================
+  ['search-input', 'filter-status'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', () => { currentPage = 1; renderTable(); });
+  });
+  $('#rows-per-page')?.addEventListener('change', (e) => {
+    rowsPerPage = Number(e.target.value);
+    currentPage = 1;
+    renderTable();
+  });
+  document.querySelectorAll('.data-table th[data-sort]').forEach(th => {
+    th.addEventListener('click', () => {
+      const key = th.dataset.sort;
+      sortDir = (sortKey === key) ? -sortDir : 1;
+      sortKey = key;
+      renderTable();
+    });
+  });
+  $('#btn-reset-filters')?.addEventListener('click', () => {
+    if ($('#search-input')) $('#search-input').value = '';
+    if ($('#filter-status')) $('#filter-status').value = '';
+    currentPage = 1;
+    renderTable();
+  });
 
   // ============================================================
   // INIT

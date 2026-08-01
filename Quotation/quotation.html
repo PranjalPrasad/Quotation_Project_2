@@ -100,32 +100,6 @@
         </div>
 
         <div class="flex items-center gap-2.5 relative">
-          <!-- <div class="relative">
-            <button id="notifBtn" aria-label="Notifications" class="w-8 h-8 rounded-full bg-cream shadow-sm border border-peach-300 flex items-center justify-center text-gray-500 hover:text-peach-500 transition-colors">
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-              </svg>
-              <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full"></span>
-            </button>
-
-            <div id="notifDropdown" class="topbar-dropdown hidden">
-              <p class="topbar-dropdown-title">Notifications</p>
-              <div class="topbar-notif-item">
-                <p>Quotation SQ-1004 pending 3 days</p>
-                <span>40 min ago</span>
-              </div>
-              <div class="topbar-notif-item">
-                <p>SQ-1002 accepted by customer</p>
-                <span>2 hr ago</span>
-              </div>
-              <div class="topbar-notif-item">
-                <p>SQ-0998 rejected</p>
-                <span>Yesterday</span>
-              </div>
-            </div>
-          </div> -->
-
           <div class="relative">
             <button id="profileBtn" aria-label="Profile" class="w-8 h-8 rounded-full bg-peach-500 flex items-center justify-center text-white font-semibold text-sm shadow-sm">
               A
@@ -212,9 +186,6 @@
               <option value="Accepted">Accepted</option>
               <option value="Rejected">Rejected</option>
             </select>
-            <select id="filter-customertype" class="select-input">
-              <option value="">All Customer Types</option>
-            </select>
             <button class="btn-outline small" id="btn-reset-filters">
               <i class="fas fa-rotate-left"></i> Reset
             </button>
@@ -231,7 +202,6 @@
               <tr>
                 <th data-sort="quoteNo">Quotation No. <span class="sort-icon">⇅</span></th>
                 <th data-sort="customer">Customer <span class="sort-icon">⇅</span></th>
-                <th data-sort="customerType">Customer Type <span class="sort-icon">⇅</span></th>
                 <th data-sort="amount">Amount <span class="sort-icon">⇅</span></th>
                 <th data-sort="status">Status <span class="sort-icon">⇅</span></th>
                 <th data-sort="date">Date <span class="sort-icon">⇅</span></th>
@@ -284,17 +254,18 @@
               <span class="field-error" id="err-customerName"></span>
             </div>
             <div class="form-field">
-              <label>Company / Firm Name</label>
-              <input type="text" id="f-companyName" placeholder="Optional — for B2B buyers">
+              <label>Primary Mobile Number <span class="req">*</span></label>
+              <input type="tel" id="f-mobilePrimary" maxlength="10" placeholder="10-digit mobile">
+              <span class="field-error" id="err-mobilePrimary"></span>
             </div>
             <div class="form-field">
-              <label>Mobile Number <span class="req">*</span></label>
-              <input type="tel" id="f-mobile" maxlength="10" placeholder="10-digit mobile">
-              <span class="field-error" id="err-mobile"></span>
+              <label>Secondary Mobile Number</label>
+              <input type="tel" id="f-mobileSecondary" maxlength="10" placeholder="10-digit mobile (optional)">
+              <span class="field-error" id="err-mobileSecondary"></span>
             </div>
             <div class="form-field">
-              <label>Email Address <span class="req">*</span></label>
-              <input type="email" id="f-email" placeholder="name@example.com">
+              <label>Email Address</label>
+              <input type="email" id="f-email" placeholder="name@example.com (optional)">
               <span class="field-error" id="err-email"></span>
             </div>
             <div class="form-field span-2">
@@ -320,58 +291,6 @@
               <label>GSTIN</label>
               <input type="text" id="f-gst" maxlength="15" placeholder="15-character GSTIN (optional)">
               <span class="field-error" id="err-gst"></span>
-            </div>
-            <div class="form-field">
-              <label>Customer Type <span class="req">*</span></label>
-              <select id="f-customerType" class="select-input">
-                <option value="">Select type</option>
-                <option value="Individual Buyer">Individual Buyer</option>
-                <option value="Contractor">Contractor</option>
-                <option value="Brick Kiln Owner">Brick Kiln Owner</option>
-                <option value="Trader-Dealer">Trader-Dealer</option>
-                <option value="Industrial Unit">Industrial Unit</option>
-              </select>
-              <span class="field-error" id="err-customerType"></span>
-            </div>
-            <div class="form-field">
-              <label>How Did They Find Us?</label>
-              <select id="f-referenceSource" class="select-input">
-                <option value="">Select source (optional)</option>
-                <option value="Direct Enquiry">Direct Enquiry</option>
-                <option value="Exhibition">Exhibition</option>
-                <option value="Existing Customer Referral">Existing Customer Referral</option>
-                <option value="Advertisement">Advertisement</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="sub-section">
-            <div class="sub-title"><i class="fas fa-warehouse"></i> Site Readiness</div>
-            <div class="form-grid">
-              <div class="form-field">
-                <label>Shed / Space Available at Site? <span class="req">*</span></label>
-                <select id="f-shedAvailable" class="select-input">
-                  <option value="">Select</option>
-                  <option value="Yes">Yes</option>
-                  <option value="No">No</option>
-                </select>
-                <span class="field-error" id="err-shedAvailable"></span>
-              </div>
-              <div class="form-field">
-                <label>Available Space Dimensions</label>
-                <input type="text" id="f-shedDimensions" placeholder="e.g. 40x60 ft">
-                <span class="field-hint">Check against the machine's required shed size before finalizing.</span>
-              </div>
-              <div class="form-field span-2">
-                <label>Power Availability at Site <span class="req">*</span></label>
-                <select id="f-powerAvailability" class="select-input">
-                  <option value="">Select</option>
-                  <option value="Electricity Connection">Electricity Connection</option>
-                  <option value="Genset Only">Genset Only</option>
-                  <option value="Both">Both</option>
-                </select>
-                <span class="field-error" id="err-powerAvailability"></span>
-              </div>
             </div>
           </div>
         </div>
@@ -420,42 +339,13 @@
         <div class="step-panel" data-panel="3">
           <div class="panel-title">Cost Calculation</div>
 
-          <div class="form-grid">
-            <div class="form-field">
-              <label>Distance Slab</label>
-              <select id="f-distanceSlab" class="select-input">
-                <option value="City">Within City</option>
-                <option value="State">Within State</option>
-                <option value="Out">Out of State</option>
-              </select>
-            </div>
-            <div class="form-field" style="justify-content:flex-end;">
-              <button type="button" class="btn-outline small" id="btn-suggest-estimate" style="align-self:flex-start;margin-top:auto;">
-                <i class="fas fa-wand-magic-sparkles"></i> Suggest Estimate
-              </button>
-            </div>
-          </div>
-          <div class="hint-box"><i class="fas fa-circle-info"></i> "Suggest Estimate" fills a starting figure based on the machines in this quotation and the distance slab — every field stays editable.</div>
-
           <div class="table-scope overflow-x-auto">
             <table class="data-table cost-table">
               <thead><tr><th>Cost Head</th><th class="text-right">Amount (₹)</th></tr></thead>
               <tbody>
                 <tr><td>Items Subtotal <span class="auto-tag">from Products</span></td><td class="text-right" id="cost-items">₹0</td></tr>
-                <tr><td>Machine Erection &amp; Alignment</td><td class="text-right"><input type="number" class="cost-input" id="cost-erection" value="0"></td></tr>
-                <tr><td>Electrical / PLC Commissioning &amp; Testing</td><td class="text-right"><input type="number" class="cost-input" id="cost-commissioning" value="0"></td></tr>
-                <tr><td>Trial Run &amp; Output Verification</td><td class="text-right"><input type="number" class="cost-input" id="cost-trialrun" value="0"></td></tr>
-                <tr>
-                  <td>Operator Training <span class="auto-tag" id="training-days-tag">0 days</span></td>
-                  <td class="text-right" style="display:flex;gap:6px;justify-content:flex-end;align-items:center;">
-                    <input type="number" class="cost-input" id="cost-training-days" value="0" min="0" step="1" style="width:60px;" title="Training days" placeholder="Days">
-                    <input type="number" class="cost-input" id="cost-training-amount" value="0" min="0" style="width:110px;">
-                  </td>
-                </tr>
-                <tr><td>Technician Travel / Stay (outstation)</td><td class="text-right"><input type="number" class="cost-input" id="cost-travelstay" value="0"></td></tr>
-                <tr class="cost-subtotal-row"><td>Installation &amp; Commissioning Total</td><td class="text-right" id="cost-installation-total">₹0</td></tr>
                 <tr><td>Transportation / Freight Charges</td><td class="text-right"><input type="number" class="cost-input" id="cost-transport" value="0"></td></tr>
-                <tr><td>Loading / Unloading Charges</td><td class="text-right"><input type="number" class="cost-input" id="cost-loading" value="0"></td></tr>
+                <tr><td>Loading Charges</td><td class="text-right"><input type="number" class="cost-input" id="cost-loading" value="0"></td></tr>
                 <tr>
                   <td><input type="text" class="cost-label-input" id="cost-other-label" value="Other Charges"></td>
                   <td class="text-right"><input type="number" class="cost-input" id="cost-other" value="0"></td>
@@ -559,12 +449,10 @@
           </div>
           <div class="sub-section">
             <div class="sub-title"><i class="fas fa-file-contract"></i> Terms &amp; Conditions</div>
+            <div class="field-hint" style="margin-bottom:6px;">Standard clauses below are generated automatically from the products in this quotation. Use the box only for extra notes specific to this quotation.</div>
             <div class="form-field span-2">
-              <textarea id="edit-terms" rows="5">GST Extra.
-Delivery after Full &amp; Final Payment.
-All Cheques &amp; Drafts in favour of Vaishnokripa Mercantile.
-Jurisdiction Agra only.
-Freight Extra.</textarea>
+              <label>Additional Notes (optional)</label>
+              <textarea id="edit-terms" rows="3" placeholder="Any extra notes for this quotation only..."></textarea>
             </div>
           </div>
           <div class="invoice-preview" id="invoice-preview"></div>
@@ -613,12 +501,12 @@ Freight Extra.</textarea>
             <span class="field-error" id="err-edit-customerName"></span>
           </div>
           <div class="form-field">
-            <label>Mobile Number <span class="req">*</span></label>
+            <label>Primary Mobile Number <span class="req">*</span></label>
             <input type="tel" id="edit-mobile" maxlength="10">
             <span class="field-error" id="err-edit-mobile"></span>
           </div>
           <div class="form-field span-2">
-            <label>Email Address <span class="req">*</span></label>
+            <label>Email Address</label>
             <input type="email" id="edit-email">
             <span class="field-error" id="err-edit-email"></span>
           </div>
@@ -663,6 +551,7 @@ Freight Extra.</textarea>
   <div id="toast-container" class="toast-container"></div>
 
 <script src="/session.js"></script>
+<script src="/Quotation/terms-config.js"></script>
 <script src="/Quotation/quotation.js"></script>
 </body>
 </html>

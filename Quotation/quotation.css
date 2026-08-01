@@ -140,6 +140,7 @@ html, body {
   top: calc(100% + 8px);
   right: 0;
   min-width: 220px;
+  max-width: calc(100vw - 32px);
   background: #FCEEF3;
   border-radius: 13px;
   box-shadow: 0 12px 30px rgba(90,0,24,0.15);
@@ -241,13 +242,20 @@ html, body {
 .data-table tbody tr { transition: background-color .15s ease; cursor: default; }
 .data-table tbody tr:hover { background: #F6DCE8; }
 
-.data-table th:nth-child(1), .data-table td:nth-child(1) { width: 13%; }
-.data-table th:nth-child(2), .data-table td:nth-child(2) { width: 18%; }
-.data-table th:nth-child(3), .data-table td:nth-child(3) { width: 14%; }
-.data-table th:nth-child(4), .data-table td:nth-child(4) { width: 13%; }
-.data-table th:nth-child(5), .data-table td:nth-child(5) { width: 12%; }
-.data-table th:nth-child(6), .data-table td:nth-child(6) { width: 12%; }
-.data-table th:nth-child(7), .data-table td:nth-child(7) { width: 18%; }
+.data-table th:nth-child(1), .data-table td:nth-child(1) { width: 15%; }
+.data-table th:nth-child(2), .data-table td:nth-child(2) { width: 22%; }
+.data-table th:nth-child(3), .data-table td:nth-child(3) { width: 15%; }
+.data-table th:nth-child(4), .data-table td:nth-child(4) { width: 14%; }
+.data-table th:nth-child(5), .data-table td:nth-child(5) { width: 14%; }
+.data-table th:nth-child(6), .data-table td:nth-child(6) { width: 20%; }
+
+/* Tablet / narrow desktop: keep the table at a natural readable width
+   and let it scroll horizontally inside .table-scope instead of
+   squashing columns — same 3-tier strategy used across the app */
+@media (min-width: 721px) and (max-width: 1023px) {
+  .data-table { min-width: 700px; table-layout: auto; }
+  .table-scope { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+}
 
 .badge { font-size: 10px; font-weight: 600; padding: 3px 9px; border-radius: 999px; display: inline-block; white-space: nowrap; }
 .badge-pending { background: #FEF3C7; color: #B45309; }
@@ -293,6 +301,7 @@ html, body {
 @media (max-width: 720px) {
   .data-table thead { display: none; }
   .data-table, .data-table tbody, .data-table tr, .data-table td { display: block; width: 100% !important; }
+  .data-table { min-width: 0; }
   .data-table tr { border: 1px solid #E8B9CE; border-radius: 12px; margin-bottom: 8px; padding: 6px 8px; }
   .data-table td { border-bottom: none; padding: 5px 2px; display: flex; align-items: center; justify-content: space-between; gap: 10px; text-align: right; white-space: normal; }
   .data-table td::before {
@@ -320,6 +329,7 @@ html, body {
 select.rows-select, .select-input {
   font-size: 10.5px; border: 1px solid #E8B9CE; border-radius: 8px;
   padding: 5px 8px; color: #374151; background: #FCEEF3; outline: none; font-family: inherit;
+  max-width: 100%;
 }
 .select-input.small { padding: 4px 6px; }
 
@@ -381,11 +391,12 @@ select.rows-select, .select-input {
   background: rgba(90,0,24,0.35);
   display: flex; align-items: center; justify-content: center;
   padding: 16px;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
   animation: fadeIn .15s ease-out;
 }
 .modal-overlay.hidden { display: none; }
 .modal-box {
-  background: #FCEEF3; width: 100%; max-width: 560px; max-height: 92vh;
+  background: #FCEEF3; width: 100%; max-width: 560px; max-height: 92vh; max-height: 92dvh;
   border-radius: 18px; box-shadow: 0 20px 40px rgba(90,0,24,0.18);
   border: 1px solid #E8B9CE;
   display: flex; flex-direction: column; overflow: hidden;
@@ -409,10 +420,11 @@ select.rows-select, .select-input {
 }
 .modal-close:hover { background: #F6DCE8; color: #374151; }
 
-.modal-body { padding: 14px 16px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.modal-body { padding: 14px 16px; overflow-y: auto; -webkit-overflow-scrolling: touch; flex: 1; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 .modal-foot {
   display: flex; align-items: center; justify-content: flex-end; gap: 8px;
   padding: 12px 16px; border-top: 1px solid #E8B9CE; flex-shrink: 0; flex-wrap: wrap;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
 }
 #wizard-nav { justify-content: space-between; }
 .confirm-text { font-size: 12.5px; color: var(--ink); line-height: 1.6; margin: 0; }
@@ -427,7 +439,7 @@ select.rows-select, .select-input {
 .form-field input, .form-field textarea, .form-field select {
   border: 1px solid var(--line-soft); border-radius: 9px;
   padding: 8px 10px; font-size: 12.5px; color: var(--ink);
-  outline: none; background: #fff; font-family: inherit; width: 100%;
+  outline: none; background: #fff; font-family: inherit; width: 100%; max-width: 100%;
 }
 .form-field input:focus, .form-field textarea:focus, .form-field select:focus {
   border-color: var(--accent); box-shadow: 0 0 0 3px rgba(128,0,33,0.18);
@@ -458,7 +470,7 @@ select.rows-select, .select-input {
 }
 .chip-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); border-style: solid; }
 
-.items-table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; }
+.items-table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; -webkit-overflow-scrolling: touch; }
 .items-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 640px; }
 .items-table th {
   text-align: left; padding: 8px 10px; background: var(--accent-100);
@@ -502,6 +514,7 @@ select.rows-select, .select-input {
 .stepper {
   display: flex; align-items: flex-start; justify-content: space-between;
   overflow-x: auto; overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
   flex-shrink: 0; min-height: 60px; padding-bottom: 10px; gap: 4px;
   border-bottom: 1px solid var(--line); margin-bottom: 4px;
 }
@@ -541,9 +554,9 @@ select.rows-select, .select-input {
   border-top: 2px solid var(--accent); border-bottom: 2px solid var(--accent);
 }
 .inv-parties { display: flex; justify-content: space-between; gap: 18px; margin-bottom: 13px; flex-wrap: wrap; }
-.inv-bill-to { line-height: 1.7; }
+.inv-bill-to { line-height: 1.7; min-width: 0; }
 .inv-label { font-weight: 700; color: var(--ink); margin-bottom: 2px; }
-.inv-meta { text-align: right; line-height: 1.9; }
+.inv-meta { text-align: right; line-height: 1.9; min-width: 0; }
 .inv-meta span { color: #555; margin-right: 6px; }
 .inv-status { display: inline-block; margin-top: 6px; }
 
@@ -675,4 +688,189 @@ html { color-scheme: light; }
 /* ============ Sidebar Logo Fix ============ */
 .sidebar .flex.items-center.justify-center.shrink-0 {
   margin-top: 4px;
+}
+
+/* =========================================================
+   RESPONSIVE ENHANCEMENTS — full mobile / tablet / desktop pass
+   (same pattern as productM/productm.css and dashboard/dashboard.css:
+   extends the rules above; fixes edge-case breakpoints so every
+   component — sidebar, topbar, stat cards, filters, quotation table,
+   the entire New-Quotation wizard, items/cost tables, GST & payment
+   summary, invoice preview, view/edit/delete modals — behaves on
+   every screen size)
+   ========================================================= */
+
+/* ---- Universal overflow safety: flex/grid children default to
+   min-width:auto which can push siblings off-screen on narrow
+   viewports. Force them to respect their container instead. ---- */
+html, body { max-width: 100vw; overflow-x: hidden; }
+.quick-add-row, .share-grid, .form-grid, .summary-box .row,
+.inv-header, .inv-parties, .inv-totals, .stepper, .step { min-width: 0; }
+.search-box, .select-input, .btn-primary, .btn-outline, .btn-danger { min-width: 0; }
+
+/* ---- Small laptops / small desktop (1024–1279px): trim side
+   padding slightly ---- */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .app-main { padding-left: 18px !important; padding-right: 18px !important; }
+}
+
+/* ---- Tablet (768–1023px): bigger touch targets for nav, action
+   icons, pagination, profile/notif buttons, wizard stepper — tablets
+   are touch-first even though the quotation table uses the
+   "natural width + scroll" strategy ---- */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .nav-item { width: 40px; height: 40px; min-height: 40px; }
+  .nav-item svg { width: 17px; height: 17px; }
+  .icon-action-btn { width: 34px; height: 34px; font-size: 15px; }
+  #notifBtn, #profileBtn { width: 34px; height: 34px; }
+  #notifBtn svg { width: 15px; height: 15px; }
+  .pagination-btn, .pagination button { min-width: 28px; height: 28px; font-size: 11.5px; }
+  .btn-primary, .btn-outline, .btn-danger { padding: 9px 16px; }
+  .step-circle { width: 30px; height: 30px; }
+  .btn-icon-sm { width: 30px; height: 30px; }
+}
+
+/* ---- Large phones / small tablets in portrait (481–767px): keep
+   the filter row (status / customer-type selects + reset + new
+   quotation) from crowding once the search box has already
+   dropped to full width ---- */
+@media (min-width: 481px) and (max-width: 767px) {
+  #filter-status, #filter-customertype { flex: 1 1 calc(50% - 4px); min-width: 0; }
+  #btn-reset-filters { flex: 1 1 calc(50% - 4px); justify-content: center; }
+  #btn-new-quotation { flex: 1 1 100%; justify-content: center; margin-top: 2px; }
+  .quick-add-row > * { flex: 1 1 45%; }
+  .quick-add-row #btn-add-catalog-product,
+  .quick-add-row #chip-custom { flex: 1 1 100%; justify-content: center; }
+}
+
+/* ---- Phones (<=480px): search bar full width, stepper labels
+   readable, cost/items tables stay scrollable rather than crushed ---- */
+@media (max-width: 480px) {
+  .search-box { min-width: 100%; }
+  #filter-status, #filter-customertype, #btn-reset-filters, #btn-new-quotation { flex: 1 1 100%; justify-content: center; }
+  .step { min-width: 56px; }
+  .step-label { font-size: 8.5px; }
+  .cost-input { width: 100px; }
+  .items-table th, .items-table td { padding: 5px 6px; }
+  .inv-items-table { font-size: 9.5px; }
+  .summary-box { padding: 10px 11px; }
+}
+
+/* ---- Very small phones (<=360px): last line of defence ---- */
+@media (max-width: 360px) {
+  .form-field input, .form-field textarea, .form-field select { font-size: 12px; padding: 7px 8px; }
+  .modal-title { font-size: 12.5px; }
+  .btn-primary, .btn-outline, .btn-danger { padding: 7px 11px; font-size: 10.5px; }
+  .step-circle { width: 24px; height: 24px; font-size: 10px; }
+  .cost-input { width: 84px; }
+}
+
+/* ---- Ultra-wide desktop (>=1920px): cap the main column and the
+   wide wizard/preview modals so they don't stretch edge to edge ---- */
+@media (min-width: 1920px) {
+  .app-main { max-width: 1680px; margin: 0 auto; }
+}
+
+/* ---- Short / landscape phones and split-screen laptops: trim
+   modal chrome so the multi-step wizard still fits and scrolls
+   comfortably ---- */
+@media (max-height: 480px) {
+  .modal-box { max-height: 96vh; max-height: 96dvh; }
+  .modal-head, .modal-body, .modal-foot { padding-top: 8px; padding-bottom: 8px; }
+  .stepper { min-height: 48px; }
+}
+@media (max-height: 480px) and (orientation: landscape) {
+  .app-main { padding-top: 10px !important; }
+  .mb-4 { margin-bottom: 10px !important; }
+}
+
+/* ---- Ensure images/icons never overflow their fixed-size boxes
+   regardless of container width (logo, invoice letterhead logo) ---- */
+img { max-width: 100%; height: auto; }
+.inv-logo { max-width: 140px; }
+@media (max-width: 480px) {
+  .inv-logo { height: 40px; max-width: 110px; }
+}
+
+
+/* ============================================================
+   QUOTATION.CSS — ADDITIONS
+   ============================================================
+   Just paste this whole block at the very END of your existing
+   quotation.css file. Nothing needs to be deleted — these are
+   new classes used by the updated buildInvoiceMarkup() function.
+   ============================================================ */
+
+/* ---- Section-wise breakdown (Section A, B, C ... per category,
+   like the ENDEAVOUR-i sample) ---- */
+.section-block { margin-bottom: 14px; }
+
+.section-header {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: 8px 8px 0 0;
+  font-size: 11px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.section-header span {
+  font-weight: 500;
+  font-size: 10px;
+  opacity: .9;
+}
+
+.section-table { margin-bottom: 0; border-radius: 0 0 8px 8px; overflow: hidden; }
+.section-table thead th { background: var(--accent-100); }
+.section-particulars { min-width: 160px; }
+.section-spec { font-size: 9px; color: #666; margin-top: 2px; }
+
+.section-subtotal-row td {
+  background: var(--accent-100);
+  font-weight: 700;
+  color: var(--accent-dark);
+}
+
+/* ---- Price Summary table (Section totals + GST + Grand Total) ---- */
+.price-summary-table { width: 100%; margin-top: 4px; border-collapse: collapse; }
+.price-summary-table td { padding: 5px 10px; border: 1px solid var(--line-soft); font-size: 11px; }
+.price-summary-table td:last-child { text-align: right; font-weight: 600; }
+.price-summary-table .total-row td { background: var(--accent-100); font-weight: 700; color: var(--accent-dark); }
+
+/* ---- Bilingual Terms & Conditions (English + Hindi side by side) ---- */
+.terms-columns { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 4px; }
+.terms-col { flex: 1 1 260px; min-width: 220px; }
+.terms-col-title {
+  font-weight: 700;
+  font-size: 10px;
+  color: var(--accent-dark);
+  margin-bottom: 3px;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+}
+
+/* ---- Product image gallery (end of PDF) ---- */
+.product-gallery {
+  margin-top: 18px;
+  border-top: 1px solid var(--line-soft);
+  padding-top: 14px;
+}
+.gallery-grid { display: flex; flex-wrap: wrap; gap: 14px; }
+.gallery-item { width: 150px; text-align: center; }
+.gallery-item img {
+  width: 150px;
+  height: 110px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--line-soft);
+}
+.gallery-caption { font-size: 9.5px; color: #555; margin-top: 4px; }
+
+/* ---- Mobile: stack terms columns, shrink section table text ---- */
+@media (max-width: 480px) {
+  .terms-columns { flex-direction: column; }
+  .section-header { font-size: 10px; padding: 5px 8px; }
+  .section-table { font-size: 9.5px; }
 }

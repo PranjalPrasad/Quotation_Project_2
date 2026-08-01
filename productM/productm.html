@@ -45,11 +45,22 @@
 
   <div class="app-shell w-full flex">
 
+    <!-- always-visible hamburger button (phone/tablet only) that opens the sidebar drawer.
+         Kept OUTSIDE #sidebar on purpose: #sidebar slides off-screen with a CSS transform
+         when closed, and anything positioned inside it would slide away too. -->
+    <button id="mobileMenuBtn" aria-label="Open menu" class="mobile-menu-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="3" y1="6" x2="21" y2="6"></line>
+        <line x1="3" y1="12" x2="21" y2="12"></line>
+        <line x1="3" y1="18" x2="21" y2="18"></line>
+      </svg>
+    </button>
+
     <!-- backdrop shown only on phone/tablet when the sidebar drawer is expanded -->
     <div id="sidebarBackdrop" class="sidebar-backdrop hidden"></div>
 
     <!-- ===================== SIDEBAR ===================== -->
-    <aside id="sidebar" class="sidebar app-sidebar relative flex flex-col items-center py-5 gap-6 bg-cream border-r border-peach-300 transition-all duration-300 ease-in-out w-20 shrink-0">
+    <aside id="sidebar" class="sidebar app-sidebar relative flex flex-col items-center py-5 gap-6 bg-cream border-r border-peach-300 transition-all duration-300 ease-in-out w-20 shrink-0 expanded">
       <!-- collapse toggle -->
       <button id="sidebarToggle" aria-label="Toggle sidebar" class="absolute -right-3 top-8 w-6 h-6 rounded-full bg-cream shadow-md border border-peach-300 flex items-center justify-center text-peach-500 hover:scale-110 transition-transform">
         <svg id="toggleIcon" class="w-3.5 h-3.5 transition-transform duration-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
@@ -88,10 +99,6 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
           <span>Billing & Invoice</span>
         </li>
-        <!-- <li class="nav-item" data-label="Reports Management" aria-label="Reports Management" onclick="window.location.href='../reports/report.html'" style="list-style:none; width:100%;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="21" x2="5" y2="11"></line><line x1="12" y1="21" x2="12" y2="6"></line><line x1="19" y1="21" x2="19" y2="14"></line><line x1="3" y1="21" x2="21" y2="21"></line></svg>
-          <span>Reports Management</span>
-        </li> -->
       </nav>
     </aside>
 
@@ -106,33 +113,6 @@
         </div>
 
         <div class="flex items-center gap-2.5 relative">
-          <!-- Notification Icon -->
-          <!-- <div class="relative">
-            <button id="notifBtn" aria-label="Notifications" class="w-8 h-8 rounded-full bg-cream shadow-sm border border-peach-300 flex items-center justify-center text-gray-500 hover:text-peach-500 transition-colors">
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-              </svg>
-              <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full"></span>
-            </button>
-
-            <div id="notifDropdown" class="topbar-dropdown hidden">
-              <p class="topbar-dropdown-title">Notifications</p>
-              <div class="topbar-notif-item">
-                <p>Out of stock: PLC Control Panel</p>
-                <span>18 min ago</span>
-              </div>
-              <div class="topbar-notif-item">
-                <p>Low stock: Battery Operated Trolley</p>
-                <span>1 hr ago</span>
-              </div>
-              <div class="topbar-notif-item">
-                <p>New product added</p>
-                <span>3 hr ago</span>
-              </div>
-            </div>
-          </div> -->
-
           <!-- Profile Icon -->
           <div class="relative">
             <button id="profileBtn" aria-label="Profile" class="w-8 h-8 rounded-full bg-peach-500 flex items-center justify-center text-white font-semibold text-sm shadow-sm">
@@ -140,7 +120,6 @@
             </button>
 
             <div id="profileDropdown" class="topbar-dropdown hidden">
-              <div class="topbar-dropdown-title" id="profileRoleLabel" style="padding:4px 6px 2px;">Logged in as: -</div>
               <button id="profileLogoutBtn" class="topbar-logout-btn">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                 Logout
@@ -342,6 +321,10 @@
             <span class="field-error" id="err-pf-other-category"></span>
           </div>
           <div class="field-group form-field">
+            <label>Sub Category</label>
+            <input type="text" id="pf-subcategory" class="field-input" placeholder="e.g. Hydraulic Press">
+          </div>
+          <div class="field-group form-field">
             <label>Machine Series / Model Code</label>
             <input type="text" id="pf-modelcode" class="field-input" placeholder="e.g. VK001, Nano, Budget, Rotary">
           </div>
@@ -382,11 +365,6 @@
             <input type="number" min="0" max="100" step="0.01" id="pf-gst" class="field-input" placeholder="e.g. 18" value="18">
           </div>
 
-          <div class="field-group form-field">
-            <label>Warranty (Years)</label>
-            <input type="number" min="0" id="pf-warranty" class="field-input" placeholder="e.g. 1">
-          </div>
-
           <div class="form-subgroup">
             <div class="form-subgroup-title"><i class="fas fa-tag"></i> Pricing</div>
             <div class="field-group form-field">
@@ -395,13 +373,21 @@
               <span class="field-error" id="err-pf-mrp"></span>
             </div>
             <div class="field-group form-field">
-              <label>Discount (%)</label>
-              <input type="number" min="0" max="100" step="0.01" id="pf-discount" class="field-input" placeholder="e.g. 9">
-              <span class="field-error" id="err-pf-discount"></span>
+              <label>Discount Type</label>
+              <select id="pf-discounttype" class="field-input">
+                <option value="percentage">Percentage (%)</option>
+                <option value="flat">Flat Amount (₹)</option>
+              </select>
             </div>
             <div class="field-group form-field">
-              <label>Selling Price / Rate (₹) <span class="req">*</span></label>
+              <label>Discount Value</label>
+              <input type="number" min="0" step="0.01" id="pf-discount" class="field-input" placeholder="e.g. 9">
+              <span class="field-error" id="err-pf-discount"></span>
+            </div>
+            <div class="field-group form-field span-2">
+              <label>Final / Selling Price (₹) <span class="req">*</span></label>
               <input type="number" min="0" step="0.01" id="pf-price" class="field-input" placeholder="e.g. 1250000">
+              <span class="field-hint">Auto-calculated from MRP + discount — adjust if needed.</span>
               <span class="field-error" id="err-pf-price"></span>
             </div>
           </div>
@@ -414,6 +400,14 @@
           <div class="field-group form-field">
             <label>Low Stock Threshold</label>
             <input type="number" min="0" id="pf-threshold" class="field-input" placeholder="e.g. 2" value="2">
+          </div>
+          <div class="field-group form-field">
+            <label>Reorder Quantity</label>
+            <input type="number" min="0" id="pf-reorderqty" class="field-input" placeholder="e.g. 3">
+          </div>
+          <div class="field-group form-field">
+            <label>Lead Time (Days)</label>
+            <input type="number" min="0" id="pf-leadtime" class="field-input" placeholder="e.g. 10">
           </div>
 
           <div class="field-group form-field">
@@ -453,8 +447,8 @@
               <input type="number" min="0" id="mi-oiltank" class="field-input" placeholder="e.g. 300">
             </div>
             <div class="field-group form-field">
-              <label>Power Consumption (HP)</label>
-              <input type="number" min="0" step="0.1" id="mi-power-hp" class="field-input" placeholder="e.g. 60">
+              <label>Power Consumption (kW)</label>
+              <input type="number" min="0" step="0.01" id="mi-power-kw" class="field-input" placeholder="e.g. 44.7">
             </div>
             <div class="field-group form-field">
               <label>Genset Requirement (KVA)</label>
@@ -489,12 +483,20 @@
               <input type="text" id="mi-shed" class="field-input" placeholder="e.g. 20x15 ft, 40x60 ft">
             </div>
             <div class="field-group form-field">
-              <label>Machine Weight</label>
-              <input type="text" id="mi-weight" class="field-input" placeholder="e.g. 12,500 kg">
+              <label>Weight (Kg)</label>
+              <input type="number" min="0" step="0.01" id="mi-weight-kg" class="field-input" placeholder="e.g. 2400">
             </div>
             <div class="field-group form-field">
-              <label>Machine Dimensions (L x W x H)</label>
-              <input type="text" id="mi-dimensions" class="field-input" placeholder="e.g. 8.5m x 3.2m x 3.8m">
+              <label>Length (cm)</label>
+              <input type="number" min="0" step="0.01" id="mi-length-cm" class="field-input" placeholder="e.g. 250">
+            </div>
+            <div class="field-group form-field">
+              <label>Width (cm)</label>
+              <input type="number" min="0" step="0.01" id="mi-width-cm" class="field-input" placeholder="e.g. 180">
+            </div>
+            <div class="field-group form-field">
+              <label>Height (cm)</label>
+              <input type="number" min="0" step="0.01" id="mi-height-cm" class="field-input" placeholder="e.g. 200">
             </div>
             <div class="field-group form-field">
               <label>Motor Details (HP, Brand, RPM, Phase)</label>
@@ -503,6 +505,18 @@
             <div class="field-group form-field">
               <label>Country of Origin</label>
               <input type="text" id="mi-origin" class="field-input" placeholder="e.g. India">
+            </div>
+            <div class="field-group form-field">
+              <label>Warranty Period (Years)</label>
+              <input type="number" min="0" id="pf-warranty" class="field-input" placeholder="e.g. 1">
+            </div>
+            <div class="field-group form-field">
+              <label>Warranty Type</label>
+              <input type="text" id="mi-warranty-type" class="field-input" placeholder="e.g. On-Site">
+            </div>
+            <div class="field-group form-field span-2">
+              <label>Warranty Parts Covered</label>
+              <input type="text" id="mi-warranty-parts" class="field-input" placeholder="e.g. Hydraulic Pump & Main Frame">
             </div>
             <div class="field-group form-field">
               <label>Demo / Reference Video Link</label>
@@ -577,15 +591,53 @@
             </div>
           </div>
 
-          <!-- ============ Product Specification Master (dynamic row-adder) ============ -->
+          <!-- ============ Feature Specification List (id / label / value — matches payload "features") ============ -->
           <div class="conditional-section" id="specMasterSection">
-            <div class="conditional-section-title"><i class="fas fa-list-ol"></i> Product Specification Master</div>
-            <div class="conditional-section-sub">Sr A, B, C… rows as used in the mould / machine quotation PDF</div>
+            <div class="conditional-section-title"><i class="fas fa-list-ol"></i> Feature Specifications</div>
+            <div class="conditional-section-sub">Each row becomes { id, label, value } — e.g. F1 · Structure · Heavy duty steel</div>
             <div class="form-field span-2">
               <div class="specmaster-list" id="specmaster-list"></div>
               <button type="button" class="btn-secondary" id="btn-add-specline" style="margin-top:8px;">
-                <i class="fas fa-plus"></i> Add Specification Line
+                <i class="fas fa-plus"></i> Add Feature Line
               </button>
+            </div>
+          </div>
+
+          <!-- ============ Media (thumbnail / gallery / brochure — matches payload "media") ============ -->
+          <div class="conditional-section" id="mediaSection">
+            <div class="conditional-section-title"><i class="fas fa-photo-film"></i> Media</div>
+            <div class="conditional-section-sub">Upload thumbnail, gallery images &amp; brochure PDF from your device</div>
+
+            <div class="field-group form-field span-2">
+              <label>Thumbnail Image</label>
+              <input type="file" id="pf-thumbnail-file" class="field-input" accept="image/*">
+              <input type="hidden" id="pf-thumbnail">
+              <div class="media-preview-row" id="pf-thumbnail-preview-wrap" style="display:none;">
+                <div class="media-thumb-preview">
+                  <img id="pf-thumbnail-preview" alt="Thumbnail preview">
+                  <button type="button" class="media-remove-btn" id="pf-thumbnail-remove"><i class="fas fa-xmark"></i></button>
+                </div>
+              </div>
+            </div>
+
+            <div class="field-group form-field span-2">
+              <label>Gallery Images</label>
+              <input type="file" id="pf-gallery-file" class="field-input" accept="image/*" multiple>
+              <span class="field-hint">You can select multiple images at once.</span>
+              <div class="media-preview-row" id="pf-gallery-preview-wrap"></div>
+            </div>
+
+            <div class="field-group form-field span-2">
+              <label>Brochure PDF</label>
+              <input type="file" id="pf-brochure-file" class="field-input" accept="application/pdf">
+              <input type="hidden" id="pf-brochure">
+              <div class="media-preview-row" id="pf-brochure-preview-wrap" style="display:none;">
+                <div class="media-file-preview" id="pf-brochure-preview">
+                  <i class="fas fa-file-pdf"></i>
+                  <span id="pf-brochure-filename"></span>
+                  <button type="button" class="media-remove-btn" id="pf-brochure-remove"><i class="fas fa-xmark"></i></button>
+                </div>
+              </div>
             </div>
           </div>
 

@@ -14,7 +14,9 @@
   let deletingId = null;
   let viewingId = null;
   let stockProductId = null;
-  let specLines = [];
+  let specLines = []; // [{ label, value }] -> mapped to payload.specifications.features [{id,label,value}]
+  let galleryImages = []; // [{ name, dataUrl }] -> mapped to payload.media.gallery (base64 for now, backend upload later)
+  let brochureFile = null; // { name, dataUrl } | null -> mapped to payload.media.brochurePdf
 
   // =============================================================
   // DOM REFS
@@ -36,43 +38,73 @@
   const modalDelete = $('#modal-delete-product');
   const modalStock = $('#modal-stock-history');
 
+  // --- productIdentity ---
   const pfId = $('#pf-id');
   const pfName = $('#pf-name');
+  const pfModelcode = $('#pf-modelcode');
+  const pfBrand = $('#pf-brand');
+  const pfSku = $('#pf-sku');
+
+  // --- classification ---
   const pfProducttype = $('#pf-producttype');
   const pfCategory = $('#pf-category');
   const pfOtherCategory = $('#pf-other-category');
   const pfOtherWrap = $('#pf-other-category-wrap');
-  const pfModelcode = $('#pf-modelcode');
-  const pfBrand = $('#pf-brand');
-  const pfSku = $('#pf-sku');
-  const pfSpec = $('#pf-spec');
-  const pfUnit = $('#pf-unit');
+  const pfSubcategory = $('#pf-subcategory');
   const pfHsn = $('#pf-hsn');
   const pfGst = $('#pf-gst');
-  const pfWarranty = $('#pf-warranty');
+
+  // --- pricing ---
   const pfMrp = $('#pf-mrp');
+  const pfDiscountType = $('#pf-discounttype');
   const pfDiscount = $('#pf-discount');
   const pfPrice = $('#pf-price');
+
+  // --- inventory ---
   const pfStock = $('#pf-stock');
   const pfThreshold = $('#pf-threshold');
-  const pfQtyPerKw = $('#pf-qtyperkw');
+  const pfReorderQty = $('#pf-reorderqty');
+  const pfLeadTime = $('#pf-leadtime');
   const pfStatus = $('#pf-status');
+
+  const pfSpec = $('#pf-spec');
+  const pfUnit = $('#pf-unit');
+  const pfQtyPerKw = $('#pf-qtyperkw');
   const pfDescription = $('#pf-description');
 
-  // Machine fields
+  // --- media (file upload + base64 preview; backend upload wiring comes later) ---
+  const pfThumbnail = $('#pf-thumbnail'); // hidden input holding the current base64 data URL
+  const pfThumbnailFile = $('#pf-thumbnail-file');
+  const pfThumbnailPreviewWrap = $('#pf-thumbnail-preview-wrap');
+  const pfThumbnailPreview = $('#pf-thumbnail-preview');
+  const pfThumbnailRemove = $('#pf-thumbnail-remove');
+
+  const pfGalleryFile = $('#pf-gallery-file');
+  const pfGalleryPreviewWrap = $('#pf-gallery-preview-wrap');
+
+  const pfBrochure = $('#pf-brochure'); // hidden input holding the current base64 data URL
+  const pfBrochureFile = $('#pf-brochure-file');
+  const pfBrochurePreviewWrap = $('#pf-brochure-preview-wrap');
+  const pfBrochurePreview = $('#pf-brochure-preview');
+  const pfBrochureFilename = $('#pf-brochure-filename');
+  const pfBrochureRemove = $('#pf-brochure-remove');
+
+  // --- specifications: machine ---
   const miOutput = $('#mi-output');
   const miTonnage = $('#mi-tonnage');
   const miCycletime = $('#mi-cycletime');
   const miOiltank = $('#mi-oiltank');
-  const miPowerHp = $('#mi-power-hp');
+  const miPowerKw = $('#mi-power-kw');
   const miGensetKva = $('#mi-genset-kva');
   const tsAutomation = $('#ts-automation');
   const tsVibration = $('#ts-vibration');
   const tsPalletsize = $('#ts-palletsize');
   const miLabour = $('#mi-labour');
   const miShed = $('#mi-shed');
-  const miWeight = $('#mi-weight');
-  const miDimensions = $('#mi-dimensions');
+  const miWeightKg = $('#mi-weight-kg');
+  const miLengthCm = $('#mi-length-cm');
+  const miWidthCm = $('#mi-width-cm');
+  const miHeightCm = $('#mi-height-cm');
   const miMotor = $('#mi-motor');
   const miOrigin = $('#mi-origin');
   const miVideo = $('#mi-video');
@@ -82,14 +114,19 @@
   const tsSafety = $('#ts-safety');
   const miAccessories = $('#mi-accessories');
 
-  // Component fields
+  // --- specifications: warranty ---
+  const pfWarranty = $('#pf-warranty');
+  const miWarrantyType = $('#mi-warranty-type');
+  const miWarrantyParts = $('#mi-warranty-parts');
+
+  // --- specifications: component ---
   const coCapacity = $('#co-capacity');
   const coLength = $('#co-length');
   const coMotor = $('#co-motor');
   const coFeatures = $('#co-features');
   const coCompatible = $('#co-compatible');
 
-  // Accessory fields
+  // --- specifications: accessory ---
   const acSizetype = $('#ac-sizetype');
   const acPackunit = $('#ac-packunit');
   const acMoq = $('#ac-moq');
@@ -123,7 +160,81 @@
   }
 
   // =============================================================
-  // SAMPLE DATA (for demo — replace with API calls)
+  // PAYLOAD MAPPING
+  // Internal `product` objects stay flat (easier to sort/filter/render
+  // in the table), but this maps a flat product to the exact nested
+  // JSON shape the backend/API payload expects.
+  // =============================================================
+  function calcFinalPrice(mrp, discountType, discountValue) {
+    mrp = parseFloat(mrp) || 0;
+    discountValue = parseFloat(discountValue) || 0;
+    if (discountType === 'flat') {
+      return Math.max(0, mrp - discountValue);
+    }
+    // percentage (default)
+    return Math.max(0, mrp - (mrp * discountValue / 100));
+  }
+
+  function productToPayload(p) {
+    const payload = {
+      productIdentity: {
+        name: p.name || '',
+        sku: p.sku || '',
+        modelCode: p.modelCode || '',
+        brand: p.brand || ''
+      },
+      classification: {
+        type: p.productType || '',
+        category: p.category || '',
+        subCategory: p.subCategory || '',
+        hsn: p.hsn || '',
+        gst: p.gst || 0
+      },
+      pricing: {
+        mrp: p.mrp || 0,
+        discountType: p.discountType || 'percentage',
+        discountValue: p.discount || 0,
+        calculatedPrice: calcFinalPrice(p.mrp, p.discountType, p.discount),
+        finalPrice: p.price || 0
+      },
+      inventory: {
+        stock: p.stock || 0,
+        threshold: p.threshold || 0,
+        reorderQuantity: p.reorderQty || 0,
+        leadTimeDays: p.leadTime || 0,
+        status: p.status || 'Active'
+      },
+      specifications: {
+        powerConsumptionKw: p.powerKw || 0,
+        weightKg: p.weightKg || 0,
+        dimensions: {
+          lengthCm: p.lengthCm || 0,
+          widthCm: p.widthCm || 0,
+          heightCm: p.heightCm || 0
+        },
+        warranty: {
+          periodYears: p.warranty || 0,
+          type: p.warrantyType || '',
+          partsCovered: p.warrantyParts || ''
+        },
+        features: (p.specMaster || []).map((f, idx) => ({
+          id: f.id || ('F' + (idx + 1)),
+          label: f.label || '',
+          value: f.value || ''
+        }))
+      },
+      media: {
+        thumbnail: p.thumbnail || '',
+        gallery: Array.isArray(p.gallery) ? p.gallery.map(g => g.dataUrl || g) : [],
+        brochurePdf: p.brochure || ''
+      },
+      description: p.description || ''
+    };
+    return payload;
+  }
+
+  // =============================================================
+  // SAMPLE DATA
   // =============================================================
   function generateSampleProducts() {
     return [
@@ -132,6 +243,7 @@
         name: 'Hydraulic Brick Making Machine VKM-40',
         productType: 'machine',
         category: 'Brick Machine',
+        subCategory: 'Hydraulic Press',
         brand: 'VKM',
         sku: 'VKM-BM-40',
         spec: 'Fully Automatic, 4 Station',
@@ -139,29 +251,35 @@
         hsn: '84743100',
         gst: 18,
         warranty: 1,
+        warrantyType: 'On-Site',
+        warrantyParts: 'Hydraulic Pump & Main Frame',
         mrp: 1380000,
+        discountType: 'percentage',
         discount: 9,
-        price: 1250000,
+        price: 1255800,
         stock: 5,
         threshold: 2,
+        reorderQty: 3,
+        leadTime: 10,
         qtyPerKw: 1,
         status: 'Active',
-        description: 'High performance hydraulic brick making machine with 4 station turntable.',
+        description: 'High performance hydraulic brick making machine with 4 station turntable, ideal for mass production of high-density concrete blocks.',
         modelCode: 'VK001',
-        // Machine fields
         output: '4500–5000 bricks/8hrs',
         tonnage: 120,
         cycletime: 12,
         oiltank: 300,
-        powerHp: 60,
+        powerKw: 1,
         gensetKva: 82.5,
         automation: 'Fully Automatic',
         vibration: 'yes',
         palletsize: '14x24',
         labour: 6,
         shed: '20x15 ft',
-        weight: '12,500 kg',
-        dimensions: '8.5m x 3.2m x 3.8m',
+        weightKg: 2400,
+        lengthCm: 250,
+        widthCm: 180,
+        heightCm: 200,
         motor: '60 HP, Crompton, 1440 RPM, 3-Phase',
         origin: 'India',
         video: '',
@@ -170,13 +288,23 @@
         controlpanel: 'IP54, MCB + contactor based',
         safety: 'Emergency stop, safety guards, overload cutoff',
         accessories: 'Pallet feeding conveyor\nPLC control panel\nHydraulic power pack',
-        specMaster: ['A - Heavy duty steel structure', 'B - 4 station turntable', 'C - Hydraulic system with 120 ton pressure']
+        thumbnail: '',
+        gallery: [],
+        brochure: '',
+        brochureName: '',
+        specMaster: [
+          { id: 'F1', label: 'Structure', value: 'Heavy duty steel' },
+          { id: 'F2', label: 'Stations', value: '4' },
+          { id: 'F3', label: 'Pressure', value: '120 tons' },
+          { id: 'F4', label: 'Operation', value: 'Fully Automatic' }
+        ]
       },
       {
         id: 2,
         name: '500kg Pan Mixer',
         productType: 'component',
         category: 'Pan Mixer',
+        subCategory: '',
         brand: 'VKM',
         sku: 'VKM-PM-500',
         spec: 'Heavy Duty, 500kg Batch',
@@ -184,27 +312,33 @@
         hsn: '84743900',
         gst: 18,
         warranty: 1,
+        warrantyType: '',
+        warrantyParts: '',
         mrp: 450000,
+        discountType: 'percentage',
         discount: 5,
         price: 427500,
         stock: 8,
         threshold: 2,
+        reorderQty: 2,
+        leadTime: 7,
         qtyPerKw: 1,
         status: 'Active',
         description: '500kg capacity pan mixer for brick manufacturing.',
         modelCode: 'PM500',
-        // Component fields
         capacity: '500kg',
         length: '',
         motor: '30 HP, 1440 RPM, 3-Phase, Crompton',
         features: 'Auto material feeding system\nAccident proof locking system\nStainless steel mixing arms',
-        compatible: 'VKM-BM-40, VKM-BM-80'
+        compatible: 'VKM-BM-40, VKM-BM-80',
+        specMaster: []
       },
       {
         id: 3,
         name: 'Zig Zag Mould with Dumble',
         productType: 'accessory',
         category: 'Mould',
+        subCategory: '',
         brand: 'VKM',
         sku: 'VKM-MD-ZZ',
         spec: 'Zig Zag Pattern with Dumble',
@@ -212,25 +346,30 @@
         hsn: '84804100',
         gst: 18,
         warranty: 0,
+        warrantyType: '',
+        warrantyParts: '',
         mrp: 8500,
+        discountType: 'percentage',
         discount: 0,
         price: 8500,
         stock: 150,
         threshold: 50,
+        reorderQty: 50,
+        leadTime: 5,
         qtyPerKw: 100,
         status: 'Active',
         description: 'Zig Zag mould with dumble pattern for interlocking bricks.',
         modelCode: 'MZZ100',
-        // Accessory fields
         sizetype: 'Zig Zag with Dumble',
         packunit: 'per piece',
-        moq: 100
+        moq: 100,
+        specMaster: []
       }
     ];
   }
 
   // =============================================================
-  // CRUD OPERATIONS (mock — replace with API)
+  // CRUD OPERATIONS
   // =============================================================
   function loadProducts() {
     const stored = localStorage.getItem('vkm_products');
@@ -286,7 +425,7 @@
   }
 
   // =============================================================
-  // STOCK LEDGER (mock)
+  // STOCK LEDGER
   // =============================================================
   let stockLedger = {};
 
@@ -317,7 +456,6 @@
     stockLedger[productId].push(entry);
     saveLedger();
 
-    // Update product stock
     const product = getProduct(parseInt(productId));
     if (product) {
       if (type === 'in') {
@@ -355,7 +493,6 @@
       return matchSearch && matchType && matchCat && matchStatus;
     });
 
-    // Sort
     filteredProducts.sort((a, b) => {
       let va = a[sortField] || '';
       let vb = b[sortField] || '';
@@ -366,7 +503,6 @@
       return 0;
     });
 
-    // Pagination
     const total = filteredProducts.length;
     const totalPages = Math.ceil(total / rowsPerPage) || 1;
     if (currentPage > totalPages) currentPage = totalPages;
@@ -374,7 +510,6 @@
     const end = Math.min(start + rowsPerPage, total);
     const pageItems = filteredProducts.slice(start, end);
 
-    // Update stats
     statTotal.textContent = products.length;
     statActive.textContent = products.filter(p => p.status === 'Active').length;
     statLow.textContent = products.filter(p => {
@@ -385,7 +520,6 @@
     const totalValue = products.reduce((sum, p) => sum + (parseFloat(p.price) || 0) * (parseInt(p.stock) || 0), 0);
     statValue.textContent = '₹' + totalValue.toLocaleString('en-IN');
 
-    // Render rows
     if (pageItems.length === 0) {
       tbody.innerHTML = '';
       emptyState.classList.remove('hidden');
@@ -398,61 +532,62 @@
     updateSortIcons();
   }
 
- function renderRow(p) {
-  const statusBadge = getStatusBadge(p);
-  const typeBadge = getTypeBadge(p.productType);
-  const iconBg = getIconBg(p.category);
+  function renderRow(p) {
+    const statusBadge = getStatusBadge(p);
+    const typeBadge = getTypeBadge(p.productType);
+    const iconBg = getIconBg(p.category);
 
-  return `
-    <tr>
-      <td data-label="Product">
-        <div class="product-cell">
-          <div class="row-icon ${iconBg}">${getIconChar(p.category)}</div>
-          <div>
-            <div class="product-name">${escapeHtml(p.name)}</div>
-            <div class="product-sub">${escapeHtml(p.brand)} ${p.sku ? '· ' + escapeHtml(p.sku) : ''}</div>
+    return `
+      <tr>
+        <td data-label="Product">
+          <div class="product-cell">
+            <div class="row-icon ${iconBg}">${getIconChar(p.category)}</div>
+            <div>
+              <div class="product-name">${escapeHtml(p.name)}</div>
+              <div class="product-sub">${escapeHtml(p.brand)} ${p.sku ? '· ' + escapeHtml(p.sku) : ''}</div>
+            </div>
           </div>
-        </div>
-      </td>
-      <td data-label="Type">${typeBadge}</td>
-      <td data-label="Category">${escapeHtml(p.category)}</td>
-      <td data-label="Brand">${escapeHtml(p.brand)}</td>
-      <td data-label="Qty / Set">${p.qtyPerKw || 0}</td>
-      <td data-label="HSN">${escapeHtml(p.hsn || '—')}</td>
-      <td data-label="GST">${p.gst || 0}%</td>
-      <td data-label="Selling Price">
-        <div class="price-cell">
-          ${p.mrp ? `<div class="price-mrp">₹${Number(p.mrp).toLocaleString('en-IN')}</div>` : ''}
-          <div class="price-selling">₹${Number(p.price).toLocaleString('en-IN')}
-            ${p.discount && p.discount > 0 ? `<span class="discount-badge">${p.discount}% off</span>` : ''}
+        </td>
+        <td data-label="Type">${typeBadge}</td>
+        <td data-label="Category">${escapeHtml(p.category)}</td>
+        <td data-label="Brand">${escapeHtml(p.brand)}</td>
+        <td data-label="Qty / Set">${p.qtyPerKw || 0}</td>
+        <td data-label="HSN">${escapeHtml(p.hsn || '—')}</td>
+        <td data-label="GST">${p.gst || 0}%</td>
+        <td data-label="Selling Price">
+          <div class="price-cell">
+            ${p.mrp ? `<div class="price-mrp">₹${Number(p.mrp).toLocaleString('en-IN')}</div>` : ''}
+            <div class="price-selling">₹${Number(p.price).toLocaleString('en-IN')}
+              ${p.discount && p.discount > 0 ? `<span class="discount-badge">${p.discount}${p.discountType === 'flat' ? ' ₹ off' : '% off'}</span>` : ''}
+            </div>
           </div>
-        </div>
-      </td>
-      <td data-label="Stock">
-        <div class="stock-cell">
-          <span>${p.stock || 0}</span>
-          <button class="stock-history-btn" data-id="${p.id}" title="Stock History">
-            <i class="fas fa-clock-rotate-left"></i>
-          </button>
-        </div>
-      </td>
-      <td data-label="Status">${statusBadge}</td>
-      <td data-label="Actions">
-        <div class="row-actions">
-          <button class="action-icon-btn icon-view" data-id="${p.id}" title="View">
-            <i class="fas fa-eye"></i>
-          </button>
-          <button class="action-icon-btn icon-edit" data-id="${p.id}" title="Edit">
-            <i class="fas fa-pen"></i>
-          </button>
-          <button class="action-icon-btn danger" data-id="${p.id}" title="Delete">
-            <i class="fas fa-trash"></i>
-          </button>
-        </div>
-      </td>
-    </tr>
-  `;
-}
+        </td>
+        <td data-label="Stock">
+          <div class="stock-cell">
+            <span>${p.stock || 0}</span>
+            <button class="stock-history-btn" data-id="${p.id}" title="Stock History">
+              <i class="fas fa-clock-rotate-left"></i>
+            </button>
+          </div>
+        </td>
+        <td data-label="Status">${statusBadge}</td>
+        <td data-label="Actions">
+          <div class="row-actions">
+            <button class="action-icon-btn icon-view" data-id="${p.id}" title="View">
+              <i class="fas fa-eye"></i>
+            </button>
+            <button class="action-icon-btn icon-edit" data-id="${p.id}" title="Edit">
+              <i class="fas fa-pen"></i>
+            </button>
+            <button class="action-icon-btn danger" data-id="${p.id}" title="Delete">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }
+
   function getStatusBadge(p) {
     const stock = parseInt(p.stock) || 0;
     const threshold = parseInt(p.threshold) || 0;
@@ -556,47 +691,79 @@
   }
 
   // =============================================================
-  // PRODUCT FORM - COLLECT DATA
+  // PRODUCT FORM
   // =============================================================
   function collectFormData() {
     const type = pfProducttype.value;
+    const mrp = parseFloat(pfMrp.value) || 0;
+    const discountType = pfDiscountType.value || 'percentage';
+    const discount = parseFloat(pfDiscount.value) || 0;
+    // If the user hasn't typed a final price, auto-calc it from MRP + discount.
+    const enteredPrice = parseFloat(pfPrice.value);
+    const price = (pfPrice.value === '' || isNaN(enteredPrice))
+      ? calcFinalPrice(mrp, discountType, discount)
+      : enteredPrice;
+
     const data = {
+      // productIdentity
       name: pfName.value.trim(),
-      productType: type,
-      category: pfCategory.value === '__other__' ? pfOtherCategory.value.trim() : pfCategory.value,
+      modelCode: pfModelcode.value.trim(),
       brand: pfBrand.value.trim(),
       sku: pfSku.value.trim(),
-      spec: pfSpec.value.trim(),
-      unit: pfUnit.value,
+
+      // classification
+      productType: type,
+      category: pfCategory.value === '__other__' ? pfOtherCategory.value.trim() : pfCategory.value,
+      subCategory: pfSubcategory.value.trim(),
       hsn: pfHsn.value.trim(),
       gst: parseFloat(pfGst.value) || 0,
-      warranty: parseInt(pfWarranty.value) || 0,
-      mrp: parseFloat(pfMrp.value) || 0,
-      discount: parseFloat(pfDiscount.value) || 0,
-      price: parseFloat(pfPrice.value) || 0,
+
+      // pricing
+      mrp: mrp,
+      discountType: discountType,
+      discount: discount,
+      price: price,
+
+      // inventory
       stock: parseInt(pfStock.value) || 0,
       threshold: parseInt(pfThreshold.value) || 0,
-      qtyPerKw: parseFloat(pfQtyPerKw.value) || 0,
+      reorderQty: parseInt(pfReorderQty.value) || 0,
+      leadTime: parseInt(pfLeadTime.value) || 0,
       status: pfStatus.value,
+
+      spec: pfSpec.value.trim(),
+      unit: pfUnit.value,
+      qtyPerKw: parseFloat(pfQtyPerKw.value) || 0,
       description: pfDescription.value.trim(),
-      modelCode: pfModelcode.value.trim()
+
+      // media (base64 data URLs for now — swap for uploaded file URLs once the backend endpoint is wired up)
+      thumbnail: pfThumbnail.value || '',
+      gallery: galleryImages.slice(),
+      brochure: pfBrochure.value || '',
+      brochureName: brochureFile ? brochureFile.name : '',
+
+      // warranty (shared)
+      warranty: parseInt(pfWarranty.value) || 0,
+      warrantyType: miWarrantyType.value.trim(),
+      warrantyParts: miWarrantyParts.value.trim()
     };
 
-    // Machine fields
     if (type === 'machine') {
       data.output = miOutput.value.trim();
       data.tonnage = parseFloat(miTonnage.value) || 0;
       data.cycletime = parseFloat(miCycletime.value) || 0;
       data.oiltank = parseInt(miOiltank.value) || 0;
-      data.powerHp = parseFloat(miPowerHp.value) || 0;
+      data.powerKw = parseFloat(miPowerKw.value) || 0;
       data.gensetKva = parseFloat(miGensetKva.value) || 0;
       data.automation = tsAutomation.value;
       data.vibration = tsVibration.value;
       data.palletsize = tsPalletsize.value.trim();
       data.labour = parseInt(miLabour.value) || 0;
       data.shed = miShed.value.trim();
-      data.weight = miWeight.value.trim();
-      data.dimensions = miDimensions.value.trim();
+      data.weightKg = parseFloat(miWeightKg.value) || 0;
+      data.lengthCm = parseFloat(miLengthCm.value) || 0;
+      data.widthCm = parseFloat(miWidthCm.value) || 0;
+      data.heightCm = parseFloat(miHeightCm.value) || 0;
       data.motor = miMotor.value.trim();
       data.origin = miOrigin.value.trim();
       data.video = miVideo.value.trim();
@@ -607,7 +774,6 @@
       data.accessories = miAccessories.value.trim();
     }
 
-    // Component fields
     if (type === 'component') {
       data.capacity = coCapacity.value.trim();
       data.length = coLength.value.trim();
@@ -616,15 +782,16 @@
       data.compatible = coCompatible.value.trim();
     }
 
-    // Accessory fields
     if (type === 'accessory') {
       data.sizetype = acSizetype.value.trim();
       data.packunit = acPackunit.value.trim();
       data.moq = parseInt(acMoq.value) || 0;
     }
 
-    // Spec Master
-    data.specMaster = specLines.filter(s => s.trim());
+    // specifications.features -> [{id, label, value}]
+    data.specMaster = specLines
+      .filter(s => (s.label && s.label.trim()) || (s.value && s.value.trim()))
+      .map((s, idx) => ({ id: 'F' + (idx + 1), label: s.label.trim(), value: s.value.trim() }));
 
     return data;
   }
@@ -633,39 +800,56 @@
     if (!data) return;
     pfId.value = data.id || '';
     pfName.value = data.name || '';
-    pfProducttype.value = data.productType || '';
-    pfCategory.value = data.category || '';
+    pfModelcode.value = data.modelCode || '';
     pfBrand.value = data.brand || '';
     pfSku.value = data.sku || '';
-    pfSpec.value = data.spec || '';
-    pfUnit.value = data.unit || 'Piece';
+
+    pfProducttype.value = data.productType || '';
+    pfCategory.value = data.category || '';
+    pfSubcategory.value = data.subCategory || '';
     pfHsn.value = data.hsn || '';
     pfGst.value = data.gst || 18;
-    pfWarranty.value = data.warranty || 0;
+
     pfMrp.value = data.mrp || 0;
+    pfDiscountType.value = data.discountType || 'percentage';
     pfDiscount.value = data.discount || 0;
     pfPrice.value = data.price || 0;
+
     pfStock.value = data.stock || 0;
     pfThreshold.value = data.threshold || 2;
-    pfQtyPerKw.value = data.qtyPerKw || 0;
+    pfReorderQty.value = data.reorderQty || 0;
+    pfLeadTime.value = data.leadTime || 0;
     pfStatus.value = data.status || 'Active';
-    pfDescription.value = data.description || '';
-    pfModelcode.value = data.modelCode || '';
 
-    // Machine
+    pfSpec.value = data.spec || '';
+    pfUnit.value = data.unit || 'Piece';
+    pfQtyPerKw.value = data.qtyPerKw || 0;
+    pfDescription.value = data.description || '';
+
+    setThumbnailPreview(data.thumbnail || '');
+    galleryImages = Array.isArray(data.gallery) ? data.gallery.slice() : [];
+    renderGalleryPreview();
+    setBrochurePreview(data.brochure || '', data.brochureName || '');
+
+    pfWarranty.value = data.warranty || 0;
+    miWarrantyType.value = data.warrantyType || '';
+    miWarrantyParts.value = data.warrantyParts || '';
+
     miOutput.value = data.output || '';
     miTonnage.value = data.tonnage || '';
     miCycletime.value = data.cycletime || '';
     miOiltank.value = data.oiltank || '';
-    miPowerHp.value = data.powerHp || '';
+    miPowerKw.value = data.powerKw || '';
     miGensetKva.value = data.gensetKva || '';
     tsAutomation.value = data.automation || 'Manual';
     tsVibration.value = data.vibration || 'no';
     tsPalletsize.value = data.palletsize || '';
     miLabour.value = data.labour || '';
     miShed.value = data.shed || '';
-    miWeight.value = data.weight || '';
-    miDimensions.value = data.dimensions || '';
+    miWeightKg.value = data.weightKg || '';
+    miLengthCm.value = data.lengthCm || '';
+    miWidthCm.value = data.widthCm || '';
+    miHeightCm.value = data.heightCm || '';
     miMotor.value = data.motor || '';
     miOrigin.value = data.origin || '';
     miVideo.value = data.video || '';
@@ -675,23 +859,19 @@
     tsSafety.value = data.safety || '';
     miAccessories.value = data.accessories || '';
 
-    // Component
     coCapacity.value = data.capacity || '';
     coLength.value = data.length || '';
-    coMotor.value = data.motor || '';
+    coMotor.value = (data.productType === 'component' ? data.motor : '') || '';
     coFeatures.value = data.features || '';
     coCompatible.value = data.compatible || '';
 
-    // Accessory
     acSizetype.value = data.sizetype || '';
     acPackunit.value = data.packunit || '';
     acMoq.value = data.moq || '';
 
-    // Spec Master
-    specLines = data.specMaster ? [...data.specMaster] : [];
+    specLines = data.specMaster ? data.specMaster.map(s => ({ label: s.label || '', value: s.value || '' })) : [];
     renderSpecMaster();
 
-    // Toggle sections
     toggleSections(data.productType || '');
     updateTypeToggle(data.productType || '');
     updateYNToggle(tsVibration.value);
@@ -700,39 +880,60 @@
   function resetForm() {
     pfId.value = '';
     pfName.value = '';
+    pfModelcode.value = '';
+    pfBrand.value = '';
+    pfSku.value = '';
+
     pfProducttype.value = '';
     pfCategory.value = '';
     pfOtherCategory.value = '';
-    pfBrand.value = '';
-    pfSku.value = '';
-    pfSpec.value = '';
-    pfUnit.value = 'Piece';
+    pfSubcategory.value = '';
     pfHsn.value = '';
     pfGst.value = '18';
-    pfWarranty.value = '';
+
     pfMrp.value = '';
+    pfDiscountType.value = 'percentage';
     pfDiscount.value = '';
     pfPrice.value = '';
+
     pfStock.value = '';
     pfThreshold.value = '2';
-    pfQtyPerKw.value = '';
+    pfReorderQty.value = '';
+    pfLeadTime.value = '';
     pfStatus.value = 'Active';
+
+    pfSpec.value = '';
+    pfUnit.value = 'Piece';
+    pfQtyPerKw.value = '';
     pfDescription.value = '';
-    pfModelcode.value = '';
+
+    setThumbnailPreview('');
+    if (pfThumbnailFile) pfThumbnailFile.value = '';
+    galleryImages = [];
+    renderGalleryPreview();
+    if (pfGalleryFile) pfGalleryFile.value = '';
+    setBrochurePreview('', '');
+    if (pfBrochureFile) pfBrochureFile.value = '';
+
+    pfWarranty.value = '';
+    miWarrantyType.value = '';
+    miWarrantyParts.value = '';
 
     miOutput.value = '';
     miTonnage.value = '';
     miCycletime.value = '';
     miOiltank.value = '';
-    miPowerHp.value = '';
+    miPowerKw.value = '';
     miGensetKva.value = '';
     tsAutomation.value = 'Manual';
     tsVibration.value = 'no';
     tsPalletsize.value = '';
     miLabour.value = '';
     miShed.value = '';
-    miWeight.value = '';
-    miDimensions.value = '';
+    miWeightKg.value = '';
+    miLengthCm.value = '';
+    miWidthCm.value = '';
+    miHeightCm.value = '';
     miMotor.value = '';
     miOrigin.value = '';
     miVideo.value = '';
@@ -777,9 +978,10 @@
         el.style.display = (id === sections[type]) ? 'grid' : 'none';
       }
     });
-    // Spec Master always visible
     const specSection = document.getElementById('specMasterSection');
     if (specSection) specSection.style.display = 'grid';
+    const mediaSection = document.getElementById('mediaSection');
+    if (mediaSection) mediaSection.style.display = 'grid';
   }
 
   function updateTypeToggle(type) {
@@ -799,27 +1001,96 @@
     });
   }
 
+  // Auto-calc Final Price whenever MRP / Discount Type / Discount Value change,
+  // matching payload.pricing.calculatedPrice -> finalPrice.
+  function recalcPrice() {
+    const mrp = parseFloat(pfMrp.value) || 0;
+    const discountType = pfDiscountType.value || 'percentage';
+    const discount = parseFloat(pfDiscount.value) || 0;
+    pfPrice.value = calcFinalPrice(mrp, discountType, discount) || '';
+  }
+
+  // =============================================================
+  // MEDIA UPLOAD HELPERS
+  // Files are read client-side into base64 data URLs so they can be
+  // previewed and stored immediately. Swap readFileAsDataURL's result
+  // for an uploaded file URL once a real /upload backend is wired up.
+  // =============================================================
+  function readFileAsDataURL(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function setThumbnailPreview(dataUrl) {
+    pfThumbnail.value = dataUrl || '';
+    if (dataUrl) {
+      pfThumbnailPreview.src = dataUrl;
+      pfThumbnailPreviewWrap.style.display = 'flex';
+    } else {
+      pfThumbnailPreview.src = '';
+      pfThumbnailPreviewWrap.style.display = 'none';
+    }
+  }
+
+  function renderGalleryPreview() {
+    if (!galleryImages.length) {
+      pfGalleryPreviewWrap.innerHTML = '';
+      return;
+    }
+    pfGalleryPreviewWrap.innerHTML = galleryImages.map((img, idx) => `
+      <div class="media-gallery-item">
+        <img src="${img.dataUrl}" alt="${escapeHtml(img.name || 'Gallery image')}">
+        <button type="button" class="media-remove-btn" data-gallery-index="${idx}"><i class="fas fa-xmark"></i></button>
+      </div>
+    `).join('');
+
+    pfGalleryPreviewWrap.querySelectorAll('.media-remove-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const idx = parseInt(this.dataset.galleryIndex);
+        galleryImages.splice(idx, 1);
+        renderGalleryPreview();
+      });
+    });
+  }
+
+  function setBrochurePreview(dataUrl, name) {
+    pfBrochure.value = dataUrl || '';
+    brochureFile = dataUrl ? { name: name || 'brochure.pdf', dataUrl } : null;
+    if (dataUrl) {
+      pfBrochureFilename.textContent = name || 'brochure.pdf';
+      pfBrochurePreviewWrap.style.display = 'flex';
+    } else {
+      pfBrochureFilename.textContent = '';
+      pfBrochurePreviewWrap.style.display = 'none';
+    }
+  }
+
   function renderSpecMaster() {
     if (specLines.length === 0) {
-      specList.innerHTML = '<div class="specmaster-empty">No specification lines added yet.</div>';
+      specList.innerHTML = '<div class="specmaster-empty">No feature lines added yet.</div>';
       return;
     }
     specList.innerHTML = specLines.map((line, idx) => {
-      const sr = String.fromCharCode(65 + idx);
+      const sr = 'F' + (idx + 1);
       return `
         <div class="specmaster-row">
           <div class="specmaster-sr">${sr}</div>
-          <input type="text" class="field-input specmaster-input" value="${escapeHtml(line)}" data-index="${idx}">
+          <input type="text" class="field-input specmaster-input" placeholder="Label (e.g. Structure)" value="${escapeHtml(line.label)}" data-index="${idx}" data-part="label">
+          <input type="text" class="field-input specmaster-input" placeholder="Value (e.g. Heavy duty steel)" value="${escapeHtml(line.value)}" data-index="${idx}" data-part="value">
           <button class="specmaster-remove" data-index="${idx}"><i class="fas fa-xmark"></i></button>
         </div>
       `;
     }).join('');
 
-    // Update specLines from inputs
     document.querySelectorAll('.specmaster-input').forEach(inp => {
       inp.addEventListener('input', function() {
         const idx = parseInt(this.dataset.index);
-        specLines[idx] = this.value;
+        const part = this.dataset.part;
+        specLines[idx][part] = this.value;
       });
     });
 
@@ -849,6 +1120,7 @@
       <div class="view-grid">
         <div class="view-item"><div class="view-label">Type</div><div class="view-value">${data.productType || '—'}</div></div>
         <div class="view-item"><div class="view-label">Category</div><div class="view-value">${escapeHtml(data.category) || '—'}</div></div>
+        <div class="view-item"><div class="view-label">Sub Category</div><div class="view-value">${escapeHtml(data.subCategory) || '—'}</div></div>
         <div class="view-item"><div class="view-label">Brand</div><div class="view-value">${escapeHtml(data.brand) || '—'}</div></div>
         <div class="view-item"><div class="view-label">SKU</div><div class="view-value">${escapeHtml(data.sku) || '—'}</div></div>
         <div class="view-item"><div class="view-label">Model Code</div><div class="view-value">${escapeHtml(data.modelCode) || '—'}</div></div>
@@ -856,18 +1128,19 @@
         <div class="view-item"><div class="view-label">Unit</div><div class="view-value">${escapeHtml(data.unit) || '—'}</div></div>
         <div class="view-item"><div class="view-label">HSN Code</div><div class="view-value">${escapeHtml(data.hsn) || '—'}</div></div>
         <div class="view-item"><div class="view-label">GST</div><div class="view-value">${data.gst || 0}%</div></div>
-        <div class="view-item"><div class="view-label">Warranty</div><div class="view-value">${data.warranty || 0} Years</div></div>
+        <div class="view-item"><div class="view-label">Warranty</div><div class="view-value">${data.warranty || 0} Yr${data.warrantyType ? ' · ' + escapeHtml(data.warrantyType) : ''}</div></div>
         <div class="view-item"><div class="view-label">MRP</div><div class="view-value">₹${Number(data.mrp).toLocaleString('en-IN') || 0}</div></div>
-        <div class="view-item"><div class="view-label">Discount</div><div class="view-value">${data.discount || 0}%</div></div>
-        <div class="view-item"><div class="view-label">Selling Price</div><div class="view-value">₹${Number(data.price).toLocaleString('en-IN') || 0}</div></div>
+        <div class="view-item"><div class="view-label">Discount</div><div class="view-value">${data.discount || 0}${data.discountType === 'flat' ? ' ₹' : '%'}</div></div>
+        <div class="view-item"><div class="view-label">Final Price</div><div class="view-value">₹${Number(data.price).toLocaleString('en-IN') || 0}</div></div>
         <div class="view-item"><div class="view-label">Stock</div><div class="view-value">${data.stock || 0}</div></div>
         <div class="view-item"><div class="view-label">Low Stock Threshold</div><div class="view-value">${data.threshold || 0}</div></div>
+        <div class="view-item"><div class="view-label">Reorder Qty</div><div class="view-value">${data.reorderQty || 0}</div></div>
+        <div class="view-item"><div class="view-label">Lead Time</div><div class="view-value">${data.leadTime || 0} Days</div></div>
         <div class="view-item"><div class="view-label">Qty per Set</div><div class="view-value">${data.qtyPerKw || 0}</div></div>
         <div class="view-item"><div class="view-label">Status</div><div class="view-value">${data.status || '—'}</div></div>
       </div>
     `;
 
-    // Machine details
     if (data.productType === 'machine') {
       html += `
         <div style="margin-top:12px;padding-top:12px;border-top:1px solid #EFC8DC;">
@@ -877,19 +1150,20 @@
             <div class="view-item"><div class="view-label">Tonnage</div><div class="view-value">${data.tonnage || 0} Ton</div></div>
             <div class="view-item"><div class="view-label">Cycle Time</div><div class="view-value">${data.cycletime || 0} Sec</div></div>
             <div class="view-item"><div class="view-label">Oil Tank</div><div class="view-value">${data.oiltank || 0} Ltr</div></div>
-            <div class="view-item"><div class="view-label">Power</div><div class="view-value">${data.powerHp || 0} HP</div></div>
+            <div class="view-item"><div class="view-label">Power</div><div class="view-value">${data.powerKw || 0} kW</div></div>
             <div class="view-item"><div class="view-label">Genset</div><div class="view-value">${data.gensetKva || 0} KVA</div></div>
             <div class="view-item"><div class="view-label">Automation</div><div class="view-value">${escapeHtml(data.automation) || '—'}</div></div>
             <div class="view-item"><div class="view-label">Vibration Table</div><div class="view-value">${data.vibration === 'yes' ? '✅ Yes' : '❌ No'}</div></div>
             <div class="view-item"><div class="view-label">Pallet Size</div><div class="view-value">${escapeHtml(data.palletsize) || '—'}</div></div>
             <div class="view-item"><div class="view-label">Labour Required</div><div class="view-value">${data.labour || 0} Persons</div></div>
             <div class="view-item"><div class="view-label">Shed Required</div><div class="view-value">${escapeHtml(data.shed) || '—'}</div></div>
-            <div class="view-item"><div class="view-label">Weight</div><div class="view-value">${escapeHtml(data.weight) || '—'}</div></div>
-            <div class="view-item"><div class="view-label">Dimensions</div><div class="view-value">${escapeHtml(data.dimensions) || '—'}</div></div>
+            <div class="view-item"><div class="view-label">Weight</div><div class="view-value">${data.weightKg || 0} Kg</div></div>
+            <div class="view-item"><div class="view-label">Dimensions (L×W×H)</div><div class="view-value">${data.lengthCm || 0} × ${data.widthCm || 0} × ${data.heightCm || 0} cm</div></div>
             <div class="view-item"><div class="view-label">Motor</div><div class="view-value">${escapeHtml(data.motor) || '—'}</div></div>
             <div class="view-item"><div class="view-label">Origin</div><div class="view-value">${escapeHtml(data.origin) || '—'}</div></div>
           </div>
-          ${data.bundled ? `<div class="view-item" style="margin-top:8px;"><div class="view-label">Bundled Equipment</div><div class="view-value">${escapeHtml(data.bundled)}</div></div>` : ''}
+          ${data.warrantyParts ? `<div class="view-item" style="margin-top:8px;"><div class="view-label">Warranty Parts Covered</div><div class="view-value">${escapeHtml(data.warrantyParts)}</div></div>` : ''}
+          ${data.bundled ? `<div class="view-item"><div class="view-label">Bundled Equipment</div><div class="view-value">${escapeHtml(data.bundled)}</div></div>` : ''}
           ${data.plc ? `<div class="view-item"><div class="view-label">PLC Details</div><div class="view-value">${escapeHtml(data.plc)}</div></div>` : ''}
           ${data.controlpanel ? `<div class="view-item"><div class="view-label">Control Panel</div><div class="view-value">${escapeHtml(data.controlpanel)}</div></div>` : ''}
           ${data.safety ? `<div class="view-item"><div class="view-label">Safety Features</div><div class="view-value">${escapeHtml(data.safety)}</div></div>` : ''}
@@ -898,7 +1172,6 @@
       `;
     }
 
-    // Component details
     if (data.productType === 'component') {
       html += `
         <div style="margin-top:12px;padding-top:12px;border-top:1px solid #EFC8DC;">
@@ -914,7 +1187,6 @@
       `;
     }
 
-    // Accessory details
     if (data.productType === 'accessory') {
       html += `
         <div style="margin-top:12px;padding-top:12px;border-top:1px solid #EFC8DC;">
@@ -928,17 +1200,31 @@
       `;
     }
 
-    // Spec Master
     if (data.specMaster && data.specMaster.length) {
       html += `
         <div class="view-specmaster">
-          <div style="font-weight:700;font-size:12px;color:#800021;margin-bottom:6px;"><i class="fas fa-list-ol"></i> Specification Master</div>
-          ${data.specMaster.map((line, i) => `
+          <div style="font-weight:700;font-size:12px;color:#800021;margin-bottom:6px;"><i class="fas fa-list-ol"></i> Feature Specifications</div>
+          ${data.specMaster.map((f) => `
             <div class="view-specmaster-row">
-              <span class="vs-sr">${String.fromCharCode(65 + i)}</span>
-              <span>${escapeHtml(line)}</span>
+              <span class="vs-sr">${escapeHtml(f.id)}</span>
+              <span>${escapeHtml(f.label)}${f.label ? ' — ' : ''}${escapeHtml(f.value)}</span>
             </div>
           `).join('')}
+        </div>
+      `;
+    }
+
+    const hasGallery = Array.isArray(data.gallery) && data.gallery.length > 0;
+    if (data.thumbnail || hasGallery || data.brochure) {
+      html += `
+        <div class="view-specmaster">
+          <div style="font-weight:700;font-size:12px;color:#800021;margin-bottom:6px;"><i class="fas fa-photo-film"></i> Media</div>
+          ${data.thumbnail ? `<img class="view-media-thumb" src="${data.thumbnail}" alt="Thumbnail">` : `<div class="view-item"><div class="view-label">Thumbnail</div><div class="view-value">—</div></div>`}
+          ${hasGallery ? `<div class="view-media-gallery">${data.gallery.map(g => `<img src="${g.dataUrl || g}" alt="Gallery image">`).join('')}</div>` : ''}
+          <div class="view-item" style="margin-top:8px;">
+            <div class="view-label">Brochure PDF</div>
+            <div class="view-value">${data.brochure ? `<a href="${data.brochure}" download="${escapeHtml(data.brochureName || 'brochure.pdf')}" style="color:#800021;text-decoration:underline;">${escapeHtml(data.brochureName || 'brochure.pdf')}</a>` : '—'}</div>
+          </div>
         </div>
       `;
     }
@@ -989,16 +1275,93 @@
   }
 
   // =============================================================
+  // SIDEBAR (single, consolidated implementation)
+  // =============================================================
+  function isMobileWidth() {
+    return window.innerWidth <= 1023;
+  }
+
+  function initSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('sidebarBackdrop');
+    const icon = document.getElementById('toggleIcon');
+
+    if (!sidebar) return;
+
+    sidebar.classList.remove('expanded', 'collapsed', 'open');
+    sidebar.style.transform = '';
+    if (backdrop) backdrop.classList.remove('visible');
+    if (icon) icon.classList.remove('rotate-180');
+
+    if (isMobileWidth()) {
+      // drawer starts closed on phone/tablet
+    } else {
+      // sidebar starts expanded on desktop
+      sidebar.classList.add('expanded');
+    }
+  }
+
+  function openSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('sidebarBackdrop');
+    const icon = document.getElementById('toggleIcon');
+    if (!sidebar) return;
+
+    if (isMobileWidth()) {
+      sidebar.classList.add('open');
+      if (backdrop) backdrop.classList.add('visible');
+    } else {
+      sidebar.classList.remove('collapsed');
+      sidebar.classList.add('expanded');
+      if (icon) icon.classList.remove('rotate-180');
+    }
+  }
+
+  function closeSidebarMobile() {
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('sidebarBackdrop');
+    if (!sidebar) return;
+
+    if (isMobileWidth()) {
+      sidebar.classList.remove('open');
+      if (backdrop) backdrop.classList.remove('visible');
+    }
+  }
+
+  function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('sidebarBackdrop');
+    const icon = document.getElementById('toggleIcon');
+    if (!sidebar) return;
+
+    if (isMobileWidth()) {
+      // Off-canvas drawer: toggle the 'open' class (CSS handles the slide)
+      const isOpen = sidebar.classList.contains('open');
+      sidebar.classList.toggle('open', !isOpen);
+      if (backdrop) backdrop.classList.toggle('visible', !isOpen);
+    } else {
+      // Desktop: toggle collapsed/expanded width
+      const isCollapsed = sidebar.classList.contains('collapsed');
+      sidebar.classList.toggle('collapsed', !isCollapsed);
+      sidebar.classList.toggle('expanded', isCollapsed);
+      if (icon) icon.classList.toggle('rotate-180', isCollapsed);
+    }
+  }
+
+  // =============================================================
   // EVENT BINDING
   // =============================================================
   function bindEvents() {
     // Add Product button
-    document.getElementById('btn-add-product').addEventListener('click', function() {
-      resetForm();
-      editingId = null;
-      document.getElementById('product-modal-title').innerHTML = '<i class="fas fa-box"></i> Add Product';
-      openModal(modalProduct);
-    });
+    const addBtn = document.getElementById('btn-add-product');
+    if (addBtn) {
+      addBtn.addEventListener('click', function() {
+        resetForm();
+        editingId = null;
+        document.getElementById('product-modal-title').innerHTML = '<i class="fas fa-box"></i> Add Product';
+        openModal(modalProduct);
+      });
+    }
 
     // Close buttons
     document.querySelectorAll('[data-close]').forEach(btn => {
@@ -1042,163 +1405,237 @@
       pfOtherWrap.classList.toggle('hidden', this.value !== '__other__');
     });
 
-    document.getElementById('btn-add-other-category').addEventListener('click', function() {
-      const val = pfOtherCategory.value.trim();
-      if (!val) {
-        document.getElementById('err-pf-other-category').textContent = 'Please enter a category name.';
-        return;
-      }
-      const opt = document.createElement('option');
-      opt.textContent = val;
-      opt.value = val;
-      pfCategory.insertBefore(opt, pfCategory.querySelector('option[value="__other__"]'));
-      pfCategory.value = val;
-      pfOtherCategory.value = '';
-      pfOtherWrap.classList.add('hidden');
-      document.getElementById('err-pf-other-category').textContent = '';
-      showToast('Category added!', 'success');
-    });
+    const addOtherCatBtn = document.getElementById('btn-add-other-category');
+    if (addOtherCatBtn) {
+      addOtherCatBtn.addEventListener('click', function() {
+        const val = pfOtherCategory.value.trim();
+        if (!val) {
+          document.getElementById('err-pf-other-category').textContent = 'Please enter a category name.';
+          return;
+        }
+        const opt = document.createElement('option');
+        opt.textContent = val;
+        opt.value = val;
+        pfCategory.insertBefore(opt, pfCategory.querySelector('option[value="__other__"]'));
+        pfCategory.value = val;
+        pfOtherCategory.value = '';
+        pfOtherWrap.classList.add('hidden');
+        document.getElementById('err-pf-other-category').textContent = '';
+        showToast('Category added!', 'success');
+      });
+    }
 
-    // Spec Master
-    btnAddSpec.addEventListener('click', function() {
-      specLines.push('');
-      renderSpecMaster();
-      // Focus the new input
-      const inputs = document.querySelectorAll('.specmaster-input');
-      if (inputs.length) {
-        inputs[inputs.length - 1].focus();
-      }
+    // Media uploads: thumbnail (single), gallery (multiple), brochure (single PDF)
+    if (pfThumbnailFile) {
+      pfThumbnailFile.addEventListener('change', async function() {
+        const file = this.files && this.files[0];
+        if (!file) return;
+        try {
+          const dataUrl = await readFileAsDataURL(file);
+          setThumbnailPreview(dataUrl);
+        } catch (_) {
+          showToast('Could not read the image file.', 'error');
+        }
+      });
+    }
+    if (pfThumbnailRemove) {
+      pfThumbnailRemove.addEventListener('click', function() {
+        setThumbnailPreview('');
+        if (pfThumbnailFile) pfThumbnailFile.value = '';
+      });
+    }
+
+    if (pfGalleryFile) {
+      pfGalleryFile.addEventListener('change', async function() {
+        const files = Array.from(this.files || []);
+        if (!files.length) return;
+        try {
+          const reads = await Promise.all(files.map(async f => ({ name: f.name, dataUrl: await readFileAsDataURL(f) })));
+          galleryImages = galleryImages.concat(reads);
+          renderGalleryPreview();
+        } catch (_) {
+          showToast('Could not read one or more gallery images.', 'error');
+        }
+        this.value = '';
+      });
+    }
+
+    if (pfBrochureFile) {
+      pfBrochureFile.addEventListener('change', async function() {
+        const file = this.files && this.files[0];
+        if (!file) return;
+        try {
+          const dataUrl = await readFileAsDataURL(file);
+          setBrochurePreview(dataUrl, file.name);
+        } catch (_) {
+          showToast('Could not read the PDF file.', 'error');
+        }
+      });
+    }
+    if (pfBrochureRemove) {
+      pfBrochureRemove.addEventListener('click', function() {
+        setBrochurePreview('', '');
+        if (pfBrochureFile) pfBrochureFile.value = '';
+      });
+    }
+
+    // Pricing auto-calc: MRP / discount type / discount value -> Final Price
+    [pfMrp, pfDiscountType, pfDiscount].forEach(el => {
+      if (el) el.addEventListener('input', recalcPrice);
     });
+    if (pfDiscountType) pfDiscountType.addEventListener('change', recalcPrice);
+
+    // Spec Master (feature list)
+    if (btnAddSpec) {
+      btnAddSpec.addEventListener('click', function() {
+        specLines.push({ label: '', value: '' });
+        renderSpecMaster();
+        const inputs = document.querySelectorAll('.specmaster-input');
+        if (inputs.length) {
+          inputs[inputs.length - 2].focus();
+        }
+      });
+    }
 
     // Save Product
-    document.getElementById('btn-save-product').addEventListener('click', function() {
-      const data = collectFormData();
+    const saveBtn = document.getElementById('btn-save-product');
+    if (saveBtn) {
+      saveBtn.addEventListener('click', function() {
+        const data = collectFormData();
 
-      // Validate
-      let errors = [];
-      if (!data.name) errors.push('Product Name is required');
-      if (!data.productType) errors.push('Product Type is required');
-      if (!data.category) errors.push('Category is required');
-      if (!data.brand) errors.push('Brand is required');
-      if (!data.price || data.price <= 0) errors.push('Selling Price is required');
-      if (!data.mrp || data.mrp <= 0) errors.push('MRP is required');
-      if (data.stock < 0) errors.push('Stock quantity cannot be negative');
-      if (!data.qtyPerKw && data.qtyPerKw !== 0) errors.push('Qty per Set is required');
+        let errors = [];
+        if (!data.name) errors.push('Product Name is required');
+        if (!data.productType) errors.push('Product Type is required');
+        if (!data.category) errors.push('Category is required');
+        if (!data.brand) errors.push('Brand is required');
+        if (!data.price || data.price <= 0) errors.push('Selling Price is required');
+        if (!data.mrp || data.mrp <= 0) errors.push('MRP is required');
+        if (data.stock < 0) errors.push('Stock quantity cannot be negative');
+        if (!data.qtyPerKw && data.qtyPerKw !== 0) errors.push('Qty per Set is required');
 
-      if (errors.length) {
-        showToast(errors[0], 'error');
-        return;
-      }
+        if (errors.length) {
+          showToast(errors[0], 'error');
+          return;
+        }
 
-      const id = pfId.value ? parseInt(pfId.value) : null;
-      if (id) {
-        updateProduct(id, data);
-      } else {
-        addProduct(data);
-      }
-      closeModal(modalProduct);
-    });
+        const id = pfId.value ? parseInt(pfId.value) : null;
+        if (id) {
+          updateProduct(id, data);
+        } else {
+          addProduct(data);
+        }
+        closeModal(modalProduct);
+      });
+    }
 
     // Table events (delegated)
-    tbody.addEventListener('click', function(e) {
-      const target = e.target.closest('button');
-      if (!target) return;
+    if (tbody) {
+      tbody.addEventListener('click', function(e) {
+        const target = e.target.closest('button');
+        if (!target) return;
 
-      // View
-      if (target.classList.contains('icon-view')) {
-        const id = parseInt(target.dataset.id);
-        const product = getProduct(id);
-        if (product) renderViewProduct(product);
-      }
-
-      // Edit
-      if (target.classList.contains('icon-edit')) {
-        const id = parseInt(target.dataset.id);
-        const product = getProduct(id);
-        if (product) {
-          resetForm();
-          populateForm(product);
-          editingId = id;
-          document.getElementById('product-modal-title').innerHTML = '<i class="fas fa-pen"></i> Edit Product';
-          openModal(modalProduct);
+        if (target.classList.contains('icon-view')) {
+          const id = parseInt(target.dataset.id);
+          const product = getProduct(id);
+          if (product) renderViewProduct(product);
         }
-      }
 
-      // Delete
-      if (target.classList.contains('danger')) {
-        const id = parseInt(target.dataset.id);
-        const product = getProduct(id);
-        if (product) {
-          deletingId = id;
-          document.getElementById('delete-product-name').textContent = product.name;
-          openModal(modalDelete);
+        if (target.classList.contains('icon-edit')) {
+          const id = parseInt(target.dataset.id);
+          const product = getProduct(id);
+          if (product) {
+            resetForm();
+            populateForm(product);
+            editingId = id;
+            document.getElementById('product-modal-title').innerHTML = '<i class="fas fa-pen"></i> Edit Product';
+            openModal(modalProduct);
+          }
         }
-      }
 
-      // Stock history
-      if (target.classList.contains('stock-history-btn')) {
-        const id = target.dataset.id;
-        renderStockHistory(id);
-      }
-    });
+        if (target.classList.contains('danger')) {
+          const id = parseInt(target.dataset.id);
+          const product = getProduct(id);
+          if (product) {
+            deletingId = id;
+            document.getElementById('delete-product-name').textContent = product.name;
+            openModal(modalDelete);
+          }
+        }
+
+        if (target.classList.contains('stock-history-btn')) {
+          const id = target.dataset.id;
+          renderStockHistory(id);
+        }
+      });
+    }
 
     // Confirm Delete
-    document.getElementById('btn-confirm-delete-product').addEventListener('click', function() {
-      if (deletingId) {
-        deleteProduct(deletingId);
-        deletingId = null;
-        closeModal(modalDelete);
-      }
-    });
+    const confirmDeleteBtn = document.getElementById('btn-confirm-delete-product');
+    if (confirmDeleteBtn) {
+      confirmDeleteBtn.addEventListener('click', function() {
+        if (deletingId) {
+          deleteProduct(deletingId);
+          deletingId = null;
+          closeModal(modalDelete);
+        }
+      });
+    }
 
     // Stock entry
-    document.getElementById('btn-add-stock-entry').addEventListener('click', function() {
-      const type = document.getElementById('sl-type').value;
-      const qty = parseInt(document.getElementById('sl-qty').value);
-      const reason = document.getElementById('sl-reason').value.trim();
+    const addStockBtn = document.getElementById('btn-add-stock-entry');
+    if (addStockBtn) {
+      addStockBtn.addEventListener('click', function() {
+        const type = document.getElementById('sl-type').value;
+        const qty = parseInt(document.getElementById('sl-qty').value);
+        const reason = document.getElementById('sl-reason').value.trim();
 
-      if (!qty || qty <= 0) {
-        showToast('Please enter a valid quantity.', 'error');
-        return;
-      }
+        if (!qty || qty <= 0) {
+          showToast('Please enter a valid quantity.', 'error');
+          return;
+        }
 
-      if (stockProductId) {
-        addStockEntry(stockProductId, type, qty, reason);
-        document.getElementById('sl-qty').value = '';
-        document.getElementById('sl-reason').value = '';
-      }
-    });
+        if (stockProductId) {
+          addStockEntry(stockProductId, type, qty, reason);
+          document.getElementById('sl-qty').value = '';
+          document.getElementById('sl-reason').value = '';
+        }
+      });
+    }
 
     // Search
-    searchInput.addEventListener('input', render);
+    if (searchInput) searchInput.addEventListener('input', render);
 
     // Filters
-    filterType.addEventListener('change', render);
-    filterCategory.addEventListener('change', render);
-    filterStatus.addEventListener('change', render);
+    if (filterType) filterType.addEventListener('change', render);
+    if (filterCategory) filterCategory.addEventListener('change', render);
+    if (filterStatus) filterStatus.addEventListener('change', render);
 
     // Rows per page
-    rowsSelect.addEventListener('change', function() {
-      rowsPerPage = parseInt(this.value);
-      currentPage = 1;
-      render();
-    });
+    if (rowsSelect) {
+      rowsSelect.addEventListener('change', function() {
+        rowsPerPage = parseInt(this.value);
+        currentPage = 1;
+        render();
+      });
+    }
 
     // Pagination
-    pagination.addEventListener('click', function(e) {
-      const btn = e.target.closest('.pagination-btn');
-      if (!btn || btn.classList.contains('disabled')) return;
-      const page = btn.dataset.page;
-      if (page === 'prev') {
-        if (currentPage > 1) currentPage--;
-      } else if (page === 'next') {
-        const total = Math.ceil(filteredProducts.length / rowsPerPage);
-        if (currentPage < total) currentPage++;
-      } else {
-        currentPage = parseInt(page);
-      }
-      render();
-    });
+    if (pagination) {
+      pagination.addEventListener('click', function(e) {
+        const btn = e.target.closest('.pagination-btn');
+        if (!btn || btn.classList.contains('disabled')) return;
+        const page = btn.dataset.page;
+        if (page === 'prev') {
+          if (currentPage > 1) currentPage--;
+        } else if (page === 'next') {
+          const total = Math.ceil(filteredProducts.length / rowsPerPage);
+          if (currentPage < total) currentPage++;
+        } else {
+          currentPage = parseInt(page);
+        }
+        render();
+      });
+    }
 
     // Sort
     document.querySelectorAll('.data-table thead th[data-sort]').forEach(th => {
@@ -1214,31 +1651,12 @@
       });
     });
 
-    // ---------------------------------------------------------
-    // Profile & Notifications (simple toggle)
-    // NOTE: these are guarded with null-checks because the
-    // notification bell markup is currently commented out in
-    // productm.html. Previously this block called
-    // document.getElementById('notifBtn').addEventListener(...)
-    // directly — since #notifBtn doesn't exist, that threw a
-    // TypeError and silently aborted the rest of bindEvents(),
-    // which meant the sidebar toggle listener (registered further
-    // down) never got attached in ANY view. Guarding every lookup
-    // here fixes that and makes this function resilient to future
-    // markup changes too.
-    // ---------------------------------------------------------
+    // Profile Button
     const profileBtn = document.getElementById('profileBtn');
     if (profileBtn) {
-      profileBtn.addEventListener('click', function() {
+      profileBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
         const dropdown = document.getElementById('profileDropdown');
-        if (dropdown) dropdown.classList.toggle('hidden');
-      });
-    }
-
-    const notifBtn = document.getElementById('notifBtn');
-    if (notifBtn) {
-      notifBtn.addEventListener('click', function() {
-        const dropdown = document.getElementById('notifDropdown');
         if (dropdown) dropdown.classList.toggle('hidden');
       });
     }
@@ -1255,45 +1673,40 @@
       }
     });
 
-    // ---------------------------------------------------------
-    // Sidebar toggle
-    // Rewritten to explicitly set the expanded/collapsed state
-    // (instead of blindly toggling both classes, which could
-    // briefly leave both classes on the element at once) and to
-    // guard every element lookup so a missing node never breaks
-    // the toggle again.
-    // ---------------------------------------------------------
+    // =============================================================
+    // SIDEBAR TOGGLE — desktop collapse/expand arrow (only relevant/visible on desktop)
+    // =============================================================
     const sidebarToggleBtn = document.getElementById('sidebarToggle');
     if (sidebarToggleBtn) {
-      sidebarToggleBtn.addEventListener('click', function() {
-        const sidebar = document.getElementById('sidebar');
-        if (!sidebar) return;
-        const icon = document.getElementById('toggleIcon');
-        const backdrop = document.getElementById('sidebarBackdrop');
-        const willExpand = !sidebar.classList.contains('expanded');
+      sidebarToggleBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        toggleSidebar();
+      });
+    }
 
-        sidebar.classList.toggle('expanded', willExpand);
-        sidebar.classList.toggle('collapsed', !willExpand);
-        if (icon) icon.classList.toggle('rotate-180', willExpand);
-        if (backdrop) backdrop.classList.toggle('visible', willExpand);
+    // Mobile/tablet hamburger button — lives outside #sidebar so it's never
+    // carried off-screen by the drawer's own transform.
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    if (mobileMenuBtn) {
+      mobileMenuBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        toggleSidebar();
       });
     }
 
     const sidebarBackdrop = document.getElementById('sidebarBackdrop');
     if (sidebarBackdrop) {
       sidebarBackdrop.addEventListener('click', function() {
-        const sidebar = document.getElementById('sidebar');
-        if (sidebar) {
-          sidebar.classList.remove('expanded');
-          sidebar.classList.add('collapsed');
-        }
-        this.classList.remove('visible');
-        const icon = document.getElementById('toggleIcon');
-        if (icon) icon.classList.remove('rotate-180');
+        closeSidebarMobile();
       });
     }
 
-    // Session / Logout (from session.js)
+    // Re-sync sidebar state when crossing the desktop/mobile breakpoint
+    window.addEventListener('resize', function() {
+      initSidebar();
+    });
+
+    // Session / Logout
     const logoutBtn = document.getElementById('profileLogoutBtn');
     if (logoutBtn) {
       logoutBtn.addEventListener('click', function() {
@@ -1312,6 +1725,8 @@
     } else if (roleLabel) {
       roleLabel.textContent = 'Logged in as: User';
     }
+
+    console.log('✅ Events bound successfully');
   }
 
   // =============================================================
@@ -1320,6 +1735,9 @@
   function init() {
     loadProducts();
     loadLedger();
+
+    initSidebar();
+
     render();
     bindEvents();
     toggleSections('');
@@ -1334,5 +1752,8 @@
   } else {
     init();
   }
+
+  // Expose payload mapper for API integration (matches the shared JSON schema)
+  window.productToPayload = productToPayload;
 
 })();
