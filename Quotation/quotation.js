@@ -1,29 +1,6 @@
 /* ============================================================
    Quotation Management — Complete Module
    VKM Brick & Block Machinery (Vaishnokripa Mercantile)
-
-   UPDATED (frontend-fix pass):
-   - Product catalog now synced live from Product Management via
-     localStorage key PRODUCT_CATALOG_STORAGE_KEY (Task 1). Product
-     Management must write the same key using
-     syncProductCatalogToStorage() after every Add/Edit/Delete/Stock
-     change so this module always reflects the latest catalog with
-     no page refresh beyond reopening the wizard.
-   - Step 1 trimmed to Customer Name, Primary/Secondary Mobile,
-     optional Email, Address/City/State/Pincode, optional-but-
-     validated GSTIN. Company Name, Customer Type, "How Did They
-     Find Us?" and the whole Site Readiness sub-section were removed.
-   - Step 3 cost breakdown is exactly Transport / Loading / Other.
-   - GST calc now switches CGST+SGST vs IGST based on customer state
-     vs company state, and returns an explicit gstBreakup object.
-   - Quote numbering persists in localStorage (stopgap until a
-     backend issues sequential numbers — see nextQuoteNo()).
-   - Terms & Conditions are pulled from terms-config.js
-     (TERMS_CONFIG / buildTermsText) instead of being retyped per
-     quotation; only { templateVersion, categoriesApplied } is
-     stored on the record.
-   - Generated PDF includes a product image gallery at the end,
-     built from each item's linked catalog product's imageUrl.
    ============================================================ */
 
 (function () {
@@ -52,8 +29,6 @@
 
   // ============================================================
   // PRODUCT CATALOG — synced live from Product Management
-  // (Task 1: Product Management writes this same key via
-  // syncProductCatalogToStorage() after every mutation.)
   // ============================================================
   const PRODUCT_CATALOG_STORAGE_KEY = 'vkmProductCatalog';
 
@@ -156,16 +131,6 @@
   // Normalizes a state name for comparison (case/whitespace insensitive)
   function normState(s) { return String(s || '').trim().toLowerCase(); }
 
-  /**
-   * Core money math — kept in one place so every screen (wizard preview,
-   * saved list, edit modal, invoice) uses the identical formula.
-   *   subtotal   = items + transport + loading + other charges
-   *   discount   = % of subtotal OR a flat ₹ amount
-   *   taxable    = subtotal - discount        (never negative)
-   *   Same state  -> CGST + SGST split (half rate each)
-   *   Diff state  -> IGST (full rate), CGST/SGST = 0
-   *   total      = taxable + tax
-   */
   function computeTotals(itemsTotal, costs, gstPercent, discountType, discountValue, customerState) {
     const itemsTotalN = Number(itemsTotal) || 0;
     const transport = Number(costs.transport) || 0;
@@ -238,11 +203,7 @@
   // QUOTATION DATA MODEL
   // ============================================================
   const QUOTE_COUNTER_STORAGE_KEY = 'quoteCounter';
-
-  // NOTE: localStorage-based counter is a STOPGAP ONLY. Once a backend
-  // exists, quote numbers must be generated server-side (sequential,
-  // race-condition-safe) — this client-side version can still collide
-  // across two browsers/tabs used at the same time.
+  
   function nextQuoteNo() {
     let counter = parseInt(localStorage.getItem(QUOTE_COUNTER_STORAGE_KEY), 10);
     if (!Number.isFinite(counter)) counter = 1000;
@@ -610,22 +571,6 @@
     return images;
   }
 
-  /* ============================================================
-   QUOTATION.JS — REPLACEMENT PATCH
-   ============================================================
-   WHAT TO DO:
-   1. Open your existing quotation.js
-   2. DELETE the old `buildInvoiceMarkup(q)` function entirely
-      (it's the big function that starts with:
-        function buildInvoiceMarkup(q) { ... }
-      and builds the <div class="inv-header"> ... markup)
-   3. PASTE everything below (from "function groupItemsBySection"
-      down to the end of "function buildInvoiceMarkup") in its place.
-   4. Nothing else in quotation.js needs to change — it still calls
-      buildInvoiceMarkup(q) exactly the same way from openViewModal,
-      renderWizardPreview, etc. so no other function needs editing.
-   ============================================================ */
-
   // ------------------------------------------------------------
   // Groups the quotation's items into "Sections" (A, B, C, ...)
   // by their product category — same idea as Section A / B / C /
@@ -850,7 +795,7 @@
             <div class="terms-col-title">English</div>
             <div class="terms-text">${termsEnglishHtml}</div>
           </div>
-          <div class="terms-col">
+          <div class="terms-col hindi-col">
             <div class="terms-col-title">हिन्दी</div>
             <div class="terms-text">${termsHindiHtml}</div>
           </div>
@@ -863,12 +808,127 @@
     `;
   }
 
-  function downloadInvoicePDF(elementId, filename) {
+  // ============================================================
+  // HINDI TERMS RASTERIZATION (fix for html2canvas Devanagari bug)
+  // ------------------------------------------------------------
+  // html2canvas re-implements text layout itself instead of going
+  // through the browser's real text-shaping engine, so it cannot
+  // correctly compose Devanagari conjuncts / reorder matras — the
+  // "और" -> "औi" style jumbling. ctx.fillText() on a real <canvas>
+  // DOES go through the browser's native shaping, and html2canvas
+  // copies an existing <canvas> element's pixels as-is (it does not
+  // try to re-render its contents). So: right before PDF export,
+  // swap the live Hindi terms text for a canvas we've drawn
+  // ourselves, let html2canvas capture that bitmap, then restore
+  // the live HTML afterwards so on-screen viewing/editing is
+  // unaffected.
+  // ============================================================
+
+  function wrapCanvasText(ctx, text, maxWidthPx) {
+    const words = text.split(' ');
+    const lines = [];
+    let current = '';
+    words.forEach(word => {
+      const test = current ? current + ' ' + word : word;
+      if (ctx.measureText(test).width > maxWidthPx && current) {
+        lines.push(current);
+        current = word;
+      } else {
+        current = test;
+      }
+    });
+    if (current) lines.push(current);
+    return lines;
+  }
+
+  function renderHindiTermsCanvas(bulletLines, cssWidthPx) {
+    const scale = 2; // matches the html2canvas { scale: 2 } export option
+    const fontSizePx = 10;      // matches .terms-text font-size: 10px
+    const lineHeightPx = fontSizePx * 1.5;
+    const bulletGapPx = 3;
+    const fontStack = "'Noto Sans Devanagari', 'Poppins', sans-serif";
+
+    const measureCanvas = document.createElement('canvas');
+    const mctx = measureCanvas.getContext('2d');
+    mctx.font = `400 ${fontSizePx * scale}px ${fontStack}`;
+    const maxTextWidthPx = Math.max(40, cssWidthPx * scale - 14 * scale);
+
+    const wrappedBullets = bulletLines.map(line => wrapCanvasText(mctx, line, maxTextWidthPx));
+    const totalLines = wrappedBullets.reduce((sum, arr) => sum + arr.length, 0);
+    const totalHeightPx = totalLines * lineHeightPx * scale + bulletLines.length * bulletGapPx * scale + 6 * scale;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.ceil(cssWidthPx * scale);
+    canvas.height = Math.ceil(totalHeightPx);
+    canvas.style.width = cssWidthPx + 'px';
+    canvas.style.height = (canvas.height / scale) + 'px';
+    canvas.style.display = 'block';
+
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#555555'; // matches .terms-text { color: #555; }
+    ctx.font = `400 ${fontSizePx * scale}px ${fontStack}`;
+    ctx.textBaseline = 'top';
+
+    let y = 3 * scale;
+    wrappedBullets.forEach(wrapped => {
+      wrapped.forEach((ln, idx) => {
+        const prefix = idx === 0 ? '• ' : '   ';
+        ctx.fillText(prefix + ln, 0, y);
+        y += lineHeightPx * scale;
+      });
+      y += bulletGapPx * scale;
+    });
+
+    return canvas;
+  }
+
+  // Swaps every live Hindi terms block inside `container` for a
+  // rasterized <canvas>. Returns a function that restores the
+  // original HTML — always call it once export finishes (success
+  // or failure) so the on-screen view goes back to live, editable-
+  // looking text.
+  async function prepareHindiTextForExport(container) {
+    try {
+      await document.fonts.load(`400 20px 'Noto Sans Devanagari'`);
+      await document.fonts.load(`600 20px 'Noto Sans Devanagari'`);
+      if (document.fonts.ready) await document.fonts.ready;
+    } catch (_) { /* font API not available — proceed with whatever is loaded */ }
+
+    const blocks = container.querySelectorAll('.hindi-col .terms-text');
+    const restoreFns = [];
+
+    blocks.forEach(block => {
+      const bulletLines = Array.from(block.children)
+        .map(div => div.textContent.replace(/^•\s*/, '').trim())
+        .filter(Boolean);
+      if (!bulletLines.length) return;
+
+      const cssWidth = block.clientWidth || block.parentElement?.clientWidth || 260;
+      const canvas = renderHindiTermsCanvas(bulletLines, cssWidth);
+
+      const originalHTML = block.innerHTML;
+      block.classList.add('hindi-canvas-block');
+      block.innerHTML = '';
+      block.appendChild(canvas);
+
+      restoreFns.push(() => {
+        block.classList.remove('hindi-canvas-block');
+        block.innerHTML = originalHTML;
+      });
+    });
+
+    return () => restoreFns.forEach(fn => fn());
+  }
+
+  async function downloadInvoicePDF(elementId, filename) {
     const element = document.getElementById(elementId);
     if (!element || typeof html2pdf === 'undefined') {
       showToast('PDF library failed to load. Check your internet connection.', 'error');
-      return Promise.resolve();
+      return;
     }
+
+    const restoreHindiText = await prepareHindiTextForExport(element);
+
     const opt = {
       margin: 8,
       filename: filename,
@@ -876,7 +936,12 @@
       html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
-    return html2pdf().set(opt).from(element).save();
+
+    try {
+      await html2pdf().set(opt).from(element).save();
+    } finally {
+      restoreHindiText();
+    }
   }
 
   // ============================================================

@@ -1,0 +1,154 @@
+/* ============================================================
+   Reports page — page-specific styles only.
+   Sidebar, topbar, KPI-toggle-btn, chart-card-title/sub, pill,
+   data-table, toast etc. are already defined in dashboard.css
+   and are reused as-is for a consistent theme.
+   ============================================================ */
+
+/* ---- Trend badge on KPI cards ---- */
+.report-trend-pill {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #D1FAE5;
+  color: #047857;
+  white-space: nowrap;
+}
+.report-trend-pill.down {
+  background: #FFE4E6;
+  color: #E11D48;
+}
+.report-trend-pill.flat {
+  background: #F6DCE8;
+  color: #9CA3AF;
+}
+
+/* ---- Custom date-range fields inline with the toggle bar ---- */
+.report-date-input {
+  width: auto;
+  font-size: 11px;
+  padding: 5px 8px;
+  border-radius: 8px;
+}
+.report-apply-btn {
+  font-size: 10.5px;
+  padding: 5px 10px;
+  border-radius: 8px;
+}
+#customRangeFields.flex { display: flex; }
+
+/* ---- Export buttons (date-range bar) ---- */
+.export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #374151;
+  background: #FCEEF3;
+  border: 1px solid #E8B9CE;
+  border-radius: 8px;
+  padding: 5px 9px;
+  cursor: pointer;
+  transition: background-color .15s ease, border-color .15s ease, color .15s ease;
+}
+.export-btn svg { width: 12px; height: 12px; flex-shrink: 0; }
+.export-btn:hover { background: #F6DCE8; border-color: #800021; color: #800021; }
+.export-btn:active { transform: scale(0.97); }
+
+/* ---- Recent Activity feed rows ---- */
+.activity-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 4px;
+  border-bottom: 1px solid #F5E6EA;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background-color .15s ease;
+}
+.activity-row:last-child { border-bottom: none; }
+.activity-row:hover { background: #F6DCE8; }
+.activity-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: #FCEEF3;
+  border: 1px solid #E8B9CE;
+  color: #800021;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.activity-icon svg { width: 13px; height: 13px; }
+.activity-body { min-width: 0; flex: 1 1 auto; }
+.activity-body p.activity-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: #1F2937;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.activity-body p.activity-meta {
+  font-size: 10.5px;
+  color: #9CA3AF;
+}
+.activity-amount {
+  margin-left: auto;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #374151;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ---- Top Clients quick table (right column) ---- */
+.top-client-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 4px;
+  border-bottom: 1px solid #F5E6EA;
+}
+.top-client-row:last-child { border-bottom: none; }
+.top-client-rank {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  background: #F6DCE8;
+  color: #800021;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.top-client-body { min-width: 0; flex: 1 1 auto; }
+.top-client-body p.top-client-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: #1F2937;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.top-client-body p.top-client-meta {
+  font-size: 10.5px;
+  color: #9CA3AF;
+}
+.top-client-value {
+  margin-left: auto;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #800021;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+@media (max-width: 480px) {
+  .report-date-input { font-size: 10.5px; padding: 4px 6px; }
+}

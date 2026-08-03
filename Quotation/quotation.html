@@ -35,7 +35,17 @@
   };
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!--
+  Noto Sans Devanagari added alongside Poppins.
+  This is required for correct Hindi (Devanagari) text — both for
+  on-screen display AND as the font used by the canvas rasterizer
+  in quotation.js that renders the Hindi Terms & Conditions block
+  as an image right before PDF export (html2canvas cannot shape
+  Devanagari conjuncts/ligatures correctly on its own, so the fix
+  is to draw that text on a real <canvas> — which uses the browser's
+  native text shaping engine — and embed the resulting image).
+-->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
@@ -84,10 +94,6 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
           <span>Billing & Invoice</span>
         </li>
-        <!-- <li class="nav-item" data-label="Reports Management" aria-label="Reports Management" onclick="window.location.href='../reports/report.html'" style="list-style:none; width:100%;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="21" x2="5" y2="11"></line><line x1="12" y1="21" x2="12" y2="6"></line><line x1="19" y1="21" x2="19" y2="14"></line><line x1="3" y1="21" x2="21" y2="21"></line></svg>
-          <span>Reports Management</span>
-        </li> -->
       </nav>
     </aside>
 
