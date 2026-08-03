@@ -88,7 +88,6 @@ const MOCK_DASHBOARD_SUMMARY = {
   totalQuotationValueAllTime: 74300000,
   totalQuotationValueMonth: 8200000,
   pendingDecision: 47,
-  confirmedOrdersMonth: 19,
   machinesDispatchedMonth: 11,
   totalInvoicesRaised: 268,
   totalOutstanding: 3860000,
@@ -121,7 +120,6 @@ function renderDashboardSummary(data) {
   setText('kpiOverdueCount', data.overdueInvoiceCount);
 
   setText('statTotalCustomers', data.totalCustomers);
-  setText('statConfirmedOrders', data.confirmedOrdersMonth);
   setText('statDispatched', data.machinesDispatchedMonth);
   setText('statTotalInvoices', data.totalInvoicesRaised);
   const avgQuotation = data.totalQuotationValueAllTime / data.totalQuotationsAllTime;
@@ -244,92 +242,6 @@ function renderTopMachines() {
       <td data-label="Units Sold (YTD)">${m.unitsYtd}</td>
       <td data-label="Revenue Generated">${formatCompactINR(m.revenue)}</td>
     </tr>
-  `).join('');
-}
-
-// ============================================================
-// Recent Activity feed
-// ============================================================
-const ACT_ICONS = {
-  quotation: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>',
-  invoice: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>',
-  payment: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>',
-  dispatch: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="7" width="15" height="13" rx="1"></rect><path d="M16 10h3l4 4v6h-7"></path></svg>',
-  stock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line></svg>',
-};
-
-const MOCK_ACTIVITY = [
-  { type: 'quotation', text: 'New quotation SQ-1024 sent to Amit Sharma', time: '10 min ago' },
-  { type: 'payment', text: '₹2,50,000 advance received from Priya Enterprises', time: '55 min ago' },
-  { type: 'dispatch', text: 'VK002 unit dispatched to Ravi Constructions', time: '2 hr ago' },
-  { type: 'invoice', text: 'Invoice INV-2026-041 raised for Meena Textiles', time: '3 hr ago' },
-  { type: 'stock', text: 'Low stock alert: Pan Mixer 500kg', time: '5 hr ago' },
-  { type: 'quotation', text: 'SQ-1020 marked Accepted by Suresh Patel', time: 'Yesterday' },
-  { type: 'payment', text: '₹4,80,000 final payment received from Global Foods', time: 'Yesterday' },
-];
-
-function renderRecentActivity() {
-  const list = document.getElementById('recentActivityList');
-  if (!list) return;
-  list.innerHTML = MOCK_ACTIVITY.map(a => `
-    <div class="activity-row">
-      <div class="activity-icon act-${a.type}">${ACT_ICONS[a.type]}</div>
-      <div class="min-w-0">
-        <p class="activity-text">${a.text}</p>
-        <p class="activity-time">${a.time}</p>
-      </div>
-    </div>
-  `).join('');
-}
-
-// ============================================================
-// Payment / Receivables Alerts
-// ============================================================
-const MOCK_OVERDUE = [
-  { name: 'Star Cold Storage', sub: 'INV-2026-033 · overdue 22 days', amount: 850000, sev: 'high' },
-  { name: 'Farha Textiles', sub: 'INV-2026-037 · overdue 15 days', amount: 318000, sev: 'high' },
-  { name: 'Vikram Industries', sub: 'INV-2026-039 · overdue 9 days', amount: 620000, sev: 'med' },
-  { name: 'Deepak Motors', sub: 'INV-2026-040 · overdue 4 days', amount: 410000, sev: 'med' },
-  { name: 'Anita Deshmukh', sub: 'INV-2026-042 · overdue 2 days', amount: 158000, sev: 'low' },
-  { name: 'Nikhil Joshi', sub: 'INV-2026-044 · overdue 1 day', amount: 205000, sev: 'low' },
-];
-
-const MOCK_UPCOMING = [
-  { name: 'Kavita Rao', sub: 'INV-2026-046 · due in 3 days', amount: 162000, sev: 'low' },
-  { name: 'Sunrise Apartments', sub: 'INV-2026-047 · due in 6 days', amount: 795000, sev: 'med' },
-  { name: 'Rajesh Traders', sub: 'INV-2026-048 · due in 9 days', amount: 372000, sev: 'low' },
-  { name: 'Global Foods Pvt Ltd', sub: 'INV-2026-049 · due in 13 days', amount: 1250000, sev: 'med' },
-];
-
-let alertTab = 'overdue';
-
-function setAlertTab(tab) {
-  alertTab = tab;
-  document.getElementById('tabOverdue').classList.toggle('active', tab === 'overdue');
-  document.getElementById('tabUpcoming').classList.toggle('active', tab === 'upcoming');
-  renderAlerts();
-}
-
-function renderAlerts() {
-  const list = document.getElementById('alertsList');
-  const summary = document.getElementById('alertSummaryLine');
-  if (!list || !summary) return;
-  const data = alertTab === 'overdue' ? MOCK_OVERDUE : MOCK_UPCOMING;
-  const total = data.reduce((sum, d) => sum + d.amount, 0);
-
-  summary.textContent = alertTab === 'overdue'
-    ? `${data.length} invoices overdue · ${formatCompactINR(total)} total`
-    : `${data.length} invoices due in the next 15 days · ${formatCompactINR(total)} total`;
-
-  list.innerHTML = data.map(d => `
-    <div class="alert-item">
-      <span class="alert-dot sev-${d.sev}"></span>
-      <div class="min-w-0">
-        <p class="alert-name">${d.name}</p>
-        <p class="alert-sub">${d.sub}</p>
-      </div>
-      <span class="alert-amount">${formatINR(d.amount)}</span>
-    </div>
   `).join('');
 }
 
@@ -790,8 +702,6 @@ profileLogoutBtn?.addEventListener('click', handleLogout);
 // Init
 // ============================================================
 renderTopMachines();
-renderRecentActivity();
-renderAlerts();
 renderRecentPayments();
 renderProductionBreakdown();
 renderTable();

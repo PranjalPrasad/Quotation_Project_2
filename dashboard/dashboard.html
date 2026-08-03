@@ -70,15 +70,10 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect><circle cx="9" cy="11" r="3"></circle><path d="M3 18.5c1.5-2.5 4-4 7-4s5.5 1.5 7 4"></path><path d="M16 9l2 2 4-4"></path></svg>
           <span>Customer Management</span>
         </button>
-        <button class="nav-item" id="menuBilling" data-label="Billing & Invoicing" aria-label="Billing & Invoicing" onclick="window.location.href='../billinginvoice/bill.html'">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line><line x1="6" y1="15" x2="10" y2="15"></line></svg>
-          <span>Billing & Invoice</span>
-        </button>
-        <!-- <button class="nav-item" id="menuReports" data-label="Reports" aria-label="Reports" onclick="window.location.href='../reports/report.html'">
+        <button class="nav-item" id="menuReports" data-label="Reports" aria-label="Reports" onclick="window.location.href='../reports/report.html'">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="21" x2="5" y2="11"></line><line x1="12" y1="21" x2="12" y2="6"></line><line x1="19" y1="21" x2="19" y2="14"></line><line x1="3" y1="21" x2="21" y2="21"></line></svg>
           <span>Reports</span>
-        </button> -->
-
+        </button>
       </nav>
     </aside>
 
@@ -140,7 +135,7 @@
       </div>
 
       <!-- Stat grid -->
-      <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-2.5 mb-2.5">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5 mb-2.5">
         <div class="bg-cream rounded-xl p-3 shadow-sm border border-peach-300 flex items-center gap-2.5">
           <div class="w-8 h-8 rounded-lg bg-peach-500 flex items-center justify-center shrink-0">
             <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
@@ -148,15 +143,6 @@
           <div class="min-w-0">
             <p class="text-sm font-semibold text-gray-800 truncate" id="statTotalCustomers">—</p>
             <p class="text-[10px] text-gray-400">Total Customers</p>
-          </div>
-        </div>
-        <div class="bg-cream rounded-xl p-3 shadow-sm border border-peach-300 flex items-center gap-2.5">
-          <div class="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0">
-            <svg class="w-4 h-4 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
-          </div>
-          <div class="min-w-0">
-            <p class="text-sm font-semibold text-gray-800 truncate" id="statConfirmedOrders">—</p>
-            <p class="text-[10px] text-gray-400">Confirmed Orders (Month)</p>
           </div>
         </div>
         <div class="bg-cream rounded-xl p-3 shadow-sm border border-peach-300 flex items-center gap-2.5">
@@ -227,31 +213,6 @@
               <tr><td colspan="5" class="text-center text-gray-400 py-3">Loading…</td></tr>
             </tbody>
           </table>
-        </div>
-      </div>
-
-      <!-- Recent Activity + Payment Alerts -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5 mb-2.5">
-        <div class="bg-cream rounded-xl p-3.5 shadow-sm border border-peach-300">
-          <div class="mb-1">
-            <h2 class="text-xs font-semibold text-gray-700">Recent Activity</h2>
-            <p class="text-[10px] text-gray-400">Latest events across quotations, billing &amp; dispatch</p>
-          </div>
-          <div id="recentActivityList" class="flex flex-col max-h-72 overflow-y-auto"></div>
-        </div>
-        <div class="bg-cream rounded-xl p-3.5 shadow-sm border border-peach-300">
-          <div class="mb-1.5 flex items-center justify-between">
-            <div>
-              <h2 class="text-xs font-semibold text-gray-700">Payment &amp; Receivables Alerts</h2>
-              <p class="text-[10px] text-gray-400">Overdue and upcoming due payments</p>
-            </div>
-            <div class="flex items-center gap-1">
-              <span class="alert-tab-btn active" id="tabOverdue" onclick="setAlertTab('overdue')">Overdue</span>
-              <span class="alert-tab-btn" id="tabUpcoming" onclick="setAlertTab('upcoming')">Upcoming</span>
-            </div>
-          </div>
-          <div id="alertSummaryLine" class="text-[11px] text-gray-500 mb-1.5"></div>
-          <div id="alertsList" class="flex flex-col max-h-64 overflow-y-auto"></div>
         </div>
       </div>
 
