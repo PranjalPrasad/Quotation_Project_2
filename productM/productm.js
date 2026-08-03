@@ -2,6 +2,27 @@
   'use strict';
 
   // =============================================================
+  // API CONFIG  (NEW)
+  // =============================================================
+  const API_BASE = 'http://localhost:8092/api';
+
+  // Fields your form collects that DO NOT have a matching column in
+  // ProductRequestDto. We pack them into the `features` list (which the
+  // backend already stores as List<Map<String,String>>) using the field
+  // name itself as the `id`, so they survive a save/reload round trip.
+  // Feature lines coming from your "Spec Master" UI keep using ids F1,F2...
+  // so the two are never confused.
+  const EXTRA_FIELD_KEYS = [
+    'spec', 'unit', 'qtyPerKw',
+    'output', 'tonnage', 'cycletime', 'oiltank', 'gensetKva', 'automation',
+    'vibration', 'palletsize', 'labour', 'shed', 'motor', 'origin', 'video',
+    'bundled', 'plc', 'controlpanel', 'safety', 'accessories',
+    'capacity', 'length', 'features', 'compatible',
+    'sizetype', 'packunit', 'moq'
+  ];
+  const EXTRA_NUMERIC_FIELD_KEYS = ['qtyPerKw', 'tonnage', 'cycletime', 'oiltank', 'gensetKva', 'labour', 'moq'];
+
+  // =============================================================
   // STATE
   // =============================================================
   let products = [];
@@ -15,8 +36,13 @@
   let viewingId = null;
   let stockProductId = null;
   let specLines = []; // [{ label, value }] -> mapped to payload.specifications.features [{id,label,value}]
-  let galleryImages = []; // [{ name, dataUrl }] -> mapped to payload.media.gallery (base64 for now, backend upload later)
-  let brochureFile = null; // { name, dataUrl } | null -> mapped to payload.media.brochurePdf
+  let galleryImages = []; // [{ name, dataUrl }] -> preview only
+  let brochureFile = null; // { name, dataUrl } | null -> preview only
+
+  // NEW: actual File objects to send to the backend as multipart parts.
+  let thumbnailFileObj = null;
+  let galleryFileObjs = [];
+  let brochureFileObj = null;
 
   // =============================================================
   // DOM REFS
@@ -72,8 +98,8 @@
   const pfQtyPerKw = $('#pf-qtyperkw');
   const pfDescription = $('#pf-description');
 
-  // --- media (file upload + base64 preview; backend upload wiring comes later) ---
-  const pfThumbnail = $('#pf-thumbnail'); // hidden input holding the current base64 data URL
+  // --- media (file upload + base64 preview) ---
+  const pfThumbnail = $('#pf-thumbnail'); // hidden input holding the current base64 data URL (preview)
   const pfThumbnailFile = $('#pf-thumbnail-file');
   const pfThumbnailPreviewWrap = $('#pf-thumbnail-preview-wrap');
   const pfThumbnailPreview = $('#pf-thumbnail-preview');
@@ -82,7 +108,7 @@
   const pfGalleryFile = $('#pf-gallery-file');
   const pfGalleryPreviewWrap = $('#pf-gallery-preview-wrap');
 
-  const pfBrochure = $('#pf-brochure'); // hidden input holding the current base64 data URL
+  const pfBrochure = $('#pf-brochure'); // hidden input holding the current base64 data URL (preview)
   const pfBrochureFile = $('#pf-brochure-file');
   const pfBrochurePreviewWrap = $('#pf-brochure-preview-wrap');
   const pfBrochurePreview = $('#pf-brochure-preview');
@@ -161,9 +187,6 @@
 
   // =============================================================
   // PAYLOAD MAPPING
-  // Internal `product` objects stay flat (easier to sort/filter/render
-  // in the table), but this maps a flat product to the exact nested
-  // JSON shape the backend/API payload expects.
   // =============================================================
   function calcFinalPrice(mrp, discountType, discountValue) {
     mrp = parseFloat(mrp) || 0;
@@ -175,257 +198,213 @@
     return Math.max(0, mrp - (mrp * discountValue / 100));
   }
 
-  function productToPayload(p) {
-    const payload = {
-      productIdentity: {
-        name: p.name || '',
-        sku: p.sku || '',
-        modelCode: p.modelCode || '',
-        brand: p.brand || ''
-      },
-      classification: {
-        type: p.productType || '',
-        category: p.category || '',
-        subCategory: p.subCategory || '',
-        hsn: p.hsn || '',
-        gst: p.gst || 0
-      },
-      pricing: {
-        mrp: p.mrp || 0,
-        discountType: p.discountType || 'percentage',
-        discountValue: p.discount || 0,
-        calculatedPrice: calcFinalPrice(p.mrp, p.discountType, p.discount),
-        finalPrice: p.price || 0
-      },
-      inventory: {
-        stock: p.stock || 0,
-        threshold: p.threshold || 0,
-        reorderQuantity: p.reorderQty || 0,
-        leadTimeDays: p.leadTime || 0,
-        status: p.status || 'Active'
-      },
-      specifications: {
-        powerConsumptionKw: p.powerKw || 0,
-        weightKg: p.weightKg || 0,
+  // NEW: builds the extra "features" entries (Spec Master lines + the
+  // form fields that ProductRequestDto has no column for).
+  function buildFeaturesArray(data) {
+    const arr = (data.specMaster || [])
+      .filter(s => (s.label && s.label.trim()) || (s.value && s.value.trim()))
+      .map((f, idx) => ({ id: f.id || ('F' + (idx + 1)), label: f.label || '', value: f.value || '' }));
+
+    EXTRA_FIELD_KEYS.forEach(key => {
+      const val = data[key];
+      if (val !== undefined && val !== null && val !== '') {
+        arr.push({ id: key, label: key, value: String(val) });
+      }
+    });
+    return arr;
+  }
+
+  // NEW: builds the exact flat JSON shape ProductRequestDto expects,
+  // plus a FormData object bundling it with any selected files.
+  function buildFormData(data) {
+    const requestDto = {
+        name: data.name || '',
+        sku: data.sku || '',
+        modelCode: data.modelCode || '',
+        brand: data.brand || '',
+        type: data.productType || '',
+        category: data.category || '',
+        subCategory: data.subCategory || '',
+        hsn: data.hsn || '',
+        gst: parseInt(data.gst) || 0,
+        mrp: data.mrp || 0,
+        discountType: data.discountType || 'percentage',
+        discountValue: data.discount || 0,
+        calculatedPrice: calcFinalPrice(data.mrp, data.discountType, data.discount),
+        finalPrice: data.price || 0,
+        stock: data.stock || 0,
+        threshold: data.threshold || 0,
+        reorderQuantity: data.reorderQty || 0,
+        leadTimeDays: data.leadTime || 0,
+        status: data.status || 'Active',
+        powerConsumptionKw: data.powerKw || 0,
+        weightKg: data.weightKg || 0,
         dimensions: {
-          lengthCm: p.lengthCm || 0,
-          widthCm: p.widthCm || 0,
-          heightCm: p.heightCm || 0
+            lengthCm: data.lengthCm || 0,
+            widthCm: data.widthCm || 0,
+            heightCm: data.heightCm || 0
         },
         warranty: {
-          periodYears: p.warranty || 0,
-          type: p.warrantyType || '',
-          partsCovered: p.warrantyParts || ''
+            periodYears: data.warranty || 0,
+            type: data.warrantyType || '',
+            partsCovered: data.warrantyParts || ''
         },
-        features: (p.specMaster || []).map((f, idx) => ({
-          id: f.id || ('F' + (idx + 1)),
-          label: f.label || '',
-          value: f.value || ''
-        }))
-      },
-      media: {
-        thumbnail: p.thumbnail || '',
-        gallery: Array.isArray(p.gallery) ? p.gallery.map(g => g.dataUrl || g) : [],
-        brochurePdf: p.brochure || ''
-      },
-      description: p.description || ''
+        features: buildFeaturesArray(data),
+        description: data.description || ''
     };
-    return payload;
-  }
 
-  // =============================================================
-  // SAMPLE DATA
-  // =============================================================
-  function generateSampleProducts() {
-    return [
-      {
-        id: 1,
-        name: 'Hydraulic Brick Making Machine VKM-40',
-        productType: 'machine',
-        category: 'Brick Machine',
-        subCategory: 'Hydraulic Press',
-        brand: 'VKM',
-        sku: 'VKM-BM-40',
-        spec: 'Fully Automatic, 4 Station',
-        unit: 'Set',
-        hsn: '84743100',
-        gst: 18,
-        warranty: 1,
-        warrantyType: 'On-Site',
-        warrantyParts: 'Hydraulic Pump & Main Frame',
-        mrp: 1380000,
-        discountType: 'percentage',
-        discount: 9,
-        price: 1255800,
-        stock: 5,
-        threshold: 2,
-        reorderQty: 3,
-        leadTime: 10,
-        qtyPerKw: 1,
-        status: 'Active',
-        description: 'High performance hydraulic brick making machine with 4 station turntable, ideal for mass production of high-density concrete blocks.',
-        modelCode: 'VK001',
-        output: '4500–5000 bricks/8hrs',
-        tonnage: 120,
-        cycletime: 12,
-        oiltank: 300,
-        powerKw: 1,
-        gensetKva: 82.5,
-        automation: 'Fully Automatic',
-        vibration: 'yes',
-        palletsize: '14x24',
-        labour: 6,
-        shed: '20x15 ft',
-        weightKg: 2400,
-        lengthCm: 250,
-        widthCm: 180,
-        heightCm: 200,
-        motor: '60 HP, Crompton, 1440 RPM, 3-Phase',
-        origin: 'India',
-        video: '',
-        bundled: '500kg Pan Mixer + 20ft Conveyor',
-        plc: 'Siemens S7-1200 with 7-inch HMI',
-        controlpanel: 'IP54, MCB + contactor based',
-        safety: 'Emergency stop, safety guards, overload cutoff',
-        accessories: 'Pallet feeding conveyor\nPLC control panel\nHydraulic power pack',
-        thumbnail: '',
-        gallery: [],
-        brochure: '',
-        brochureName: '',
-        specMaster: [
-          { id: 'F1', label: 'Structure', value: 'Heavy duty steel' },
-          { id: 'F2', label: 'Stations', value: '4' },
-          { id: 'F3', label: 'Pressure', value: '120 tons' },
-          { id: 'F4', label: 'Operation', value: 'Fully Automatic' }
-        ]
-      },
-      {
-        id: 2,
-        name: '500kg Pan Mixer',
-        productType: 'component',
-        category: 'Pan Mixer',
-        subCategory: '',
-        brand: 'VKM',
-        sku: 'VKM-PM-500',
-        spec: 'Heavy Duty, 500kg Batch',
-        unit: 'Set',
-        hsn: '84743900',
-        gst: 18,
-        warranty: 1,
-        warrantyType: '',
-        warrantyParts: '',
-        mrp: 450000,
-        discountType: 'percentage',
-        discount: 5,
-        price: 427500,
-        stock: 8,
-        threshold: 2,
-        reorderQty: 2,
-        leadTime: 7,
-        qtyPerKw: 1,
-        status: 'Active',
-        description: '500kg capacity pan mixer for brick manufacturing.',
-        modelCode: 'PM500',
-        capacity: '500kg',
-        length: '',
-        motor: '30 HP, 1440 RPM, 3-Phase, Crompton',
-        features: 'Auto material feeding system\nAccident proof locking system\nStainless steel mixing arms',
-        compatible: 'VKM-BM-40, VKM-BM-80',
-        specMaster: []
-      },
-      {
-        id: 3,
-        name: 'Zig Zag Mould with Dumble',
-        productType: 'accessory',
-        category: 'Mould',
-        subCategory: '',
-        brand: 'VKM',
-        sku: 'VKM-MD-ZZ',
-        spec: 'Zig Zag Pattern with Dumble',
-        unit: 'Piece',
-        hsn: '84804100',
-        gst: 18,
-        warranty: 0,
-        warrantyType: '',
-        warrantyParts: '',
-        mrp: 8500,
-        discountType: 'percentage',
-        discount: 0,
-        price: 8500,
-        stock: 150,
-        threshold: 50,
-        reorderQty: 50,
-        leadTime: 5,
-        qtyPerKw: 100,
-        status: 'Active',
-        description: 'Zig Zag mould with dumble pattern for interlocking bricks.',
-        modelCode: 'MZZ100',
-        sizetype: 'Zig Zag with Dumble',
-        packunit: 'per piece',
-        moq: 100,
-        specMaster: []
-      }
-    ];
-  }
-
-  // =============================================================
-  // CRUD OPERATIONS
-  // =============================================================
-  function loadProducts() {
-    const stored = localStorage.getItem('vkm_products');
-    if (stored) {
-      try {
-        products = JSON.parse(stored);
-        return;
-      } catch (_) {}
+    const formData = new FormData();
+    // Send as JSON string directly, not as a Blob
+    formData.append('product', JSON.stringify(requestDto));
+    if (thumbnailFileObj) formData.append('thumbnailFile', thumbnailFileObj);
+    if (galleryFileObjs && galleryFileObjs.length) {
+        galleryFileObjs.forEach(f => formData.append('galleryFiles', f));
     }
-    products = generateSampleProducts();
-    saveProducts();
+    if (brochureFileObj) formData.append('brochurePdfFile', brochureFileObj);
+    return formData;
+}
+
+  // NEW: turns a ProductResponseDto (from the backend) back into the flat
+  // `product` shape the rest of this file (table, form, view modal) uses.
+  function mapDtoToProduct(dto) {
+    const product = {
+      id: dto.id,
+      name: dto.name || '',
+      sku: dto.sku || '',
+      modelCode: dto.modelCode || '',
+      brand: dto.brand || '',
+      productType: dto.type || '',
+      category: dto.category || '',
+      subCategory: dto.subCategory || '',
+      hsn: dto.hsn || '',
+      gst: dto.gst || 0,
+      mrp: dto.mrp || 0,
+      discountType: dto.discountType || 'percentage',
+      discount: dto.discountValue || 0,
+      price: dto.finalPrice || 0,
+      stock: dto.stock || 0,
+      threshold: dto.threshold || 0,
+      reorderQty: dto.reorderQuantity || 0,
+      leadTime: dto.leadTimeDays || 0,
+      status: dto.status || 'Active',
+      description: dto.description || '',
+      powerKw: dto.powerConsumptionKw || 0,
+      weightKg: dto.weightKg || 0,
+      lengthCm: (dto.dimensions && dto.dimensions.lengthCm) || 0,
+      widthCm: (dto.dimensions && dto.dimensions.widthCm) || 0,
+      heightCm: (dto.dimensions && dto.dimensions.heightCm) || 0,
+      warranty: (dto.warranty && dto.warranty.periodYears) || 0,
+      warrantyType: (dto.warranty && dto.warranty.type) || '',
+      warrantyParts: (dto.warranty && dto.warranty.partsCovered) || '',
+      thumbnail: dto.thumbnail || '',
+      gallery: Array.isArray(dto.gallery) ? dto.gallery.map(url => ({ name: '', dataUrl: url })) : [],
+      brochure: dto.brochurePdf || '',
+      brochureName: dto.brochurePdf ? dto.brochurePdf.split('/').pop() : '',
+      specMaster: []
+    };
+
+    const features = Array.isArray(dto.features) ? dto.features : [];
+    features.forEach(f => {
+      if (f.id && /^F\d+$/.test(f.id)) {
+        product.specMaster.push({ id: f.id, label: f.label || '', value: f.value || '' });
+      } else if (f.id && EXTRA_FIELD_KEYS.indexOf(f.id) !== -1) {
+        product[f.id] = EXTRA_NUMERIC_FIELD_KEYS.indexOf(f.id) !== -1
+          ? (parseFloat(f.value) || 0)
+          : (f.value || '');
+      }
+    });
+
+    return product;
   }
 
-  function saveProducts() {
-    localStorage.setItem('vkm_products', JSON.stringify(products));
-  }
-
-  function getNextId() {
-    return products.length ? Math.max(...products.map(p => p.id)) + 1 : 1;
+  // =============================================================
+  // CRUD OPERATIONS  (now backed by the REST API on port 8092)
+  // =============================================================
+  async function fetchProductsFromServer() {
+    try {
+      const res = await fetch(`${API_BASE}/products/get-all-products`);
+      const json = await res.json();
+      if (res.ok && json && json.success) {
+        products = (json.data || []).map(mapDtoToProduct);
+      } else {
+        showToast((json && json.message) || 'Failed to load products', 'error');
+        products = [];
+      }
+    } catch (err) {
+      showToast('Could not connect to server on port 8092.', 'error');
+      products = [];
+    }
+    render();
   }
 
   function getProduct(id) {
     return products.find(p => p.id === id);
   }
 
-  function addProduct(data) {
-    data.id = getNextId();
-    products.push(data);
-    saveProducts();
-    render();
-    showToast('Product added successfully!', 'success');
+  async function addProduct(data) {
+    try {
+      const formData = buildFormData(data);
+      const res = await fetch(`${API_BASE}/create-product`, {
+        method: 'POST',
+        body: formData
+      });
+      const json = await res.json();
+      if (res.ok && json && json.success) {
+        await fetchProductsFromServer();
+        showToast('Product added successfully!', 'success');
+        return true;
+      }
+      showToast((json && json.message) || 'Failed to add product', 'error');
+      return false;
+    } catch (err) {
+      showToast('Could not connect to server on port 8092.', 'error');
+      return false;
+    }
   }
 
-  function updateProduct(id, data) {
-    const idx = products.findIndex(p => p.id === id);
-    if (idx === -1) return false;
-    data.id = id;
-    products[idx] = data;
-    saveProducts();
-    render();
-    showToast('Product updated successfully!', 'success');
-    return true;
+  async function updateProduct(id, data, silent) {
+    try {
+      const formData = buildFormData(data);
+      const res = await fetch(`${API_BASE}/products/update-product/${id}`, {
+        method: 'PUT',
+        body: formData
+      });
+      const json = await res.json();
+      if (res.ok && json && json.success) {
+        await fetchProductsFromServer();
+        if (!silent) showToast('Product updated successfully!', 'success');
+        return true;
+      }
+      if (!silent) showToast((json && json.message) || 'Failed to update product', 'error');
+      return false;
+    } catch (err) {
+      if (!silent) showToast('Could not connect to server on port 8092.', 'error');
+      return false;
+    }
   }
 
-  function deleteProduct(id) {
-    const idx = products.findIndex(p => p.id === id);
-    if (idx === -1) return false;
-    products.splice(idx, 1);
-    saveProducts();
-    render();
-    showToast('Product deleted successfully!', 'error');
-    return true;
+  async function deleteProduct(id) {
+    try {
+      const res = await fetch(`${API_BASE}/products/delete-product/${id}`, {
+        method: 'DELETE'
+      });
+      const json = await res.json();
+      if (res.ok && json && json.success) {
+        await fetchProductsFromServer();
+        showToast('Product deleted successfully!', 'error');
+        return true;
+      }
+      showToast((json && json.message) || 'Failed to delete product', 'error');
+      return false;
+    } catch (err) {
+      showToast('Could not connect to server on port 8092.', 'error');
+      return false;
+    }
   }
 
   // =============================================================
-  // STOCK LEDGER
+  // STOCK LEDGER (kept in localStorage — backend has no stock-ledger
+  // endpoint — but stock quantity itself is now synced to the server)
   // =============================================================
   let stockLedger = {};
 
@@ -444,7 +423,7 @@
     localStorage.setItem('vkm_stock_ledger', JSON.stringify(stockLedger));
   }
 
-  function addStockEntry(productId, type, qty, reason) {
+  async function addStockEntry(productId, type, qty, reason) {
     if (!stockLedger[productId]) stockLedger[productId] = [];
     const entry = {
       id: Date.now(),
@@ -458,13 +437,20 @@
 
     const product = getProduct(parseInt(productId));
     if (product) {
+      let newStock = parseInt(product.stock) || 0;
       if (type === 'in') {
-        product.stock = (parseInt(product.stock) || 0) + parseInt(qty);
+        newStock += parseInt(qty);
       } else {
-        product.stock = Math.max(0, (parseInt(product.stock) || 0) - parseInt(qty));
+        newStock = Math.max(0, newStock - parseInt(qty));
       }
-      saveProducts();
-      render();
+      const updatedData = Object.assign({}, product, { stock: newStock });
+
+      // A stock adjustment shouldn't re-upload/replace existing media files.
+      thumbnailFileObj = null;
+      galleryFileObjs = [];
+      brochureFileObj = null;
+
+      await updateProduct(parseInt(productId), updatedData, true);
     }
     showToast('Stock entry added!', 'success');
     renderStockHistory(productId);
@@ -736,7 +722,8 @@
       qtyPerKw: parseFloat(pfQtyPerKw.value) || 0,
       description: pfDescription.value.trim(),
 
-      // media (base64 data URLs for now — swap for uploaded file URLs once the backend endpoint is wired up)
+      // media (base64 data URLs for preview only — the actual files travel
+      // separately as multipart parts, see thumbnailFileObj/galleryFileObjs/brochureFileObj)
       thumbnail: pfThumbnail.value || '',
       gallery: galleryImages.slice(),
       brochure: pfBrochure.value || '',
@@ -826,6 +813,11 @@
     pfQtyPerKw.value = data.qtyPerKw || 0;
     pfDescription.value = data.description || '';
 
+    // Editing an existing product: no new files chosen yet.
+    thumbnailFileObj = null;
+    galleryFileObjs = [];
+    brochureFileObj = null;
+
     setThumbnailPreview(data.thumbnail || '');
     galleryImages = Array.isArray(data.gallery) ? data.gallery.slice() : [];
     renderGalleryPreview();
@@ -906,6 +898,10 @@
     pfUnit.value = 'Piece';
     pfQtyPerKw.value = '';
     pfDescription.value = '';
+
+    thumbnailFileObj = null;
+    galleryFileObjs = [];
+    brochureFileObj = null;
 
     setThumbnailPreview('');
     if (pfThumbnailFile) pfThumbnailFile.value = '';
@@ -1013,8 +1009,9 @@
   // =============================================================
   // MEDIA UPLOAD HELPERS
   // Files are read client-side into base64 data URLs so they can be
-  // previewed and stored immediately. Swap readFileAsDataURL's result
-  // for an uploaded file URL once a real /upload backend is wired up.
+  // previewed immediately, and the raw File objects are kept in
+  // thumbnailFileObj / galleryFileObjs / brochureFileObj so they can be
+  // sent to the backend as multipart parts on save.
   // =============================================================
   function readFileAsDataURL(file) {
     return new Promise((resolve, reject) => {
@@ -1052,6 +1049,7 @@
       btn.addEventListener('click', function() {
         const idx = parseInt(this.dataset.galleryIndex);
         galleryImages.splice(idx, 1);
+        if (galleryFileObjs[idx]) galleryFileObjs.splice(idx, 1);
         renderGalleryPreview();
       });
     });
@@ -1430,6 +1428,7 @@
       pfThumbnailFile.addEventListener('change', async function() {
         const file = this.files && this.files[0];
         if (!file) return;
+        thumbnailFileObj = file; // NEW: keep the real File for upload
         try {
           const dataUrl = await readFileAsDataURL(file);
           setThumbnailPreview(dataUrl);
@@ -1440,6 +1439,7 @@
     }
     if (pfThumbnailRemove) {
       pfThumbnailRemove.addEventListener('click', function() {
+        thumbnailFileObj = null;
         setThumbnailPreview('');
         if (pfThumbnailFile) pfThumbnailFile.value = '';
       });
@@ -1449,6 +1449,7 @@
       pfGalleryFile.addEventListener('change', async function() {
         const files = Array.from(this.files || []);
         if (!files.length) return;
+        galleryFileObjs = galleryFileObjs.concat(files); // NEW: keep the real Files for upload
         try {
           const reads = await Promise.all(files.map(async f => ({ name: f.name, dataUrl: await readFileAsDataURL(f) })));
           galleryImages = galleryImages.concat(reads);
@@ -1464,6 +1465,7 @@
       pfBrochureFile.addEventListener('change', async function() {
         const file = this.files && this.files[0];
         if (!file) return;
+        brochureFileObj = file; // NEW: keep the real File for upload
         try {
           const dataUrl = await readFileAsDataURL(file);
           setBrochurePreview(dataUrl, file.name);
@@ -1474,6 +1476,7 @@
     }
     if (pfBrochureRemove) {
       pfBrochureRemove.addEventListener('click', function() {
+        brochureFileObj = null;
         setBrochurePreview('', '');
         if (pfBrochureFile) pfBrochureFile.value = '';
       });
@@ -1497,10 +1500,10 @@
       });
     }
 
-    // Save Product
+    // Save Product  (NOW async — calls the backend)
     const saveBtn = document.getElementById('btn-save-product');
     if (saveBtn) {
-      saveBtn.addEventListener('click', function() {
+      saveBtn.addEventListener('click', async function() {
         const data = collectFormData();
 
         let errors = [];
@@ -1519,12 +1522,15 @@
         }
 
         const id = pfId.value ? parseInt(pfId.value) : null;
+        saveBtn.disabled = true;
+        let ok;
         if (id) {
-          updateProduct(id, data);
+          ok = await updateProduct(id, data);
         } else {
-          addProduct(data);
+          ok = await addProduct(data);
         }
-        closeModal(modalProduct);
+        saveBtn.disabled = false;
+        if (ok) closeModal(modalProduct);
       });
     }
 
@@ -1569,22 +1575,24 @@
       });
     }
 
-    // Confirm Delete
+    // Confirm Delete  (NOW async — calls the backend)
     const confirmDeleteBtn = document.getElementById('btn-confirm-delete-product');
     if (confirmDeleteBtn) {
-      confirmDeleteBtn.addEventListener('click', function() {
+      confirmDeleteBtn.addEventListener('click', async function() {
         if (deletingId) {
-          deleteProduct(deletingId);
+          confirmDeleteBtn.disabled = true;
+          const ok = await deleteProduct(deletingId);
+          confirmDeleteBtn.disabled = false;
           deletingId = null;
-          closeModal(modalDelete);
+          if (ok) closeModal(modalDelete);
         }
       });
     }
 
-    // Stock entry
+    // Stock entry  (NOW async — syncs new stock qty to the backend)
     const addStockBtn = document.getElementById('btn-add-stock-entry');
     if (addStockBtn) {
-      addStockBtn.addEventListener('click', function() {
+      addStockBtn.addEventListener('click', async function() {
         const type = document.getElementById('sl-type').value;
         const qty = parseInt(document.getElementById('sl-qty').value);
         const reason = document.getElementById('sl-reason').value.trim();
@@ -1595,7 +1603,9 @@
         }
 
         if (stockProductId) {
-          addStockEntry(stockProductId, type, qty, reason);
+          addStockBtn.disabled = true;
+          await addStockEntry(stockProductId, type, qty, reason);
+          addStockBtn.disabled = false;
           document.getElementById('sl-qty').value = '';
           document.getElementById('sl-reason').value = '';
         }
@@ -1730,15 +1740,14 @@
   }
 
   // =============================================================
-  // INIT
+  // INIT  (NOW async — loads products from the backend first)
   // =============================================================
-  function init() {
-    loadProducts();
+  async function init() {
     loadLedger();
 
     initSidebar();
 
-    render();
+    await fetchProductsFromServer(); // calls render() internally
     bindEvents();
     toggleSections('');
     updateTypeToggle('');
@@ -1752,8 +1761,5 @@
   } else {
     init();
   }
-
-  // Expose payload mapper for API integration (matches the shared JSON schema)
-  window.productToPayload = productToPayload;
 
 })();

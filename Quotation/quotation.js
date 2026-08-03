@@ -28,6 +28,11 @@
   };
 
   // ============================================================
+  // API CONFIG
+  // ============================================================
+  const API_BASE = 'http://localhost:8092/api';
+
+  // ============================================================
   // PRODUCT CATALOG — synced live from Product Management
   // ============================================================
   const PRODUCT_CATALOG_STORAGE_KEY = 'vkmProductCatalog';
@@ -74,6 +79,51 @@
       }
     } catch (_) { /* fall through to fallback list */ }
     return FALLBACK_PRODUCTS;
+  }
+
+  // Fetch products from backend and update localStorage
+  async function fetchProductsFromBackend() {
+    try {
+      const response = await fetch(`${API_BASE}/products/get-all-products`);
+      const json = await response.json();
+      if (response.ok && json && json.success) {
+        const products = json.data.map(dto => ({
+          id: dto.id,
+          name: dto.name,
+          category: dto.category,
+          brand: dto.brand,
+          spec: dto.description || '',
+          unit: 'Nos',
+          price: dto.finalPrice || 0,
+          status: dto.status || 'Active',
+          hsnCode: dto.hsn || '',
+          gstRate: dto.gst || 18,
+          sectionCode: '',
+          imageUrl: dto.thumbnail || '',
+          powerHP: dto.powerConsumptionKw || 0,
+          production: '',
+          shedSize: '',
+          labor: 0,
+          inCustomerScope: false
+        }));
+        
+        // Store in localStorage
+        try {
+          localStorage.setItem(PRODUCT_CATALOG_STORAGE_KEY, JSON.stringify(products));
+        } catch (_) {}
+        
+        // Update the catalog dropdown if it exists
+        if (window.__quotationProductCatalog) {
+          window.__quotationProductCatalog = products;
+          populateProductPicker();
+        }
+        
+        return products;
+      }
+    } catch (err) {
+      console.error('Failed to fetch products from backend:', err);
+    }
+    return null;
   }
 
   function findCatalogProduct(catalog, productId) {
@@ -166,14 +216,14 @@
     return {
       subtotal, discountAmount, taxable,
       isInterState,
-      sgst: sgstAmount, cgst: cgstAmount, // kept for backward-compat display
+      sgst: sgstAmount, cgst: cgstAmount,
       gstBreakup: { cgstPercent, cgstAmount, sgstPercent, sgstAmount, igstPercent, igstAmount },
       total
     };
   }
 
   // ============================================================
-  // TERMS & CONDITIONS (Task 3 — terms-config.js)
+  // TERMS & CONDITIONS
   // ============================================================
   function buildTermsText(items) {
     const cfg = window.TERMS_CONFIG || { version: 'DEFAULT_TC_V1', base: { english: [], hindi: [] }, categoryExtras: {} };
@@ -253,6 +303,188 @@
     merged.termsAndConditions = merged.termsAndConditions || buildTermsText(merged.items);
 
     return merged;
+  }
+
+  // ============================================================
+  // BACKEND API INTEGRATION
+  // ============================================================
+  async function saveQuotationToBackend(quotationData) {
+    try {
+      const requestDto = {
+        quoteNo: quotationData.quoteNo,
+        date: quotationData.date,
+        status: quotationData.status,
+        customer: {
+          name: quotationData.customer.name || '',
+          mobilePrimary: quotationData.customer.mobilePrimary || '',
+          mobileSecondary: quotationData.customer.mobileSecondary || '',
+          email: quotationData.customer.email || '',
+          address: quotationData.customer.address || '',
+          city: quotationData.customer.city || '',
+          state: quotationData.customer.state || '',
+          pincode: quotationData.customer.pincode || '',
+          gst: quotationData.customer.gst || ''
+        },
+        items: quotationData.items.map(item => ({
+          productId: item.productId || null,
+          name: item.name || '',
+          category: item.category || '',
+          qty: Number(item.qty) || 0,
+          rate: Number(item.rate) || 0,
+          amount: (Number(item.qty) || 0) * (Number(item.rate) || 0),
+          hsnCode: item.hsnCode || '',
+          gstRate: Number(item.gstRate) || 18,
+          powerHP: Number(item.powerHP) || 0,
+          powerKW: Number(item.powerKW) || 0,
+          inCustomerScope: item.inCustomerScope || false,
+          shedSize: item.shedSize || '',
+          labor: Number(item.labor) || 0,
+          production: item.production || '',
+          imageUrl: item.imageUrl || ''
+        })),
+        costs: {
+          transport: Number(quotationData.costs.transport) || 0,
+          loading: Number(quotationData.costs.loading) || 0,
+          otherLabel: quotationData.costs.otherLabel || 'Other Charges',
+          other: Number(quotationData.costs.other) || 0
+        },
+        gstPercent: Number(quotationData.gstPercent) || 18,
+        discountType: quotationData.discountType || 'percent',
+        discountValue: Number(quotationData.discountValue) || 0,
+        subtotal: Number(quotationData.subtotal) || 0,
+        discountAmount: Number(quotationData.discountAmount) || 0,
+        taxable: Number(quotationData.taxable) || 0,
+        total: Number(quotationData.total) || 0,
+        amount: Number(quotationData.amount) || 0,
+        deliveryTimeline: quotationData.deliveryTimeline || '',
+        validUntil: quotationData.validUntil || '',
+        paymentTerms: {
+          advance: Number(quotationData.paymentTerms.advance) || 0,
+          material: Number(quotationData.paymentTerms.material) || 0,
+          installation: Number(quotationData.paymentTerms.installation) || 0,
+          balance: Number(quotationData.paymentTerms.balance) || 0
+        },
+        paymentType: quotationData.paymentType || 'full',
+        bank: {
+          accountName: quotationData.bank.accountName || '',
+          bankName: quotationData.bank.bankName || '',
+          accountNumber: quotationData.bank.accountNumber || '',
+          ifscCode: quotationData.bank.ifscCode || '',
+          branch: quotationData.bank.branch || ''
+        },
+        termsAndConditions: quotationData.termsAndConditions || {},
+        additionalNotes: quotationData.additionalNotes || '',
+        productImages: quotationData.productImages || []
+      };
+
+      const response = await fetch(`${API_BASE}/quotations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestDto)
+      });
+
+      const json = await response.json();
+      if (response.ok && json && json.success) {
+        return json.data;
+      } else {
+        console.error('Backend error:', json);
+        showToast(json?.message || 'Failed to save quotation', 'error');
+        return null;
+      }
+    } catch (err) {
+      console.error('Error saving quotation:', err);
+      showToast('Could not connect to server on port 8092.', 'error');
+      return null;
+    }
+  }
+
+  async function fetchQuotationsFromBackend() {
+    try {
+      const response = await fetch(`${API_BASE}/quotations`);
+      const json = await response.json();
+      if (response.ok && json && json.success) {
+        const backendQuotations = json.data.content || json.data || [];
+        return backendQuotations.map(q => convertBackendToFrontend(q));
+      }
+      return [];
+    } catch (err) {
+      console.error('Error fetching quotations:', err);
+      return [];
+    }
+  }
+
+  function convertBackendToFrontend(backendData) {
+    return {
+      quoteNo: backendData.quoteNo || '',
+      date: backendData.date || new Date().toISOString().slice(0, 10),
+      status: backendData.status || 'Pending',
+      customer: {
+        name: backendData.customer?.name || '',
+        mobilePrimary: backendData.customer?.mobilePrimary || '',
+        mobileSecondary: backendData.customer?.mobileSecondary || '',
+        email: backendData.customer?.email || '',
+        address: backendData.customer?.address || '',
+        city: backendData.customer?.city || '',
+        state: backendData.customer?.state || '',
+        pincode: backendData.customer?.pincode || '',
+        gst: backendData.customer?.gst || ''
+      },
+      items: (backendData.items || []).map(item => ({
+        id: item.id || 'it' + Math.random(),
+        productId: item.productId || null,
+        name: item.name || '',
+        category: item.category || '',
+        qty: Number(item.qty) || 0,
+        rate: Number(item.rate) || 0,
+        hsnCode: item.hsnCode || '',
+        gstRate: Number(item.gstRate) || 18,
+        powerHP: Number(item.powerHP) || 0,
+        powerKW: Number(item.powerKW) || 0,
+        inCustomerScope: item.inCustomerScope || false,
+        shedSize: item.shedSize || '',
+        labor: Number(item.labor) || 0,
+        production: item.production || '',
+        imageUrl: item.imageUrl || ''
+      })),
+      costs: {
+        transport: Number(backendData.costs?.transport) || 0,
+        loading: Number(backendData.costs?.loading) || 0,
+        otherLabel: backendData.costs?.otherLabel || 'Other Charges',
+        other: Number(backendData.costs?.other) || 0
+      },
+      gstPercent: Number(backendData.gstPercent) || 18,
+      discountType: backendData.discountType || 'percent',
+      discountValue: Number(backendData.discountValue) || 0,
+      subtotal: Number(backendData.subtotal) || 0,
+      discountAmount: Number(backendData.discountAmount) || 0,
+      taxable: Number(backendData.taxable) || 0,
+      total: Number(backendData.total) || 0,
+      amount: Number(backendData.amount) || 0,
+      itemsTotal: Number(backendData.itemsTotal) || 0,
+      deliveryTimeline: backendData.deliveryTimeline || '45 days from advance payment',
+      validUntil: backendData.validUntil || '',
+      paymentTerms: {
+        advance: Number(backendData.paymentTerms?.advance) || 0,
+        material: Number(backendData.paymentTerms?.material) || 0,
+        installation: Number(backendData.paymentTerms?.installation) || 0,
+        balance: Number(backendData.paymentTerms?.balance) || 0
+      },
+      paymentType: backendData.paymentType || 'full',
+      bank: {
+        accountName: backendData.bank?.accountName || COMPANY.bank.accountName,
+        bankName: backendData.bank?.bankName || COMPANY.bank.bankName,
+        accountNumber: backendData.bank?.accountNumber || COMPANY.bank.accountNumber,
+        ifscCode: backendData.bank?.ifscCode || COMPANY.bank.ifscCode,
+        branch: backendData.bank?.branch || COMPANY.bank.branch
+      },
+      termsAndConditions: backendData.termsAndConditions || {},
+      additionalNotes: backendData.additionalNotes || '',
+      productImages: backendData.productImages || [],
+      isInterState: backendData.isInterState || false,
+      gstBreakup: backendData.gstBreakup || { cgstPercent: 0, cgstAmount: 0, sgstPercent: 0, sgstAmount: 0, igstPercent: 0, igstAmount: 0 }
+    };
   }
 
   // ============================================================
@@ -553,7 +785,7 @@
   }
 
   // ============================================================
-  // PRODUCT IMAGE GALLERY (Task 3 — Step 5)
+  // PRODUCT IMAGE GALLERY
   // ============================================================
   function collectProductImages(items) {
     const catalog = getProductCatalog();
@@ -573,11 +805,7 @@
 
   // ------------------------------------------------------------
   // Groups the quotation's items into "Sections" (A, B, C, ...)
-  // by their product category — same idea as Section A / B / C /
-  // D / E in the ENDEAVOUR-i sample quotation, but built
-  // dynamically from whatever categories are actually present in
-  // THIS quotation (so it always matches what was picked in the
-  // wizard, in the order items were first added).
+  // by their product category
   // ------------------------------------------------------------
   function groupItemsBySection(items) {
     const letters = 'ABCDEFGHIJ';
@@ -596,17 +824,12 @@
   }
 
   // ============================================================
-  // INVOICE MARKUP (shared by wizard preview + view modal)
-  // Section-wise breakdown (A/B/C...) + Price Summary + bilingual
-  // Terms & Conditions + product image gallery — matches the
-  // ENDEAVOUR-i sample quotation layout, built from the actual
-  // items/categories picked in this quotation.
+  // INVOICE MARKUP
   // ============================================================
   function buildInvoiceMarkup(q) {
     const sections = groupItemsBySection(q.items || []);
     const badgeCls = badgeClass(q.status);
 
-    // ---- Section tables: one per product category ----
     let sectionsHtml = '';
     sections.forEach(sec => {
       let secTotal = 0;
@@ -658,7 +881,6 @@
         </div>`;
     });
 
-    // ---- Additional Charges block (Transport / Loading / Other) ----
     const extraRows = [];
     if (q.costs.transport) extraRows.push(['Transportation / Freight Charges', q.costs.transport]);
     if (q.costs.loading) extraRows.push(['Loading Charges', q.costs.loading]);
@@ -675,7 +897,6 @@
         </table>
       </div>` : '';
 
-    // ---- Price Summary table ----
     let summaryRows = sections.map(sec => {
       const secTotal = sec.items.reduce((s, it) => s + (it.inCustomerScope ? 0 : (Number(it.qty) || 0) * (Number(it.rate) || 0)), 0);
       return `<tr><td>Section ${sec.code}: ${escapeHtml(sec.title)}</td><td class="num">${formatINR(secTotal)}</td></tr>`;
@@ -701,13 +922,11 @@
         </table>
       </div>`;
 
-    // ---- Bilingual Terms & Conditions (English + Hindi, side by side) ----
     const terms = buildTermsText(q.items);
     const termsEnglishHtml = terms.english.map(line => `<div>• ${escapeHtml(line)}</div>`).join('');
     const termsHindiHtml = terms.hindi.map(line => `<div>• ${escapeHtml(line)}</div>`).join('');
     const additionalNotes = (q.additionalNotes || '').trim();
 
-    // ---- Product image gallery (last section of the PDF) ----
     const productImages = q.productImages && q.productImages.length ? q.productImages : collectProductImages(q.items);
     const galleryHtml = productImages.length ? `
       <div class="product-gallery">
@@ -809,21 +1028,8 @@
   }
 
   // ============================================================
-  // HINDI TERMS RASTERIZATION (fix for html2canvas Devanagari bug)
-  // ------------------------------------------------------------
-  // html2canvas re-implements text layout itself instead of going
-  // through the browser's real text-shaping engine, so it cannot
-  // correctly compose Devanagari conjuncts / reorder matras — the
-  // "और" -> "औi" style jumbling. ctx.fillText() on a real <canvas>
-  // DOES go through the browser's native shaping, and html2canvas
-  // copies an existing <canvas> element's pixels as-is (it does not
-  // try to re-render its contents). So: right before PDF export,
-  // swap the live Hindi terms text for a canvas we've drawn
-  // ourselves, let html2canvas capture that bitmap, then restore
-  // the live HTML afterwards so on-screen viewing/editing is
-  // unaffected.
+  // HINDI TERMS RASTERIZATION
   // ============================================================
-
   function wrapCanvasText(ctx, text, maxWidthPx) {
     const words = text.split(' ');
     const lines = [];
@@ -842,8 +1048,8 @@
   }
 
   function renderHindiTermsCanvas(bulletLines, cssWidthPx) {
-    const scale = 2; // matches the html2canvas { scale: 2 } export option
-    const fontSizePx = 10;      // matches .terms-text font-size: 10px
+    const scale = 2;
+    const fontSizePx = 10;
     const lineHeightPx = fontSizePx * 1.5;
     const bulletGapPx = 3;
     const fontStack = "'Noto Sans Devanagari', 'Poppins', sans-serif";
@@ -865,7 +1071,7 @@
     canvas.style.display = 'block';
 
     const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#555555'; // matches .terms-text { color: #555; }
+    ctx.fillStyle = '#555555';
     ctx.font = `400 ${fontSizePx * scale}px ${fontStack}`;
     ctx.textBaseline = 'top';
 
@@ -882,17 +1088,12 @@
     return canvas;
   }
 
-  // Swaps every live Hindi terms block inside `container` for a
-  // rasterized <canvas>. Returns a function that restores the
-  // original HTML — always call it once export finishes (success
-  // or failure) so the on-screen view goes back to live, editable-
-  // looking text.
   async function prepareHindiTextForExport(container) {
     try {
       await document.fonts.load(`400 20px 'Noto Sans Devanagari'`);
       await document.fonts.load(`600 20px 'Noto Sans Devanagari'`);
       if (document.fonts.ready) await document.fonts.ready;
-    } catch (_) { /* font API not available — proceed with whatever is loaded */ }
+    } catch (_) { /* font API not available */ }
 
     const blocks = container.querySelectorAll('.hindi-col .terms-text');
     const restoreFns = [];
@@ -1101,9 +1302,6 @@
     const rate = parseFloat(rateInput?.value) || Number(p.pricing?.sellingPrice ?? p.price) || 0;
     const inCustomerScope = !!(p.pricing?.inCustomerScope ?? p.inCustomerScope);
 
-    // Snapshot the catalog product's fields into the item at add-time —
-    // this is a point-in-time copy, not a live reference, so later
-    // catalog edits never retroactively change an already-added item.
     wizardItems.push({
       id: newItemId(),
       productId: p.id,
@@ -1181,11 +1379,6 @@
     updateSiteRequirementsBox();
   }
 
-  // ------------------------------------------------------------
-  // Site Requirements hint (Step 2) — surfaces shed/labor needs of
-  // the machines picked so far, so the team knows what to confirm
-  // with the customer before dispatch.
-  // ------------------------------------------------------------
   function updateSiteRequirementsBox() {
     const box = $('#site-requirements-box');
     if (!box) return;
@@ -1275,6 +1468,8 @@
   function openWizard() {
     draftQuoteNo = null;
     resetWizardForm();
+    // Refresh product catalog from backend
+    fetchProductsFromBackend();
     currentStep = 1;
     goToStep(1);
     openModal('modal-wizard');
@@ -1398,7 +1593,6 @@
     return ok;
   }
 
-  // Task 3 — Step 3 cost breakdown is exactly Transport / Loading / Other
   function getCostTotalsFromForm() {
     const transport = parseFloat($('#cost-transport')?.value) || 0;
     const loading = parseFloat($('#cost-loading')?.value) || 0;
@@ -1490,8 +1684,7 @@
   });
 
   // ============================================================
-  // collectWizardRecord() — matches the Task 4 Quotation payload
-  // shape field-for-field.
+  // collectWizardRecord()
   // ============================================================
   function collectWizardRecord(quoteNo) {
     const costs = getCostTotalsFromForm();
@@ -1521,9 +1714,6 @@
       paymentTerms.balance = parseFloat($('#f-payment-balance')?.value) || 0;
     }
 
-    // Items already carry their catalog snapshot (productId, hsnCode,
-    // gstRate, sectionCode, powerHP, powerKW, inCustomerScope) from the
-    // moment they were added in Step 2 — see btn-add-catalog-product.
     const items = wizardItems.map(it => ({ ...it }));
 
     const terms = buildTermsText(items);
@@ -1582,12 +1772,32 @@
     if (preview) preview.innerHTML = buildInvoiceMarkup(record);
   }
 
-  $('#btn-generate')?.addEventListener('click', () => {
+  $('#btn-generate')?.addEventListener('click', async () => {
     const btn = $('#btn-generate');
     if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...'; }
 
     const record = collectWizardRecord(draftQuoteNo || nextQuoteNo());
-    quotations.unshift(record);
+    
+    // Save to backend
+    const savedQuotation = await saveQuotationToBackend(record);
+    
+    if (savedQuotation) {
+      // Convert backend response to frontend format and add to list
+      const frontendQuotation = convertBackendToFrontend(savedQuotation);
+      quotations.unshift(frontendQuotation);
+      
+      // Save to localStorage
+      try {
+        localStorage.setItem('quotations', JSON.stringify(quotations));
+      } catch (_) {}
+    } else {
+      // Fallback: save locally if backend fails
+      quotations.unshift(record);
+      try {
+        localStorage.setItem('quotations', JSON.stringify(quotations));
+      } catch (_) {}
+    }
+    
     draftQuoteNo = null;
 
     const preview = $('#invoice-preview');
@@ -1672,10 +1882,52 @@
   // ============================================================
   // INIT
   // ============================================================
-  function init() {
-    if (quotations.length === 0) {
+  async function init() {
+    // Try to load from localStorage first
+    const stored = localStorage.getItem('quotations');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length) {
+          quotations = parsed;
+          populateProductPicker();
+          togglePaymentFields();
+          renderTable();
+          // Still try to refresh from backend in background
+          try {
+            const backendQuotations = await fetchQuotationsFromBackend();
+            if (backendQuotations && backendQuotations.length) {
+              quotations = backendQuotations;
+              try {
+                localStorage.setItem('quotations', JSON.stringify(quotations));
+              } catch (_) {}
+              renderTable();
+            }
+          } catch (_) {}
+          return;
+        }
+      } catch (_) {}
+    }
+    
+    // If nothing in localStorage, try backend
+    try {
+      const backendQuotations = await fetchQuotationsFromBackend();
+      if (backendQuotations && backendQuotations.length) {
+        quotations = backendQuotations;
+        try {
+          localStorage.setItem('quotations', JSON.stringify(quotations));
+        } catch (_) {}
+      } else {
+        quotations = generateSampleQuotations();
+      }
+    } catch (err) {
+      console.error('Error loading quotations:', err);
       quotations = generateSampleQuotations();
     }
+    
+    // Refresh product catalog from backend
+    await fetchProductsFromBackend();
+    
     populateProductPicker();
     togglePaymentFields();
     renderTable();
