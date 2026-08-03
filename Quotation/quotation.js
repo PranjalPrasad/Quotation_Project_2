@@ -1418,10 +1418,18 @@
   }
 
   function resetWizardForm() {
-    ['f-customerName', 'f-mobilePrimary', 'f-mobileSecondary', 'f-email', 'f-address', 'f-city', 'f-state', 'f-pincode', 'f-gst'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.value = '';
-    });
+   // Check if we have prefilled customer data to preserve
+  const hasPrefilledData = window._prefilledCustomer !== null;
+  
+  ['f-customerName', 'f-mobilePrimary', 'f-mobileSecondary', 'f-email', 'f-address', 'f-city', 'f-state', 'f-pincode', 'f-gst'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      // Don't clear if we have prefilled data
+      if (!hasPrefilledData) {
+        el.value = '';
+      }
+    }
+  });
 
     $('#f-deliveryTimeline').value = '45 days from advance payment';
 
@@ -1465,15 +1473,75 @@
     if ($('#btn-generate')) $('#btn-generate').disabled = false;
   }
 
-  function openWizard() {
-    draftQuoteNo = null;
-    resetWizardForm();
-    // Refresh product catalog from backend
-    fetchProductsFromBackend();
-    currentStep = 1;
-    goToStep(1);
-    openModal('modal-wizard');
+function openWizard() {
+  draftQuoteNo = null;
+  resetWizardForm();
+  
+  // If we have prefilled customer data, fill the form
+  if (window._prefilledCustomer) {
+    fillCustomerForm(window._prefilledCustomer);
   }
+  
+  // Refresh product catalog from backend
+  fetchProductsFromBackend();
+  currentStep = 1;
+  goToStep(1);
+  openModal('modal-wizard');
+}
+
+/* ============================================================
+   Fill Customer Form with Data from Customer Management
+   ============================================================ */
+function fillCustomerForm(customerData) {
+  if (!customerData) return;
+  
+  console.log('Filling customer form with:', customerData);
+  
+  // Step 1 fields - Customer Details
+  const nameField = document.getElementById('f-customerName');
+  const mobileField = document.getElementById('f-mobilePrimary');
+  const mobileSecondaryField = document.getElementById('f-mobileSecondary');
+  const emailField = document.getElementById('f-email');
+  const addressField = document.getElementById('f-address');
+  const cityField = document.getElementById('f-city');
+  const stateField = document.getElementById('f-state');
+  const pincodeField = document.getElementById('f-pincode');
+  const gstField = document.getElementById('f-gst');
+  
+  if (nameField) nameField.value = customerData.name || '';
+  if (mobileField) mobileField.value = customerData.mobilePrimary || '';
+  if (mobileSecondaryField) mobileSecondaryField.value = customerData.mobileSecondary || '';
+  if (emailField) emailField.value = customerData.email || '';
+  if (addressField) addressField.value = customerData.address || '';
+  if (cityField) cityField.value = customerData.city || '';
+  if (stateField) stateField.value = customerData.state || '';
+  if (pincodeField) pincodeField.value = customerData.pincode || '';
+  if (gstField) gstField.value = customerData.gst || '';
+  
+  // Update state field for GST calculation
+  if (stateField) {
+    // Trigger change event to update GST calculations
+    const event = new Event('input');
+    stateField.dispatchEvent(event);
+  }
+  
+  // Also update the edit modal fields if they exist
+  const editNameField = document.getElementById('edit-customerName');
+  const editMobileField = document.getElementById('edit-mobile');
+  const editEmailField = document.getElementById('edit-email');
+  
+  if (editNameField) editNameField.value = customerData.name || '';
+  if (editMobileField) editMobileField.value = customerData.mobilePrimary || '';
+  if (editEmailField) editEmailField.value = customerData.email || '';
+  
+  // Show toast notification
+  showToast(`Customer ${customerData.name} details loaded automatically`, 'success');
+  
+  // Clear session storage after loading
+  sessionStorage.removeItem('quotationCustomerData');
+  sessionStorage.removeItem('quotationCustomerId');
+  window._prefilledCustomer = null;
+}
   $('#btn-new-quotation')?.addEventListener('click', openWizard);
 
   function goToStep(step) {
@@ -1883,55 +1951,85 @@
   // INIT
   // ============================================================
   async function init() {
-    // Try to load from localStorage first
-    const stored = localStorage.getItem('quotations');
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length) {
-          quotations = parsed;
-          populateProductPicker();
-          togglePaymentFields();
-          renderTable();
-          // Still try to refresh from backend in background
-          try {
-            const backendQuotations = await fetchQuotationsFromBackend();
-            if (backendQuotations && backendQuotations.length) {
-              quotations = backendQuotations;
-              try {
-                localStorage.setItem('quotations', JSON.stringify(quotations));
-              } catch (_) {}
-              renderTable();
-            }
-          } catch (_) {}
-          return;
-        }
-      } catch (_) {}
-    }
-    
-    // If nothing in localStorage, try backend
+  // ============================================================
+  // CHECK FOR CUSTOMER DATA FROM CUSTOMER MANAGEMENT
+  // ============================================================
+  const customerDataStr = sessionStorage.getItem('quotationCustomerData');
+  const customerId = sessionStorage.getItem('quotationCustomerId');
+  
+  if (customerDataStr) {
     try {
-      const backendQuotations = await fetchQuotationsFromBackend();
-      if (backendQuotations && backendQuotations.length) {
-        quotations = backendQuotations;
-        try {
-          localStorage.setItem('quotations', JSON.stringify(quotations));
-        } catch (_) {}
-      } else {
-        quotations = generateSampleQuotations();
-      }
+      const customerData = JSON.parse(customerDataStr);
+      console.log('Loading customer data:', customerData);
+      
+      // Store customer data globally for later use
+      window._prefilledCustomer = customerData;
+      
+      // Pre-fill customer details in the wizard (will be applied when wizard opens)
+      setTimeout(() => {
+        fillCustomerForm(customerData);
+      }, 500);
+      
     } catch (err) {
-      console.error('Error loading quotations:', err);
+      console.error('Error loading customer data:', err);
+    }
+  }
+  
+  // ============================================================
+  // LOAD QUOTATIONS
+  // ============================================================
+  // Try to load from localStorage first
+  const stored = localStorage.getItem('quotations');
+  if (stored) {
+    try {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length) {
+        quotations = parsed;
+        populateProductPicker();
+        togglePaymentFields();
+        renderTable();
+        
+        // If customer data exists and wizard is not open, open it
+        if (window._prefilledCustomer) {
+          setTimeout(() => {
+            openWizard();
+          }, 300);
+        }
+        return;
+      }
+    } catch (_) {}
+  }
+  
+  // If nothing in localStorage, try backend
+  try {
+    const backendQuotations = await fetchQuotationsFromBackend();
+    if (backendQuotations && backendQuotations.length) {
+      quotations = backendQuotations;
+      try {
+        localStorage.setItem('quotations', JSON.stringify(quotations));
+      } catch (_) {}
+    } else {
       quotations = generateSampleQuotations();
     }
-    
-    // Refresh product catalog from backend
-    await fetchProductsFromBackend();
-    
-    populateProductPicker();
-    togglePaymentFields();
-    renderTable();
+  } catch (err) {
+    console.error('Error loading quotations:', err);
+    quotations = generateSampleQuotations();
   }
+  
+  // If customer data exists and wizard is not open, open it
+  if (window._prefilledCustomer) {
+    setTimeout(() => {
+      openWizard();
+    }, 300);
+  }
+  
+  // Refresh product catalog from backend
+  await fetchProductsFromBackend();
+  
+  populateProductPicker();
+  togglePaymentFields();
+  renderTable();
+}
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);

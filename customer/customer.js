@@ -1,6 +1,11 @@
 /* ============ customer.js ============ */
 
 /* ============================================================
+   API CONFIGURATION
+   ============================================================ */
+const API_BASE = 'http://localhost:8092/api';
+
+/* ============================================================
    SIDEBAR / TOPBAR CHROME
    (matches Quotation Management behavior — toggle expand/collapse,
    mobile drawer backdrop, close-on-outside-click)
@@ -38,155 +43,161 @@ window.addEventListener('resize', () => {
 });
 
 /* ============================================================
-   Sample data (replace with API later)
+   State (all data now comes from backend — no sample/dummy data)
    ============================================================ */
-let customers = [
-  {
-    id: 'CUST-1001',
-    name: 'Ramesh Kumar',
-    company: 'Shree Brick Industries',
-    mobile: '9876543210',
-    altMobile: '9123456780',
-    email: 'ramesh@shreebrick.com',
-    billingAddress: 'Plot 12, MIDC Area',
-    siteAddress: 'Survey No. 45, Outer Ring Road',
-    city: 'Nagpur',
-    state: 'Maharashtra',
-    pincode: '440001',
-    gst: '27AABCU9603R1ZM',
-    type: 'Brick Kiln Owner',
-    leadSource: 'Exhibition',
-    status: 'Active',
-    requirement: '10 Cavity Fully Automatic Brick Machine',
-    siteDetails: 'Shed 80×40 ft, 3-phase electricity available',
-    notes: 'Visited site on 12 Jun. Interested in AMC also.',
-    totalOrders: 2,
-    totalBusiness: 1850000,
-    lastActivity: '2026-07-20',
-    created: '2026-03-15',
-  },
-  {
-    id: 'CUST-1002',
-    name: 'Suresh Patel',
-    company: 'Patel Traders',
-    mobile: '9988776655',
-    altMobile: '',
-    email: 'suresh@pateltraders.in',
-    billingAddress: 'Shop 4, Main Market',
-    siteAddress: '',
-    city: 'Indore',
-    state: 'Madhya Pradesh',
-    pincode: '452001',
-    gst: '23AADCP1234F1Z5',
-    type: 'Trader-Dealer',
-    leadSource: 'Existing Customer Reference',
-    status: 'Active',
-    requirement: 'Semi-Automatic Brick Making Machine',
-    siteDetails: 'Warehouse available',
-    notes: 'Repeat buyer — ordered 2nd machine.',
-    totalOrders: 3,
-    totalBusiness: 920000,
-    lastActivity: '2026-07-18',
-    created: '2025-11-02',
-  },
-  {
-    id: 'CUST-1003',
-    name: 'Anita Deshmukh',
-    company: '',
-    mobile: '9765432109',
-    altMobile: '',
-    email: '',
-    billingAddress: 'Village Khedi, Taluka Hingna',
-    siteAddress: 'Same as billing',
-    city: 'Nagpur',
-    state: 'Maharashtra',
-    pincode: '441110',
-    gst: '',
-    type: 'Individual Buyer',
-    leadSource: 'Direct Enquiry',
-    status: 'Prospect',
-    requirement: 'Manual Brick Press (small unit)',
-    siteDetails: 'Open land 30×20, genset available',
-    notes: 'First enquiry. Follow up after 1 week.',
-    totalOrders: 0,
-    totalBusiness: 0,
-    lastActivity: '2026-07-22',
-    created: '2026-07-22',
-  },
-  {
-    id: 'CUST-1004',
-    name: 'Vikram Singh',
-    company: 'Singh Construction Co.',
-    mobile: '9812345678',
-    altMobile: '9823456789',
-    email: 'vikram@singhconst.com',
-    billingAddress: '12, Civil Lines',
-    siteAddress: 'Project site — Bypass Road',
-    city: 'Raipur',
-    state: 'Chhattisgarh',
-    pincode: '492001',
-    gst: '22AABCS9876G1Z2',
-    type: 'Contractor',
-    leadSource: 'Website',
-    status: 'Active',
-    requirement: 'Fully Automatic Fly Ash Brick Plant',
-    siteDetails: 'Large shed, dedicated transformer',
-    notes: 'High value lead. Quotation sent.',
-    totalOrders: 1,
-    totalBusiness: 2450000,
-    lastActivity: '2026-07-10',
-    created: '2026-01-28',
-  },
-  {
-    id: 'CUST-1005',
-    name: 'Meena Kiln Works',
-    company: 'Meena Kiln Works Pvt Ltd',
-    mobile: '9654321098',
-    altMobile: '',
-    email: 'info@meenakiln.com',
-    billingAddress: 'Industrial Area Phase-2',
-    siteAddress: 'Same',
-    city: 'Bhopal',
-    state: 'Madhya Pradesh',
-    pincode: '462001',
-    gst: '23AADCM4567H1Z8',
-    type: 'Industrial Unit',
-    leadSource: 'Advertisement',
-    status: 'Inactive',
-    requirement: 'Hydraulic Brick Press + Mixer',
-    siteDetails: 'Existing plant expansion',
-    notes: 'Deal postponed due to budget.',
-    totalOrders: 0,
-    totalBusiness: 0,
-    lastActivity: '2026-05-14',
-    created: '2026-04-03',
-  },
-];
-
-let followups = [
-  { customerId: 'CUST-1001', date: '2026-07-15', remark: 'Discussed AMC package', next: '2026-07-30', status: 'Completed' },
-  { customerId: 'CUST-1003', date: '2026-07-22', remark: 'First call — interested in manual press', next: '2026-07-29', status: 'Pending' },
-  { customerId: 'CUST-1004', date: '2026-07-08', remark: 'Site visit scheduled', next: '2026-07-25', status: 'Pending' },
-];
-
-let historyData = {
-  'CUST-1001': [
-    { label: 'Order placed — 10 Cavity Auto Machine', when: '15 Mar 2026' },
-    { label: 'Quotation QT-2041 approved', when: '10 Mar 2026' },
-    { label: 'Site visit completed', when: '28 Feb 2026' },
-  ],
-  'CUST-1002': [
-    { label: 'Order placed — Semi-Auto Machine #3', when: '05 Jun 2026' },
-    { label: 'Repeat order discussion', when: '20 May 2026' },
-  ],
-  'CUST-1004': [
-    { label: 'Quotation QT-2105 sent', when: '28 Jan 2026' },
-    { label: 'Lead created from website', when: '28 Jan 2026' },
-  ],
-};
+let customers = [];
+let followups = [];      // Not backed by an API yet (none provided) — kept in-memory for this session only
+let historyData = {};    // Not backed by an API yet (none provided) — kept in-memory for this session only
 
 /* ============================================================
-   State
+   API Functions
+   ============================================================ */
+
+// Fetch all customers from backend
+async function fetchCustomersFromBackend() {
+  try {
+    const response = await fetch(`${API_BASE}/customers/get-all-customers`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const json = await response.json();
+    if (json && json.success) {
+      return json.data || [];
+    }
+    return [];
+  } catch (err) {
+    console.error('Error fetching customers:', err);
+    return null;
+  }
+}
+
+// Create customer in backend
+async function createCustomerInBackend(customerData) {
+  try {
+    const response = await fetch(`${API_BASE}/customers/create-customer`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(customerData)
+    });
+    const json = await response.json();
+    if (response.ok && json && json.success) {
+      return json.data;
+    }
+    return null;
+  } catch (err) {
+    console.error('Error creating customer:', err);
+    return null;
+  }
+}
+
+// Update customer in backend
+async function updateCustomerInBackend(id, customerData) {
+  try {
+    const response = await fetch(`${API_BASE}/customers/update-customer/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(customerData)
+    });
+    const json = await response.json();
+    if (response.ok && json && json.success) {
+      return json.data;
+    }
+    return null;
+  } catch (err) {
+    console.error('Error updating customer:', err);
+    return null;
+  }
+}
+
+// Delete customer from backend
+async function deleteCustomerFromBackend(id) {
+  try {
+    const response = await fetch(`${API_BASE}/customers/delete-customer/${id}`, {
+      method: 'DELETE'
+    });
+    const json = await response.json();
+    if (response.ok && json && json.success) {
+      return true;
+    }
+    return false;
+  } catch (err) {
+    console.error('Error deleting customer:', err);
+    return false;
+  }
+}
+
+// Convert backend customer to frontend format
+// NOTE: backend field names are mobilePrimary / mobileSecondary / gstin
+// (see CustomerDto.java) — mapped here to the frontend's mobile/altMobile/gst
+function convertBackendToFrontend(backendCustomer) {
+  return {
+    id: backendCustomer.id ? `CUST-${backendCustomer.id}` : '',
+    rawId: backendCustomer.id,
+    customerCode: backendCustomer.customerCode || '',
+    name: backendCustomer.name || '',
+    company: backendCustomer.company || '',
+    mobile: backendCustomer.mobilePrimary || '',
+    altMobile: backendCustomer.mobileSecondary || '',
+    email: backendCustomer.email || '',
+    billingAddress: backendCustomer.billingAddress || '',
+    siteAddress: backendCustomer.siteAddress || '',
+    city: backendCustomer.city || '',
+    state: backendCustomer.state || '',
+    pincode: backendCustomer.pincode || '',
+    gst: backendCustomer.gstin || '',
+    type: backendCustomer.type || 'Individual Buyer',
+    leadSource: backendCustomer.leadSource || 'Direct Enquiry',
+    status: backendCustomer.status || 'Prospect',
+    requirement: backendCustomer.requirement || '',
+    siteDetails: backendCustomer.siteDetails || '',
+    notes: backendCustomer.notes || '',
+    totalOrders: backendCustomer.totalOrders || 0,
+    totalBusiness: backendCustomer.totalBusiness || 0,
+    lastActivity: backendCustomer.lastActivity || new Date().toISOString().slice(0, 10),
+    created: backendCustomer.created || new Date().toISOString().slice(0, 10)
+  };
+}
+
+// Convert frontend customer to backend format
+// NOTE: must match CustomerDto.java field names exactly —
+// mobile -> mobilePrimary, altMobile -> mobileSecondary, gst -> gstin
+function convertFrontendToBackend(customer) {
+  return {
+    name: customer.name || '',
+    company: customer.company || '',
+    mobilePrimary: customer.mobile || '',
+    mobileSecondary: customer.altMobile || '',
+    email: customer.email || '',
+    billingAddress: customer.billingAddress || '',
+    siteAddress: customer.siteAddress || '',
+    city: customer.city || '',
+    state: customer.state || '',
+    pincode: customer.pincode || '',
+    gstin: customer.gst || '',
+    type: customer.type || 'Individual Buyer',
+    leadSource: customer.leadSource || 'Direct Enquiry',
+    status: customer.status || 'Prospect',
+    requirement: customer.requirement || '',
+    siteDetails: customer.siteDetails || '',
+    notes: customer.notes || '',
+    totalOrders: customer.totalOrders || 0,
+    totalBusiness: customer.totalBusiness || 0,
+    lastActivity: customer.lastActivity || new Date().toISOString().slice(0, 10),
+    created: customer.created || new Date().toISOString().slice(0, 10)
+  };
+}
+
+/* ============================================================
+   State (filters / paging)
    ============================================================ */
 let searchTerm = '';
 let typeFilter = 'All';
@@ -227,13 +238,64 @@ function formatCurrency(n) {
   return '₹' + Number(n).toLocaleString('en-IN');
 }
 
-function showToast(msg) {
+function showToast(msg, type) {
   const el = document.getElementById('toast');
   if (!el) return;
   el.textContent = msg;
+  if (type === 'error') {
+    el.style.background = '#EF4444';
+    el.style.color = '#fff';
+  } else {
+    el.style.background = '';
+    el.style.color = '';
+  }
   el.classList.remove('hidden');
   clearTimeout(showToast._t);
-  showToast._t = setTimeout(() => el.classList.add('hidden'), 2600);
+  showToast._t = setTimeout(() => {
+    el.classList.add('hidden');
+    el.style.background = '';
+    el.style.color = '';
+  }, 2600);
+}
+
+/* ============================================================
+   Create Quotation for Customer
+   ============================================================ */
+function createQuotationForCustomer(customer) {
+  try {
+    // Store complete customer data in sessionStorage
+    const customerData = {
+      id: customer.id,
+      name: customer.name || '',
+      mobilePrimary: customer.mobile || '',
+      mobileSecondary: customer.altMobile || '',
+      email: customer.email || '',
+      address: customer.billingAddress || customer.address || '',
+      city: customer.city || '',
+      state: customer.state || '',
+      pincode: customer.pincode || '',
+      gst: customer.gst || '',
+      company: customer.company || '',
+      type: customer.type || '',
+      leadSource: customer.leadSource || '',
+      status: customer.status || '',
+      requirement: customer.requirement || '',
+      siteDetails: customer.siteDetails || '',
+      notes: customer.notes || ''
+    };
+
+    sessionStorage.setItem('quotationCustomerData', JSON.stringify(customerData));
+    sessionStorage.setItem('quotationCustomerId', customer.id);
+
+    showToast(`Opening quotation for ${customer.name}...`, 'info');
+
+    // Navigate to quotation page
+    window.location.href = '../Quotation/quotation.html';
+
+  } catch (err) {
+    console.error('Error creating quotation:', err);
+    showToast('Failed to open quotation page', 'error');
+  }
 }
 
 /* ============================================================
@@ -575,7 +637,7 @@ function validateCustomerForm() {
   return valid;
 }
 
-document.getElementById('customerFormSaveBtn')?.addEventListener('click', () => {
+document.getElementById('customerFormSaveBtn')?.addEventListener('click', async () => {
   if (!validateCustomerForm()) return;
 
   const payload = {
@@ -598,33 +660,48 @@ document.getElementById('customerFormSaveBtn')?.addEventListener('click', () => 
     notes: document.getElementById('fldNotes').value.trim(),
   };
 
+  // payload above is still in FRONTEND shape (mobile/altMobile/gst).
+  // convertFrontendToBackend() maps it to the backend's expected
+  // mobilePrimary/mobileSecondary/gstin field names before sending.
+  const backendPayload = convertFrontendToBackend(payload);
+
+  const saveBtn = document.getElementById('customerFormSaveBtn');
+  saveBtn.disabled = true;
+  saveBtn.textContent = formMode === 'add' ? 'Saving...' : 'Updating...';
+
   if (formMode === 'add') {
-    const maxNum = customers.reduce((max, c) => {
-      const n = parseInt(c.id.replace(/\D/g, ''), 10);
-      return isNaN(n) ? max : Math.max(max, n);
-    }, 1000);
-    const newId = `CUST-${maxNum + 1}`;
-    const today = new Date().toISOString().slice(0, 10);
-    const newCustomer = {
-      id: newId,
-      created: today,
-      lastActivity: today,
-      totalOrders: 0,
-      totalBusiness: 0,
-      ...payload,
-    };
-    customers.unshift(newCustomer);
-    showToast(`Customer ${newId} added`);
+    const backendCustomer = await createCustomerInBackend(backendPayload);
+    if (backendCustomer) {
+      const newCustomer = convertBackendToFrontend(backendCustomer);
+      customers.unshift(newCustomer);
+      showToast(`Customer ${newCustomer.id} added`);
+    } else {
+      showToast('Failed to add customer. Check backend connection.', 'error');
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Save Customer';
+      return;
+    }
   } else {
     const id = document.getElementById('fldCustomerId').value;
-    const c = customers.find(x => x.id === id);
-    if (c) {
-      Object.assign(c, payload);
-      c.lastActivity = new Date().toISOString().slice(0, 10);
+    const numericId = parseInt(id.replace('CUST-', ''), 10);
+    const updatedCustomer = await updateCustomerInBackend(numericId, backendPayload);
+    if (updatedCustomer) {
+      const frontendCustomer = convertBackendToFrontend(updatedCustomer);
+      const index = customers.findIndex(c => c.id === id);
+      if (index !== -1) {
+        customers[index] = frontendCustomer;
+      }
+      showToast(`Customer ${id} updated`);
+    } else {
+      showToast('Failed to update customer. Check backend connection.', 'error');
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Update Customer';
+      return;
     }
-    showToast(`Customer ${id} updated`);
   }
 
+  saveBtn.disabled = false;
+  saveBtn.textContent = formMode === 'add' ? 'Save Customer' : 'Update Customer';
   closeCustomerForm();
   currentPage = 1;
   renderAll();
@@ -683,12 +760,27 @@ document.getElementById('deleteModalCloseBtn')?.addEventListener('click', closeD
 document.getElementById('deleteCancelBtn')?.addEventListener('click', closeDeleteModal);
 deleteModal?.addEventListener('click', (e) => { if (e.target === deleteModal) closeDeleteModal(); });
 
-document.getElementById('deleteConfirmBtn')?.addEventListener('click', () => {
+document.getElementById('deleteConfirmBtn')?.addEventListener('click', async () => {
   if (!pendingDeleteId) return;
-  customers = customers.filter(c => c.id !== pendingDeleteId);
-  followups = followups.filter(f => f.customerId !== pendingDeleteId);
-  delete historyData[pendingDeleteId];
-  showToast('Customer deleted');
+
+  const deleteBtn = document.getElementById('deleteConfirmBtn');
+  deleteBtn.disabled = true;
+  deleteBtn.textContent = 'Deleting...';
+
+  const numericId = parseInt(pendingDeleteId.replace('CUST-', ''), 10);
+  const success = await deleteCustomerFromBackend(numericId);
+
+  if (success) {
+    customers = customers.filter(c => c.id !== pendingDeleteId);
+    followups = followups.filter(f => f.customerId !== pendingDeleteId);
+    delete historyData[pendingDeleteId];
+    showToast('Customer deleted');
+  } else {
+    showToast('Failed to delete customer. Check backend connection.', 'error');
+  }
+
+  deleteBtn.disabled = false;
+  deleteBtn.textContent = 'Delete';
   closeDeleteModal();
   renderAll();
 });
@@ -707,11 +799,16 @@ document.getElementById('customerTbody')?.addEventListener('click', (e) => {
   if (action === 'view') openViewCustomer(customer);
   else if (action === 'edit') openCustomerForm('edit', customer);
   else if (action === 'delete') openDeleteModal(customer);
-  else if (action === 'quote') showToast(`Quotation flow started for ${customer.name}`);
+  else if (action === 'quote') {
+    // Create quotation for this customer
+    createQuotationForCustomer(customer);
+  }
 });
 
 /* ============================================================
    Customer History
+   (No backend endpoint provided for history yet — this stays
+   as an in-memory, session-only feature until a history API exists.)
    ============================================================ */
 function renderHistory() {
   const list = document.getElementById('historyList');
@@ -751,6 +848,8 @@ function renderHistory() {
 
 /* ============================================================
    Follow-up section
+   (No backend endpoint provided for follow-ups yet — this stays
+   as an in-memory, session-only feature until a follow-up API exists.)
    ============================================================ */
 function renderFollowups() {
   const tbody = document.getElementById('followupTbody');
@@ -889,6 +988,25 @@ document.getElementById('profileLogoutBtn')?.addEventListener('click', () => {
 });
 
 /* ============================================================
+   Load data from backend on init
+   (No dummy/sample data — every record comes from the backend)
+   ============================================================ */
+async function loadCustomersFromBackend() {
+  const backendCustomers = await fetchCustomersFromBackend();
+  if (backendCustomers === null) {
+    // fetch itself failed (network error / server down)
+    customers = [];
+    showToast('Could not connect to backend server (port 8092)', 'error');
+  } else {
+    customers = backendCustomers.map(convertBackendToFrontend);
+    if (customers.length === 0) {
+      showToast('Connected to backend — no customers yet');
+    }
+  }
+  renderAll();
+}
+
+/* ============================================================
    Render all
    ============================================================ */
 function renderAll() {
@@ -898,4 +1016,5 @@ function renderAll() {
   renderFollowups();
 }
 
-renderAll();
+// Initialize - load from backend only
+loadCustomersFromBackend();
