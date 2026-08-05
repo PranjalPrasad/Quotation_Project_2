@@ -34,6 +34,11 @@
     },
   };
 </script>
+
+<script>
+  Auth.requireAuth();
+  window.addEventListener('pageshow', function () { Auth.requireAuth(); });
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <!--
   Noto Sans Devanagari added alongside Poppins.
@@ -558,5 +563,6 @@
 
 <script src="/Quotation/terms-config.js"></script>
 <script src="/Quotation/quotation.js"></script>
+<script src="../auth.js"></script>
 </body>
 </html>

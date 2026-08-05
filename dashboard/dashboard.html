@@ -5,6 +5,14 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>VKM Dashboard — Vaishnokripa Mercantile</title>
+<script src="../auth.js"></script>
+<script>
+  Auth.requireAuth();
+  // Re-check on bfcache restore too (e.g. user logs out, then hits
+  // the browser Forward button back into this page) — see index.html
+  // for the full explanation of why plain top-level checks aren't enough.
+  window.addEventListener('pageshow', function () { Auth.requireAuth(); });
+</script>
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
   tailwind.config = {

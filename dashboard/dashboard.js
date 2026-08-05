@@ -701,7 +701,7 @@ document.addEventListener('click', () => closeAllTopbarDropdowns());
 
 function handleLogout() {
   showToast('Logged out');
-  window.location.href = '../index.html';
+  Auth.logout();
 }
 profileLogoutBtn?.addEventListener('click', handleLogout);
 

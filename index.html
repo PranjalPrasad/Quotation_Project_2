@@ -478,11 +478,22 @@
         </div>
     </div>
 
+    <!-- auth.js must load BEFORE the inline script below, since that script calls Auth.login() -->
+    <script src="./auth.js"></script>
     <script>
-        // ---- DUMMY CREDENTIALS (frontend only) ----
-        const DUMMY_EMAIL = 'admin@gmail.com';
-        const DUMMY_PASSWORD = 'admin@1234';
-
+        // If the admin is already logged in, skip the login form entirely.
+        // Runs on pageshow (not just once at parse time) because the browser
+        // Back/Forward buttons often restore this page from bfcache — in that
+        // case NO scripts re-execute, so a plain top-level check here would
+        // silently do nothing when the user hits Back from the dashboard.
+        // event.persisted === true means "this was a bfcache restore".
+        window.addEventListener('pageshow', function () {
+            if (Auth.isAuthenticated()) {
+                window.location.replace('./dashboard/dashboard.html');
+            }
+        });
+    </script>
+    <script>
         // ---- DOM refs ----
         const emailInput = document.getElementById('email');
         const passwordInput = document.getElementById('password');
@@ -545,13 +556,14 @@
                         </div>
                     `;
             } else {
+                const safeMessage = message || 'The email address or password you entered is incorrect. Please verify your credentials and try again.';
                 overlay.innerHTML = `
                         <div class="message-card error-card" style="background:white; border-radius:16px; padding:32px 40px; max-width:400px; width:90%; text-align:center; animation:slideUp 0.4s cubic-bezier(0.34,1.56,0.64,1); box-shadow:0 20px 40px rgba(128,0,33,0.3); border-top:4px solid #E11D48;">
                             <div style="width:70px; height:70px; border-radius:50%; background:#FFE4E6; color:#E11D48; display:flex; align-items:center; justify-content:center; margin:0 auto 20px; font-size:32px;">
                                 <i class="fas fa-lock"></i>
                             </div>
                             <h3 style="font-size:20px; font-weight:700; margin-bottom:12px; color:#800021;">Authentication Failed</h3>
-                            <p style="font-size:13px; color:#6b7280; line-height:1.5; margin-bottom:20px;">The email address or password you entered is incorrect. Please verify your credentials and try again.</p>
+                            <p style="font-size:13px; color:#6b7280; line-height:1.5; margin-bottom:20px;">${safeMessage}</p>
                             <div style="background:#FEF3C7; border-radius:8px; padding:12px; margin:16px 0; text-align:left; font-size:11px; color:#B45309;">
                                 <div style="margin:6px 0; display:flex; gap:8px;"><i class="fas fa-envelope"></i> Use registered admin email</div>
                                 <div style="margin:6px 0; display:flex; gap:8px;"><i class="fas fa-key"></i> Check for case-sensitive password</div>
@@ -582,7 +594,7 @@
         }
 
         // ---- LOGIN submit ----
-        loginForm.addEventListener('submit', (e) => {
+        loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
 
             const email = emailInput.value.trim();
@@ -597,32 +609,19 @@
             loginBtn.innerHTML = '<i class="fas fa-spinner"></i> Logging in...';
             loginError.style.display = 'none';
 
-            setTimeout(() => {
-                if (email === DUMMY_EMAIL && password === DUMMY_PASSWORD) {
-                    if (rememberCheckbox.checked) {
-                        localStorage.setItem('rememberedEmail', email);
-                    } else {
-                        localStorage.removeItem('rememberedEmail');
-                    }
-                    localStorage.removeItem('isLoggedIn');
-                    localStorage.removeItem('adminName');
-                    localStorage.removeItem('adminEmail');
-                    localStorage.removeItem('adminRole');
-                    localStorage.removeItem('adminId');
+            const result = await Auth.login(email, password, rememberCheckbox.checked);
 
-                    localStorage.setItem('adminRole', 'ADMIN');
-
-                    showOverlayMessage('', 'success');
-                    setTimeout(() => {
-                        window.location.href = './dashboard/dashboard.html';
-                    }, 3000);
-                } else {
-                    showOverlayMessage('', 'error');
-                    loginBtn.classList.remove('loading');
-                    loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login to Dashboard';
-                    passwordInput.value = '';
-                }
-            }, 600);
+            if (result.success) {
+                showOverlayMessage('', 'success');
+                setTimeout(() => {
+                    window.location.href = './dashboard/dashboard.html';
+                }, 5000);
+            } else {
+                showOverlayMessage(result.message || '', 'error');
+                loginBtn.classList.remove('loading');
+                loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login to Dashboard';
+                passwordInput.value = '';
+            }
         });
 
         console.log('VKM CRM login ready.');

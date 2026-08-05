@@ -33,6 +33,10 @@
     },
   };
 </script>
+<script>
+  Auth.requireAuth();
+  window.addEventListener('pageshow', function () { Auth.requireAuth(); });
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -373,5 +377,6 @@
   <div id="toast-container" class="fixed bottom-5 right-5 z-[400] space-y-2 max-w-[calc(100vw-2.5rem)]"></div>
 
 <script src="/reports/report.js"></script>
+<script src="../auth.js"></script>
 </body>
 </html>

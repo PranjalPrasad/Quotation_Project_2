@@ -7,6 +7,10 @@
 <title>VKM Dashboard — Customer Management</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
+  Auth.requireAuth();
+  window.addEventListener('pageshow', function () { Auth.requireAuth(); });
+</script>
+<script>
   tailwind.config = {
     theme: {
       extend: {
@@ -589,5 +593,6 @@
   <div id="toast" class="toast hidden"></div>
 
   <script src="/customer/customer.js"></script>
+  <script src="../auth.js"></script>
 </body>
 </html>
