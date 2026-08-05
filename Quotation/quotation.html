@@ -2,7 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
+<meta name="theme-color" content="#800021" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <title>Quotation Management — VKM Brick &amp; Block Machinery</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
@@ -49,6 +53,8 @@
   Devanagari conjuncts/ligatures correctly on its own, so the fix
   is to draw that text on a real <canvas> — which uses the browser's
   native text shaping engine — and embed the resulting image).
+  Weights 400/600/700 are preloaded so quotation.js can wait on
+  document.fonts.load() for all of them before rasterizing.
 -->
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -111,6 +117,9 @@
         </div>
 
         <div class="flex items-center gap-2.5 relative">
+          <button id="btn-view-history-log" class="btn-outline small" title="View activity across all quotations">
+            <i class="fas fa-clock-rotate-left"></i> <span class="hidden sm:inline">History Log</span>
+          </button>
           <div class="relative">
             <button id="profileBtn" aria-label="Profile" class="w-8 h-8 rounded-full bg-peach-500 flex items-center justify-center text-white font-semibold text-sm shadow-sm">
               A
@@ -304,6 +313,48 @@
               <span class="field-error" id="err-gst"></span>
             </div>
           </div>
+
+          <!-- Plant Overview — optional summary block that appears at the
+               top of the generated PDF, mirroring the reference layout
+               (Model / Production Capacity / Bricks Size / Pallet Size /
+               Shed Area / Land / Connected Power / Labour Requirement). -->
+          <div class="sub-section">
+            <div class="sub-title"><i class="fas fa-industry"></i> Plant Overview <span class="field-hint" style="font-weight:400;">(optional — shown at the top of the PDF)</span></div>
+            <div class="plant-overview-grid">
+              <div class="form-field">
+                <label>Model</label>
+                <input type="text" id="f-plantModel" placeholder="e.g. ENDEAVOUR-iF5000 / VKM-FB10">
+              </div>
+              <div class="form-field">
+                <label>Production Capacity</label>
+                <input type="text" id="f-plantProduction" placeholder="e.g. 4200-4800 Bricks per Hour">
+              </div>
+              <div class="form-field">
+                <label>Bricks Size</label>
+                <input type="text" id="f-plantBrickSize" placeholder="e.g. 230mm X 110mm X 75mm">
+              </div>
+              <div class="form-field">
+                <label>Pallet Size</label>
+                <input type="text" id="f-plantPalletSize" placeholder="e.g. 880mm X 1100mm X 30mm">
+              </div>
+              <div class="form-field">
+                <label>Required Shed Area</label>
+                <input type="text" id="f-plantShedArea" placeholder="e.g. 60 ft X 80 ft">
+              </div>
+              <div class="form-field">
+                <label>Total Land</label>
+                <input type="text" id="f-plantLand" placeholder="e.g. 1-1.25 Acre">
+              </div>
+              <div class="form-field">
+                <label>Connected Power</label>
+                <input type="text" id="f-plantPower" placeholder="e.g. 95 HP / 71.25 KW">
+              </div>
+              <div class="form-field">
+                <label>Labour Requirement</label>
+                <input type="text" id="f-plantLabour" placeholder="e.g. 1 Skilled Operator / 20-22 Unskilled">
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- STEP 2 — Product / Machine Selection -->
@@ -482,6 +533,7 @@
     </div>
   </div>
 
+  <!-- MODAL: VIEW (invoice preview + Approval section) -->
   <div id="modal-view" class="modal-overlay hidden">
     <div class="modal-box modal-wide">
       <div class="modal-head">
@@ -489,6 +541,7 @@
         <button class="modal-close" data-close="modal-view"><i class="fas fa-xmark"></i></button>
       </div>
       <div class="modal-body">
+        <div class="approval-box" id="approval-box"></div>
         <div class="invoice-preview" id="view-invoice-preview"></div>
       </div>
       <div class="modal-foot">
@@ -498,6 +551,7 @@
     </div>
   </div>
 
+  <!-- MODAL: EDIT -->
   <div id="modal-edit" class="modal-overlay hidden">
     <div class="modal-box">
       <div class="modal-head">
@@ -543,6 +597,7 @@
     </div>
   </div>
 
+  <!-- MODAL: DELETE -->
   <div id="modal-delete" class="modal-overlay hidden">
     <div class="modal-box modal-small">
       <div class="modal-head">
@@ -555,6 +610,22 @@
       <div class="modal-foot">
         <button class="btn-outline" data-close="modal-delete">Cancel</button>
         <button class="btn-danger" id="btn-confirm-delete"><i class="fas fa-trash"></i> Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: HISTORY (per-quotation and global log share this shell) -->
+  <div id="modal-history" class="modal-overlay hidden">
+    <div class="modal-box">
+      <div class="modal-head">
+        <div class="modal-title"><i class="fas fa-clock-rotate-left"></i> History — <span id="history-quoteno"></span></div>
+        <button class="modal-close" data-close="modal-history"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="history-list" id="history-list"></div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn-outline" data-close="modal-history">Close</button>
       </div>
     </div>
   </div>

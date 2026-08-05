@@ -1,6 +1,22 @@
 /* ============================================================
    Quotation Management — Complete Module
    VKM Brick & Block Machinery (Vaishnokripa Mercantile)
+
+   CHANGELOG (this revision):
+   - Fixed Hindi (Devanagari) terms rendering for PDF export:
+     more robust font-loading/measurement, correct CSS targeting
+     of the rasterized <canvas> (not just <img>), safe fallbacks
+     if the webfont fails to load.
+   - Added Plant Overview fields (Model, Production Capacity,
+     Bricks Size, Pallet Size, Required Shed Area, Total Land,
+     Connected Power, Labour Requirement) to the wizard + PDF,
+     matching the ENDEAVOUR-i reference layout.
+   - Added per-quotation History (audit trail: created, edited,
+     approved, rejected) + a global History Log, both persisted.
+   - Added an Approval section (Approve / Reject with notes) in
+     the View modal, wired to status + history.
+   - All changes persist to localStorage immediately (previously
+     edits were lost on refresh).
    ============================================================ */
 
 (function () {
@@ -106,18 +122,18 @@
           labor: 0,
           inCustomerScope: false
         }));
-        
+
         // Store in localStorage
         try {
           localStorage.setItem(PRODUCT_CATALOG_STORAGE_KEY, JSON.stringify(products));
         } catch (_) {}
-        
+
         // Update the catalog dropdown if it exists
         if (window.__quotationProductCatalog) {
           window.__quotationProductCatalog = products;
           populateProductPicker();
         }
-        
+
         return products;
       }
     } catch (err) {
@@ -213,6 +229,14 @@
 
   function formatINR(n) {
     return '₹' + Math.round(Number(n) || 0).toLocaleString('en-IN');
+  }
+
+  function formatDateTime(iso) {
+    if (!iso) return '—';
+    try {
+      const d = new Date(iso);
+      return d.toLocaleDateString('en-GB') + ' ' + d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+    } catch (_) { return '—'; }
   }
 
   function numberToWordsIndian(num) {
@@ -322,7 +346,9 @@
   // QUOTATION DATA MODEL
   // ============================================================
   const QUOTE_COUNTER_STORAGE_KEY = 'quoteCounter';
-  
+  const QUOTATIONS_STORAGE_KEY = 'quotations';
+  const GLOBAL_HISTORY_LOG_KEY = 'quotationHistoryLog';
+
   function nextQuoteNo() {
     let counter = parseInt(localStorage.getItem(QUOTE_COUNTER_STORAGE_KEY), 10);
     if (!Number.isFinite(counter)) counter = 1000;
@@ -340,6 +366,47 @@
     return items.reduce((sum, it) => sum + (Number(it.qty) || 0) * (Number(it.rate) || 0), 0);
   }
 
+  // ------------------------------------------------------------
+  // Persistence — every mutation to `quotations` should end with
+  // a call to persistQuotations() so nothing is lost on refresh.
+  // ------------------------------------------------------------
+  function persistQuotations() {
+    try { localStorage.setItem(QUOTATIONS_STORAGE_KEY, JSON.stringify(quotations)); } catch (_) { /* storage full/unavailable */ }
+  }
+
+  // ------------------------------------------------------------
+  // History — per-quotation audit trail + a flat global log so
+  // "Quotation History" can be viewed both per-record and overall.
+  // ------------------------------------------------------------
+  function addHistoryEntry(q, action, details) {
+    if (!q) return;
+    if (!Array.isArray(q.history)) q.history = [];
+    const entry = {
+      ts: new Date().toISOString(),
+      action: action,
+      by: 'Admin',
+      details: details || ''
+    };
+    q.history.unshift(entry);
+
+    try {
+      const raw = localStorage.getItem(GLOBAL_HISTORY_LOG_KEY);
+      const log = raw ? JSON.parse(raw) : [];
+      log.unshift({ quoteNo: q.quoteNo, customer: q.customer?.name || '', ...entry });
+      // keep the flat log from growing forever
+      const trimmed = log.slice(0, 300);
+      localStorage.setItem(GLOBAL_HISTORY_LOG_KEY, JSON.stringify(trimmed));
+    } catch (_) { /* ignore storage errors for the log */ }
+  }
+
+  function getGlobalHistoryLog() {
+    try {
+      const raw = localStorage.getItem(GLOBAL_HISTORY_LOG_KEY);
+      const log = raw ? JSON.parse(raw) : [];
+      return Array.isArray(log) ? log : [];
+    } catch (_) { return []; }
+  }
+
   function makeQuotation(overrides) {
     const base = {
       quoteNo: nextQuoteNo(),
@@ -355,7 +422,18 @@
       bank: { ...COMPANY.bank },
       paymentTerms: { advance: 50, material: 25, installation: 15, balance: 10 },
       paymentType: 'full',
-      validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+      validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+      // Plant Overview — optional summary block shown at the top of the PDF,
+      // mirrors the reference ENDEAVOUR-i layout (Model / Production
+      // Capacity / Bricks Size / Pallet Size / Shed Area / Land / Power / Labour)
+      plantOverview: {
+        model: '', productionCapacity: '', bricksSize: '', palletSize: '',
+        requiredShedArea: '', totalLand: '', connectedPower: '', labourRequirement: ''
+      },
+      // Approval workflow
+      approval: { approvedBy: '', approvalDate: '', notes: '' },
+      // Audit trail
+      history: []
     };
     const merged = { ...base, ...(overrides || {}) };
     if (overrides?.customer) merged.customer = { ...base.customer, ...overrides.customer };
@@ -363,6 +441,9 @@
     if (overrides?.items) merged.items = overrides.items;
     if (overrides?.bank) merged.bank = { ...base.bank, ...overrides.bank };
     if (overrides?.paymentTerms) merged.paymentTerms = { ...base.paymentTerms, ...overrides.paymentTerms };
+    if (overrides?.plantOverview) merged.plantOverview = { ...base.plantOverview, ...overrides.plantOverview };
+    if (overrides?.approval) merged.approval = { ...base.approval, ...overrides.approval };
+    merged.history = Array.isArray(overrides?.history) ? overrides.history : [];
 
     const itTotal = itemsSubtotal(merged.items);
     const totals = computeTotals(itTotal, merged.costs, merged.gstPercent, merged.discountType, merged.discountValue, merged.customer.state);
@@ -443,7 +524,10 @@
         },
         termsAndConditions: quotationData.termsAndConditions || {},
         additionalNotes: quotationData.additionalNotes || '',
-        productImages: quotationData.productImages || []
+        productImages: quotationData.productImages || [],
+        plantOverview: quotationData.plantOverview || {},
+        approval: quotationData.approval || {},
+        history: quotationData.history || []
       };
 
       const response = await fetch(`${API_BASE}/quotations`, {
@@ -552,7 +636,10 @@
       additionalNotes: backendData.additionalNotes || '',
       productImages: backendData.productImages || [],
       isInterState: backendData.isInterState || false,
-      gstBreakup: backendData.gstBreakup || { cgstPercent: 0, cgstAmount: 0, sgstPercent: 0, sgstAmount: 0, igstPercent: 0, igstAmount: 0 }
+      gstBreakup: backendData.gstBreakup || { cgstPercent: 0, cgstAmount: 0, sgstPercent: 0, sgstAmount: 0, igstPercent: 0, igstAmount: 0 },
+      plantOverview: backendData.plantOverview || { model: '', productionCapacity: '', bricksSize: '', palletSize: '', requiredShedArea: '', totalLand: '', connectedPower: '', labourRequirement: '' },
+      approval: backendData.approval || { approvedBy: '', approvalDate: '', notes: '' },
+      history: Array.isArray(backendData.history) ? backendData.history : []
     };
   }
 
@@ -589,9 +676,15 @@
       ],
       status: 'Pending',
       date: '2026-06-22',
-      deliveryTimeline: '45 days from advance payment'
+      deliveryTimeline: '45 days from advance payment',
+      plantOverview: {
+        model: 'VKM-FB10', productionCapacity: '4200-4800 Bricks per Hour', bricksSize: '230mm x 110mm x 75mm',
+        palletSize: '880mm x 1100mm x 30mm', requiredShedArea: '60 ft X 80 ft', totalLand: '1-1.25 Acre',
+        connectedPower: '95 HP / 71.25 KW', labourRequirement: '1 Skilled Operator / 20-22 Unskilled laborer'
+      }
     });
     q1.quoteNo = 'SQ-1001';
+    addHistoryEntry(q1, 'Created', 'Sample quotation generated on first load');
 
     const q2 = makeQuotation({
       customer: {
@@ -610,9 +703,12 @@
         { id: newItemId(), name: 'PAN MIXER 500 KG', category: 'Component', qty: 1, rate: 500000 }
       ],
       status: 'Accepted',
-      date: '2026-07-14'
+      date: '2026-07-14',
+      approval: { approvedBy: 'Admin', approvalDate: '2026-07-15', notes: 'Customer confirmed telephonically.' }
     });
     q2.quoteNo = 'SQ-1002';
+    addHistoryEntry(q2, 'Created', 'Sample quotation generated on first load');
+    addHistoryEntry(q2, 'Approved', 'Customer confirmed telephonically.');
 
     const q3 = makeQuotation({
       customer: {
@@ -630,9 +726,12 @@
         { id: newItemId(), name: 'VIBRATOR TABLE', category: 'Accessory', qty: 1, rate: 90000 }
       ],
       status: 'Rejected',
-      date: '2026-07-13'
+      date: '2026-07-13',
+      approval: { approvedBy: 'Admin', approvalDate: '2026-07-14', notes: 'Budget mismatch.' }
     });
     q3.quoteNo = 'SQ-1003';
+    addHistoryEntry(q3, 'Created', 'Sample quotation generated on first load');
+    addHistoryEntry(q3, 'Rejected', 'Budget mismatch.');
 
     const q4 = makeQuotation({
       customer: {
@@ -655,6 +754,7 @@
       date: '2026-07-12'
     });
     q4.quoteNo = 'SQ-1004';
+    addHistoryEntry(q4, 'Created', 'Sample quotation generated on first load');
 
     return [q1, q2, q3, q4];
   }
@@ -812,8 +912,9 @@
         <td data-label="Date">${row.date ? new Date(row.date).toLocaleDateString('en-GB') : '—'}</td>
         <td data-label="Actions" class="text-right">
           <div class="action-icons">
-            <button class="icon-action-btn" title="View" data-action="view" data-quote="${escapeAttr(row.quoteNo)}"><i class="fas fa-eye"></i></button>
+            <button class="icon-action-btn" title="View / Approve" data-action="view" data-quote="${escapeAttr(row.quoteNo)}"><i class="fas fa-eye"></i></button>
             <button class="icon-action-btn" title="Edit" data-action="edit" data-quote="${escapeAttr(row.quoteNo)}"><i class="fas fa-pen"></i></button>
+            <button class="icon-action-btn" title="History" data-action="history" data-quote="${escapeAttr(row.quoteNo)}"><i class="fas fa-clock-rotate-left"></i></button>
             <button class="icon-action-btn danger" title="Delete" data-action="delete" data-quote="${escapeAttr(row.quoteNo)}"><i class="fas fa-trash"></i></button>
           </div>
         </td>
@@ -848,6 +949,7 @@
         if (!quote) return;
         if (btn.dataset.action === 'view') openViewModal(quote);
         if (btn.dataset.action === 'edit') openEditModal(quote);
+        if (btn.dataset.action === 'history') openHistoryModal(quote);
         if (btn.dataset.action === 'delete') openDeleteModal(quote);
       });
     });
@@ -890,6 +992,34 @@
       title: cat,
       items: map[cat]
     }));
+  }
+
+  // ------------------------------------------------------------
+  // Plant Overview table — renders only the rows that were
+  // actually filled in, matching the reference PDF layout.
+  // ------------------------------------------------------------
+  function buildPlantOverviewMarkup(q) {
+    const po = q.plantOverview || {};
+    const rows = [
+      ['Model', po.model],
+      ['Production Capacity', po.productionCapacity],
+      ['Bricks Size', po.bricksSize],
+      ['Pallet Size', po.palletSize],
+      ['Required Shed Area', po.requiredShedArea],
+      ['Total Land', po.totalLand],
+      ['Connected Power', po.connectedPower],
+      ['Labour Requirement', po.labourRequirement]
+    ].filter(r => (r[1] || '').toString().trim());
+
+    if (!rows.length) return '';
+
+    return `
+      <div class="section-block">
+        <div class="section-header">Plant Overview</div>
+        <table class="plant-overview-table section-table">
+          ${rows.map(r => `<tr><td>${escapeHtml(r[0])}</td><td>${escapeHtml(r[1])}</td></tr>`).join('')}
+        </table>
+      </div>`;
   }
 
   // ============================================================
@@ -1019,6 +1149,19 @@
          <tr><td>On Delivery</td><td>${paymentTerms.installation || 0}%</td></tr>
          <tr><td>Balance</td><td>${paymentTerms.balance || 0}%</td></tr>`;
 
+    const plantOverviewHtml = buildPlantOverviewMarkup(q);
+
+    const approvalLineHtml = (q.status === 'Accepted' || q.status === 'Rejected') && q.approval?.approvedBy ? `
+      <div class="section-block">
+        <div class="section-header">Approval</div>
+        <table class="plant-overview-table section-table">
+          <tr><td>Status</td><td>${escapeHtml(q.status)}</td></tr>
+          <tr><td>${q.status === 'Accepted' ? 'Approved By' : 'Rejected By'}</td><td>${escapeHtml(q.approval.approvedBy || '—')}</td></tr>
+          <tr><td>Date</td><td>${q.approval.approvalDate ? new Date(q.approval.approvalDate).toLocaleDateString('en-GB') : '—'}</td></tr>
+          ${q.approval.notes ? `<tr><td>Notes</td><td>${escapeHtml(q.approval.notes)}</td></tr>` : ''}
+        </table>
+      </div>` : '';
+
     return `
       <div class="inv-header">
         <div class="inv-company">
@@ -1051,6 +1194,7 @@
         </div>
       </div>
 
+      ${plantOverviewHtml}
       ${sectionsHtml}
       ${extraHtml}
       ${priceSummaryHtml}
@@ -1076,6 +1220,8 @@
         <table>${paymentScheduleHtml}</table>
       </div>
 
+      ${approvalLineHtml}
+
       <div class="inv-terms">
         <div class="inv-label">Terms &amp; Conditions / नियम और शर्तें</div>
         <div class="terms-columns">
@@ -1098,7 +1244,12 @@
 
   // ============================================================
   // HINDI TERMS RASTERIZATION
+  // (fix: robust font loading + fallback font stack + correct
+  //  CSS targeting so the rasterized text is crisp both on
+  //  screen and in the exported PDF)
   // ============================================================
+  const DEVANAGARI_FONT_STACK = "'Noto Sans Devanagari', 'Nirmala UI', 'Mangal', 'Poppins', sans-serif";
+
   function wrapCanvasText(ctx, text, maxWidthPx) {
     const words = text.split(' ');
     const lines = [];
@@ -1121,21 +1272,22 @@
     const fontSizePx = 10;
     const lineHeightPx = fontSizePx * 1.5;
     const bulletGapPx = 3;
-    const fontStack = "'Noto Sans Devanagari', 'Poppins', sans-serif";
+    const fontStack = DEVANAGARI_FONT_STACK;
+    const safeWidth = Math.max(160, cssWidthPx || 260);
 
     const measureCanvas = document.createElement('canvas');
     const mctx = measureCanvas.getContext('2d');
     mctx.font = `400 ${fontSizePx * scale}px ${fontStack}`;
-    const maxTextWidthPx = Math.max(40, cssWidthPx * scale - 14 * scale);
+    const maxTextWidthPx = Math.max(40, safeWidth * scale - 14 * scale);
 
     const wrappedBullets = bulletLines.map(line => wrapCanvasText(mctx, line, maxTextWidthPx));
     const totalLines = wrappedBullets.reduce((sum, arr) => sum + arr.length, 0);
     const totalHeightPx = totalLines * lineHeightPx * scale + bulletLines.length * bulletGapPx * scale + 6 * scale;
 
     const canvas = document.createElement('canvas');
-    canvas.width = Math.ceil(cssWidthPx * scale);
+    canvas.width = Math.ceil(safeWidth * scale);
     canvas.height = Math.ceil(totalHeightPx);
-    canvas.style.width = cssWidthPx + 'px';
+    canvas.style.width = safeWidth + 'px';
     canvas.style.height = (canvas.height / scale) + 'px';
     canvas.style.display = 'block';
 
@@ -1157,12 +1309,28 @@
     return canvas;
   }
 
-  async function prepareHindiTextForExport(container) {
+  // Loads the Devanagari webfont (both weights actually used) and
+  // resolves even if the network request fails, so PDF export never
+  // hangs — it just falls back to the OS's own Devanagari font.
+  async function ensureDevanagariFontLoaded() {
+    const loaders = [
+      `400 20px 'Noto Sans Devanagari'`,
+      `600 20px 'Noto Sans Devanagari'`,
+      `700 20px 'Noto Sans Devanagari'`
+    ];
     try {
-      await document.fonts.load(`400 20px 'Noto Sans Devanagari'`);
-      await document.fonts.load(`600 20px 'Noto Sans Devanagari'`);
-      if (document.fonts.ready) await document.fonts.ready;
-    } catch (_) { /* font API not available */ }
+      await Promise.race([
+        Promise.all(loaders.map(f => document.fonts.load(f).catch(() => null))),
+        new Promise(resolve => setTimeout(resolve, 2500)) // don't block export forever
+      ]);
+      if (document.fonts.ready) {
+        await Promise.race([document.fonts.ready, new Promise(resolve => setTimeout(resolve, 2500))]);
+      }
+    } catch (_) { /* font API unavailable — canvas will still draw with a fallback font */ }
+  }
+
+  async function prepareHindiTextForExport(container) {
+    await ensureDevanagariFontLoaded();
 
     const blocks = container.querySelectorAll('.hindi-col .terms-text');
     const restoreFns = [];
@@ -1215,14 +1383,75 @@
   }
 
   // ============================================================
-  // VIEW MODAL
+  // VIEW MODAL (+ Approval section)
   // ============================================================
   let viewingQuoteNo = null;
+
+  function renderApprovalBox(q) {
+    const box = $('#approval-box');
+    if (!box) return;
+
+    const isDecided = q.status === 'Accepted' || q.status === 'Rejected';
+    const metaHtml = isDecided ? `
+      <div class="approval-meta">
+        <div><b>${q.status === 'Accepted' ? 'Approved' : 'Rejected'} by:</b> ${escapeHtml(q.approval?.approvedBy || 'Admin')}</div>
+        <div><b>Date:</b> ${q.approval?.approvalDate ? new Date(q.approval.approvalDate).toLocaleDateString('en-GB') : '—'}</div>
+        ${q.approval?.notes ? `<div><b>Notes:</b> ${escapeHtml(q.approval.notes)}</div>` : ''}
+      </div>` : `<div class="approval-meta">This quotation is awaiting a decision.</div>`;
+
+    box.innerHTML = `
+      <div class="approval-head">
+        <div class="sub-title"><i class="fas fa-stamp"></i> Approval</div>
+        <span class="badge ${badgeClass(q.status)}">${q.status}</span>
+      </div>
+      ${metaHtml}
+      <div class="form-field approval-notes-field">
+        <label>Approval / Rejection Notes (optional)</label>
+        <textarea id="approval-notes-input" placeholder="e.g. Customer confirmed on call...">${q.status === 'Pending' ? '' : escapeAttr(q.approval?.notes || '')}</textarea>
+      </div>
+      <div class="approval-actions">
+        <button class="btn-success" id="btn-approve-quote" ${q.status === 'Accepted' ? 'disabled' : ''}><i class="fas fa-check"></i> Approve</button>
+        <button class="btn-danger" id="btn-reject-quote" ${q.status === 'Rejected' ? 'disabled' : ''}><i class="fas fa-xmark"></i> Reject</button>
+        ${q.status !== 'Pending' ? `<button class="btn-outline" id="btn-reset-pending"><i class="fas fa-rotate-left"></i> Reset to Pending</button>` : ''}
+      </div>
+    `;
+
+    $('#btn-approve-quote')?.addEventListener('click', () => decideQuotation(q.quoteNo, 'Accepted'));
+    $('#btn-reject-quote')?.addEventListener('click', () => decideQuotation(q.quoteNo, 'Rejected'));
+    $('#btn-reset-pending')?.addEventListener('click', () => decideQuotation(q.quoteNo, 'Pending'));
+  }
+
+  function decideQuotation(quoteNo, newStatus) {
+    const q = quotations.find(x => x.quoteNo === quoteNo);
+    if (!q) return;
+    const notes = $('#approval-notes-input')?.value.trim() || '';
+
+    q.status = newStatus;
+    if (newStatus === 'Pending') {
+      q.approval = { approvedBy: '', approvalDate: '', notes: '' };
+      addHistoryEntry(q, 'Reset to Pending', notes);
+    } else {
+      q.approval = {
+        approvedBy: 'Admin',
+        approvalDate: new Date().toISOString().slice(0, 10),
+        notes: notes
+      };
+      addHistoryEntry(q, newStatus === 'Accepted' ? 'Approved' : 'Rejected', notes);
+    }
+
+    persistQuotations();
+    renderTable();
+    renderApprovalBox(q);
+    const preview = $('#view-invoice-preview');
+    if (preview) preview.innerHTML = buildInvoiceMarkup(q);
+    showToast(`${q.quoteNo} marked as ${newStatus}`, newStatus === 'Rejected' ? 'error' : 'success');
+  }
 
   function openViewModal(q) {
     viewingQuoteNo = q.quoteNo;
     const preview = $('#view-invoice-preview');
     if (preview) preview.innerHTML = buildInvoiceMarkup(q);
+    renderApprovalBox(q);
     openModal('modal-view');
   }
 
@@ -1230,6 +1459,54 @@
     if (!viewingQuoteNo) return;
     downloadInvoicePDF('view-invoice-preview', `${viewingQuoteNo}.pdf`);
   });
+
+  // ============================================================
+  // HISTORY MODAL
+  // ============================================================
+  function openHistoryModal(q) {
+    const titleEl = $('#history-quoteno');
+    if (titleEl) titleEl.textContent = q.quoteNo;
+    const list = $('#history-list');
+    if (!list) return;
+
+    const entries = Array.isArray(q.history) ? q.history : [];
+    if (!entries.length) {
+      list.innerHTML = `<div class="history-empty">No history recorded yet for ${escapeHtml(q.quoteNo)}.</div>`;
+    } else {
+      list.innerHTML = entries.map(e => `
+        <div class="history-item">
+          <div class="hi-main">
+            <div class="hi-title">${escapeHtml(e.action)}</div>
+            <div class="hi-sub">${formatDateTime(e.ts)} · by ${escapeHtml(e.by || 'Admin')}${e.details ? ' — ' + escapeHtml(e.details) : ''}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+    openModal('modal-history');
+  }
+
+  function openGlobalHistoryModal() {
+    const titleEl = $('#history-quoteno');
+    if (titleEl) titleEl.textContent = 'All Quotations';
+    const list = $('#history-list');
+    if (!list) return;
+
+    const log = getGlobalHistoryLog();
+    if (!log.length) {
+      list.innerHTML = `<div class="history-empty">No activity recorded yet.</div>`;
+    } else {
+      list.innerHTML = log.map(e => `
+        <div class="history-item">
+          <div class="hi-main">
+            <div class="hi-title">${escapeHtml(e.quoteNo || '—')} — ${escapeHtml(e.action)}</div>
+            <div class="hi-sub">${formatDateTime(e.ts)} · ${escapeHtml(e.customer || '')}${e.details ? ' — ' + escapeHtml(e.details) : ''}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+    openModal('modal-history');
+  }
+  $('#btn-view-history-log')?.addEventListener('click', openGlobalHistoryModal);
 
   // ============================================================
   // EDIT MODAL
@@ -1292,16 +1569,34 @@
 
     if (!valid) { showToast('Please fix the highlighted fields.', 'error'); return; }
 
+    const changeNotes = [];
+    if (q.customer.name !== name) changeNotes.push(`name → ${name}`);
+    if (q.customer.mobilePrimary !== mobile) changeNotes.push(`mobile → ${mobile}`);
+    if (q.customer.email !== email) changeNotes.push(`email → ${email}`);
+    const newDiscount = parseFloat($('#edit-discountValue')?.value) || 0;
+    if (q.discountValue !== newDiscount) changeNotes.push(`discount → ${newDiscount}`);
+    const newStatus = $('#edit-status')?.value || 'Pending';
+    const statusChanged = q.status !== newStatus;
+
     q.customer.name = name;
     q.customer.mobilePrimary = mobile;
     q.customer.email = email;
-    q.discountValue = parseFloat($('#edit-discountValue')?.value) || 0;
-    q.status = $('#edit-status')?.value || 'Pending';
+    q.discountValue = newDiscount;
+    q.status = newStatus;
+    if (statusChanged && newStatus !== 'Pending') {
+      q.approval = { approvedBy: 'Admin', approvalDate: new Date().toISOString().slice(0, 10), notes: q.approval?.notes || '' };
+    } else if (statusChanged && newStatus === 'Pending') {
+      q.approval = { approvedBy: '', approvalDate: '', notes: '' };
+    }
 
     const totals = computeTotals(q.itemsTotal, q.costs, q.gstPercent, q.discountType, q.discountValue, q.customer.state);
     Object.assign(q, totals);
     q.amount = Math.round(totals.total);
 
+    if (changeNotes.length) addHistoryEntry(q, 'Edited', changeNotes.join(', '));
+    if (statusChanged) addHistoryEntry(q, `Status changed to ${newStatus}`, '');
+
+    persistQuotations();
     closeModal('modal-edit');
     renderTable();
     showToast(`${q.quoteNo} updated successfully`, 'success');
@@ -1320,6 +1615,7 @@
 
   $('#btn-confirm-delete')?.addEventListener('click', () => {
     quotations = quotations.filter(q => q.quoteNo !== deletingQuoteNo);
+    persistQuotations();
     closeModal('modal-delete');
     showToast(`${deletingQuoteNo} deleted`, 'success');
     renderTable();
@@ -1494,7 +1790,7 @@
   function resetWizardForm() {
    // Check if we have prefilled customer data to preserve
   const hasPrefilledData = window._prefilledCustomer !== null;
-  
+
   ['f-customerName', 'f-mobilePrimary', 'f-mobileSecondary', 'f-email', 'f-address', 'f-city', 'f-state', 'f-pincode', 'f-gst'].forEach(id => {
     const el = document.getElementById(id);
     if (el) {
@@ -1504,6 +1800,13 @@
       }
     }
   });
+
+    // Plant Overview fields — always reset (per-quotation, not per-customer)
+    ['f-plantModel', 'f-plantProduction', 'f-plantBrickSize', 'f-plantPalletSize',
+     'f-plantShedArea', 'f-plantLand', 'f-plantPower', 'f-plantLabour'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
 
     $('#f-deliveryTimeline').value = '45 days from advance payment';
 
@@ -1550,12 +1853,12 @@
 function openWizard() {
   draftQuoteNo = null;
   resetWizardForm();
-  
+
   // If we have prefilled customer data, fill the form
   if (window._prefilledCustomer) {
     fillCustomerForm(window._prefilledCustomer);
   }
-  
+
   // Refresh product catalog from backend
   fetchProductsFromBackend();
   currentStep = 1;
@@ -1568,9 +1871,9 @@ function openWizard() {
    ============================================================ */
 function fillCustomerForm(customerData) {
   if (!customerData) return;
-  
+
   console.log('Filling customer form with:', customerData);
-  
+
   // Step 1 fields - Customer Details
   const nameField = document.getElementById('f-customerName');
   const mobileField = document.getElementById('f-mobilePrimary');
@@ -1581,7 +1884,7 @@ function fillCustomerForm(customerData) {
   const stateField = document.getElementById('f-state');
   const pincodeField = document.getElementById('f-pincode');
   const gstField = document.getElementById('f-gst');
-  
+
   if (nameField) nameField.value = customerData.name || '';
   if (mobileField) mobileField.value = customerData.mobilePrimary || '';
   if (mobileSecondaryField) mobileSecondaryField.value = customerData.mobileSecondary || '';
@@ -1591,26 +1894,26 @@ function fillCustomerForm(customerData) {
   if (stateField) stateField.value = customerData.state || '';
   if (pincodeField) pincodeField.value = customerData.pincode || '';
   if (gstField) gstField.value = customerData.gst || '';
-  
+
   // Update state field for GST calculation
   if (stateField) {
     // Trigger change event to update GST calculations
     const event = new Event('input');
     stateField.dispatchEvent(event);
   }
-  
+
   // Also update the edit modal fields if they exist
   const editNameField = document.getElementById('edit-customerName');
   const editMobileField = document.getElementById('edit-mobile');
   const editEmailField = document.getElementById('edit-email');
-  
+
   if (editNameField) editNameField.value = customerData.name || '';
   if (editMobileField) editMobileField.value = customerData.mobilePrimary || '';
   if (editEmailField) editEmailField.value = customerData.email || '';
-  
+
   // Show toast notification
   showToast(`Customer ${customerData.name} details loaded automatically`, 'success');
-  
+
   // Clear session storage after loading
   sessionStorage.removeItem('quotationCustomerData');
   sessionStorage.removeItem('quotationCustomerId');
@@ -1864,6 +2167,17 @@ function fillCustomerForm(customerData) {
     const totalPowerHP = items.reduce((s, it) => s + (Number(it.powerHP) || 0) * (Number(it.qty) || 0), 0);
     const totalPowerKW = items.reduce((s, it) => s + (Number(it.powerKW) || 0) * (Number(it.qty) || 0), 0);
 
+    const plantOverview = {
+      model: $('#f-plantModel')?.value.trim() || '',
+      productionCapacity: $('#f-plantProduction')?.value.trim() || '',
+      bricksSize: $('#f-plantBrickSize')?.value.trim() || '',
+      palletSize: $('#f-plantPalletSize')?.value.trim() || '',
+      requiredShedArea: $('#f-plantShedArea')?.value.trim() || '',
+      totalLand: $('#f-plantLand')?.value.trim() || '',
+      connectedPower: $('#f-plantPower')?.value.trim() || '',
+      labourRequirement: $('#f-plantLabour')?.value.trim() || ''
+    };
+
     return {
       quoteNo: quoteNo,
       quoteDate: new Date().toISOString().slice(0, 10),
@@ -1898,6 +2212,9 @@ function fillCustomerForm(customerData) {
       termsAndConditions: { templateVersion: terms.version, categoriesApplied: terms.categoriesApplied },
       additionalNotes: $('#edit-terms')?.value.trim() || '',
       productImages: productImages,
+      plantOverview: plantOverview,
+      approval: { approvedBy: '', approvalDate: '', notes: '' },
+      history: [],
       validUntil: (() => {
         const days = parseInt($('#f-validityDays')?.value, 10) || 30;
         const d = new Date();
@@ -1919,50 +2236,47 @@ function fillCustomerForm(customerData) {
     if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...'; }
 
     const record = collectWizardRecord(draftQuoteNo || nextQuoteNo());
-    
+
     // Save to backend
     const savedQuotation = await saveQuotationToBackend(record);
-    
+
+    let finalQuotation;
     if (savedQuotation) {
       // Convert backend response to frontend format and add to list
-      const frontendQuotation = convertBackendToFrontend(savedQuotation);
-      quotations.unshift(frontendQuotation);
-      
-      // Save to localStorage
-      try {
-        localStorage.setItem('quotations', JSON.stringify(quotations));
-      } catch (_) {}
+      finalQuotation = convertBackendToFrontend(savedQuotation);
     } else {
       // Fallback: save locally if backend fails
-      quotations.unshift(record);
-      try {
-        localStorage.setItem('quotations', JSON.stringify(quotations));
-      } catch (_) {}
+      finalQuotation = record;
+      finalQuotation.history = [];
     }
-    
+
+    addHistoryEntry(finalQuotation, 'Created', `Quotation generated for ${finalQuotation.customer?.name || 'customer'}`);
+    quotations.unshift(finalQuotation);
+    persistQuotations();
+
     draftQuoteNo = null;
 
     const preview = $('#invoice-preview');
-    if (preview) preview.innerHTML = buildInvoiceMarkup(record);
+    if (preview) preview.innerHTML = buildInvoiceMarkup(finalQuotation);
     $('#share-grid')?.classList.remove('hidden');
     if (btn) btn.classList.add('hidden');
 
     renderTable();
 
-    downloadInvoicePDF('invoice-preview', `${record.quoteNo}.pdf`).then(() => {
-      showToast(`Quotation ${record.quoteNo} generated & PDF downloaded`, 'success');
+    downloadInvoicePDF('invoice-preview', `${finalQuotation.quoteNo}.pdf`).then(() => {
+      showToast(`Quotation ${finalQuotation.quoteNo} generated & PDF downloaded`, 'success');
     }).catch(() => {
-      showToast(`Quotation ${record.quoteNo} generated successfully`, 'success');
+      showToast(`Quotation ${finalQuotation.quoteNo} generated successfully`, 'success');
     });
 
-    $('#btn-download-pdf').onclick = () => downloadInvoicePDF('invoice-preview', `${record.quoteNo}.pdf`);
+    $('#btn-download-pdf').onclick = () => downloadInvoicePDF('invoice-preview', `${finalQuotation.quoteNo}.pdf`);
     $('#btn-share-email').onclick = () => {
-      const subject = encodeURIComponent(`Quotation ${record.quoteNo}`);
-      const body = encodeURIComponent(`Hi ${record.customer.name || ''},\n\nPlease find your quotation ${record.quoteNo} (Total: ${formatINR(record.total)}). We have downloaded the PDF — please attach it to this email before sending.\n\nThanks,\n${COMPANY.name}`);
-      window.location.href = `mailto:${record.customer.email || ''}?subject=${subject}&body=${body}`;
+      const subject = encodeURIComponent(`Quotation ${finalQuotation.quoteNo}`);
+      const body = encodeURIComponent(`Hi ${finalQuotation.customer.name || ''},\n\nPlease find your quotation ${finalQuotation.quoteNo} (Total: ${formatINR(finalQuotation.total)}). We have downloaded the PDF — please attach it to this email before sending.\n\nThanks,\n${COMPANY.name}`);
+      window.location.href = `mailto:${finalQuotation.customer.email || ''}?subject=${subject}&body=${body}`;
     };
     $('#btn-share-whatsapp').onclick = () => {
-      const text = encodeURIComponent(`Hi ${record.customer.name || ''}, here is your quotation ${record.quoteNo} — Total: ${formatINR(record.total)}. (PDF downloaded separately)`);
+      const text = encodeURIComponent(`Hi ${finalQuotation.customer.name || ''}, here is your quotation ${finalQuotation.quoteNo} — Total: ${formatINR(finalQuotation.total)}. (PDF downloaded separately)`);
       window.open(`https://wa.me/?text=${text}`, '_blank');
     };
 
@@ -2030,39 +2344,45 @@ function fillCustomerForm(customerData) {
   // ============================================================
   const customerDataStr = sessionStorage.getItem('quotationCustomerData');
   const customerId = sessionStorage.getItem('quotationCustomerId');
-  
+
   if (customerDataStr) {
     try {
       const customerData = JSON.parse(customerDataStr);
       console.log('Loading customer data:', customerData);
-      
+
       // Store customer data globally for later use
       window._prefilledCustomer = customerData;
-      
+
       // Pre-fill customer details in the wizard (will be applied when wizard opens)
       setTimeout(() => {
         fillCustomerForm(customerData);
       }, 500);
-      
+
     } catch (err) {
       console.error('Error loading customer data:', err);
     }
   }
-  
+
   // ============================================================
   // LOAD QUOTATIONS
   // ============================================================
   // Try to load from localStorage first
-  const stored = localStorage.getItem('quotations');
+  const stored = localStorage.getItem(QUOTATIONS_STORAGE_KEY);
   if (stored) {
     try {
       const parsed = JSON.parse(stored);
       if (Array.isArray(parsed) && parsed.length) {
-        quotations = parsed;
+        // backfill new fields for quotations saved before this revision
+        quotations = parsed.map(q => ({
+          plantOverview: { model: '', productionCapacity: '', bricksSize: '', palletSize: '', requiredShedArea: '', totalLand: '', connectedPower: '', labourRequirement: '' },
+          approval: { approvedBy: '', approvalDate: '', notes: '' },
+          history: [],
+          ...q
+        }));
         populateProductPicker();
         togglePaymentFields();
         renderTable();
-        
+
         // If customer data exists and wizard is not open, open it
         if (window._prefilledCustomer) {
           setTimeout(() => {
@@ -2073,33 +2393,33 @@ function fillCustomerForm(customerData) {
       }
     } catch (_) {}
   }
-  
+
   // If nothing in localStorage, try backend
   try {
     const backendQuotations = await fetchQuotationsFromBackend();
     if (backendQuotations && backendQuotations.length) {
       quotations = backendQuotations;
-      try {
-        localStorage.setItem('quotations', JSON.stringify(quotations));
-      } catch (_) {}
+      persistQuotations();
     } else {
       quotations = generateSampleQuotations();
+      persistQuotations();
     }
   } catch (err) {
     console.error('Error loading quotations:', err);
     quotations = generateSampleQuotations();
+    persistQuotations();
   }
-  
+
   // If customer data exists and wizard is not open, open it
   if (window._prefilledCustomer) {
     setTimeout(() => {
       openWizard();
     }, 300);
   }
-  
+
   // Refresh product catalog from backend
   await fetchProductsFromBackend();
-  
+
   populateProductPicker();
   togglePaymentFields();
   renderTable();

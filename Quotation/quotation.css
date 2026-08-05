@@ -372,6 +372,14 @@ select.rows-select, .select-input {
 }
 .btn-danger:hover { background: #DC2626; }
 
+.btn-success {
+  display: inline-flex; align-items: center; gap: 7px;
+  background: #059669; color: #fff; border: none; border-radius: 10px;
+  padding: 8px 15px; font-size: 12px; font-weight: 600; cursor: pointer;
+  transition: background-color .15s ease;
+}
+.btn-success:hover { background: #047857; }
+
 .btn-icon-sm {
   width: 28px; height: 28px; border-radius: 8px;
   border: 1px solid var(--line-soft); background: var(--bg);
@@ -803,7 +811,7 @@ img { max-width: 100%; height: auto; }
 .plant-overview-table { width: 100%; border-collapse: collapse; font-size: 10.5px; }
 .plant-overview-table td { padding: 5px 10px; border: 1px solid var(--line-soft); }
 .plant-overview-table td:first-child { width: 34%; font-weight: 700; color: var(--ink); background: var(--accent-100); }
-.plant-overview-table td:last-child { color: #333; }
+.plant-overview-table td:last-child { color: #333; white-space: pre-line; }
 
 .terms-columns { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 4px; }
 .terms-col { flex: 1 1 260px; min-width: 220px; }
@@ -822,7 +830,12 @@ img { max-width: 100%; height: auto; }
    (before export) it shows live HTML text using the Noto Sans
    Devanagari webfont, which the browser renders correctly. */
 .hindi-canvas-block { font-family: 'Noto Sans Devanagari', 'Poppins', sans-serif; }
+.hindi-canvas-block canvas,
 .hindi-canvas-block img { display: block; width: 100%; height: auto; }
+.terms-col.hindi-col,
+.terms-col.hindi-col .terms-text {
+  font-family: 'Noto Sans Devanagari', 'Poppins', sans-serif;
+}
 
 .product-gallery {
   margin-top: 18px;
@@ -845,4 +858,122 @@ img { max-width: 100%; height: auto; }
   .section-header { font-size: 10px; padding: 5px 8px; }
   .section-table { font-size: 9.5px; }
   .plant-overview-table { font-size: 9.5px; }
+}
+
+/* ============================================================
+   NEW ADDITIONS — Plant Overview form, Approval, History,
+   and extra responsive polish
+   ============================================================ */
+
+/* --- Plant Overview form grid inside wizard Step 1 --- */
+.plant-overview-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.plant-overview-grid .form-field.span-2 { grid-column: span 2; }
+@media (max-width: 767px) {
+  .plant-overview-grid { grid-template-columns: 1fr; }
+  .plant-overview-grid .form-field.span-2 { grid-column: span 1; }
+}
+
+/* --- Approval section (inside View modal) --- */
+.approval-box {
+  border: 1px solid var(--line-soft);
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.approval-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.approval-head .sub-title { margin: 0; }
+.approval-meta { font-size: 11px; color: var(--muted); line-height: 1.6; }
+.approval-meta b { color: var(--ink); }
+.approval-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.approval-actions .btn-success,
+.approval-actions .btn-danger,
+.approval-actions .btn-outline { flex: 1 1 auto; justify-content: center; min-width: 110px; }
+.approval-notes-field textarea { min-height: 64px; resize: vertical; }
+
+/* --- History list (inside View / History modal) --- */
+.history-list { display: flex; flex-direction: column; gap: 8px; max-height: 340px; overflow-y: auto; }
+.history-empty { text-align: center; color: var(--muted); font-size: 12px; padding: 22px 10px; font-style: italic; }
+.history-item {
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  padding: 9px 12px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  background: #fff;
+}
+.history-item .hi-main { min-width: 0; }
+.history-item .hi-title { font-size: 12px; font-weight: 700; color: var(--ink); }
+.history-item .hi-sub { font-size: 10.5px; color: var(--muted); margin-top: 2px; line-height: 1.5; }
+.history-item .hi-badge { flex-shrink: 0; }
+
+/* ============================================================
+   FULL RESPONSIVE PASS — fluid type + safer breakpoints for
+   phones / tablets / desktop (Android & iPhone included)
+   ============================================================ */
+
+/* Fluid base font so text scales smoothly between the smallest
+   phone (320px) and desktop, instead of jumping at breakpoints. */
+html { font-size: clamp(13px, 0.85vw + 10.5px, 16px); }
+
+/* iPhone notch / Android gesture bar safe areas already handled
+   via env(safe-area-inset-*) above — reinforced here for modals
+   opened at the very bottom on small screens. */
+@supports (padding: max(0px)) {
+  .modal-overlay { padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
+}
+
+/* Landscape phones (Android/iPhone rotated) */
+@media (max-width: 900px) and (orientation: landscape) and (max-height: 500px) {
+  .app-main { padding-top: 8px !important; }
+  .modal-box { max-height: 94vh; }
+  .stepper { min-height: 44px; }
+  .step-label { display: none; }
+}
+
+/* Foldables / mid phones (360–480px) */
+@media (min-width: 361px) and (max-width: 480px) {
+  .plant-overview-grid, .form-grid { gap: 10px; }
+  .approval-actions .btn-success,
+  .approval-actions .btn-danger,
+  .approval-actions .btn-outline { min-width: 100%; }
+}
+
+/* Large tablets / small laptops (1024–1279px) already covered;
+   add iPad Pro portrait (1024px) & landscape (1366px) nuance */
+@media (min-width: 1024px) and (max-width: 1366px) {
+  .modal-box.modal-wide { max-width: 900px; }
+}
+
+/* Ensure tables never force horizontal page scroll on tablets */
+@media (max-width: 1023px) {
+  .items-table-wrap, .inv-items-table { max-width: 100%; }
+}
+
+/* Prevent iOS Safari's auto-zoom-on-focus (triggers whenever an
+   input's font-size is under 16px) while keeping the compact look
+   on larger screens. */
+@media (max-width: 767px) {
+  .form-field input,
+  .form-field textarea,
+  .form-field select,
+  .items-table input,
+  .items-table select,
+  .cost-input,
+  .cost-label-input,
+  .select-input,
+  .search-box input {
+    font-size: 16px;
+  }
 }
