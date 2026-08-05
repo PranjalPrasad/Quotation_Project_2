@@ -130,6 +130,75 @@
     return catalog.find(c => String(c.id) === String(productId));
   }
 
+
+  // ============================================================
+  // SYNC CUSTOM ITEM -> PRODUCT MANAGEMENT
+  // Jab quotation mein ek naya "Custom Item" add hota hai (jo
+  // catalog mein pehle se maujood nahi tha), usko automatically
+  // Product Management (backend /api/create-product) mein bhi
+  // ek product ke roop mein create kar dete hain.
+  // ============================================================
+  async function syncCustomItemToProductCatalog(item) {
+    if (!item || item._syncing || item._synced) return;
+    const name = (item.name || '').trim();
+    if (!name) return; // naam khaali hai toh product mat banao
+
+    item._syncing = true;
+
+    const sku = 'CUSTOM-' + Date.now().toString(36).toUpperCase() + '-' + Math.floor(Math.random() * 1000);
+
+    const productPayload = {
+      name: name,
+      sku: sku,
+      brand: 'VKM',
+      type: 'Custom',
+      category: item.category || 'Custom',
+      subCategory: '',
+      hsn: item.hsnCode || '',
+      gst: item.gstRate || 18,
+      mrp: Number(item.rate) || 0,
+      discountType: 'flat',
+      discountValue: 0,
+      calculatedPrice: Number(item.rate) || 0,
+      finalPrice: Number(item.rate) || 0,
+      stock: 0,
+      threshold: 0,
+      reorderQuantity: 0,
+      leadTimeDays: 0,
+      status: 'Active',
+      powerConsumptionKw: Number(item.powerHP) || 0,
+      weightKg: 0,
+      description: 'Auto-added from Quotation Management (Custom Item)'
+    };
+
+    try {
+      const formData = new FormData();
+      formData.append('product', JSON.stringify(productPayload));
+
+      const response = await fetch(`${API_BASE}/create-product`, {
+        method: 'POST',
+        body: formData
+      });
+      const json = await response.json();
+
+      if (response.ok && json && json.success && json.data) {
+        item.productId = String(json.data.id);
+        item._synced = true;
+        showToast(`"${name}" Product Management mein bhi add ho gaya`, 'success');
+        // local catalog cache refresh kar do taaki dropdown mein bhi dikhe
+        fetchProductsFromBackend();
+      } else {
+        console.error('Failed to sync custom item to product catalog:', json);
+        showToast(`"${name}" ko Product Management mein save nahi kar paya`, 'error');
+      }
+    } catch (err) {
+      console.error('Error syncing custom item to product catalog:', err);
+      showToast('Product Management se connect nahi ho paya', 'error');
+    } finally {
+      item._syncing = false;
+    }
+  }
+
   // ============================================================
   // UTILITIES
   // ============================================================
@@ -1336,8 +1405,8 @@
     }
   });
 
-  $('#chip-custom')?.addEventListener('click', () => {
-    wizardItems.push({ id: newItemId(), name: '', qty: 1, rate: 0 });
+ $('#chip-custom')?.addEventListener('click', () => {
+    wizardItems.push({ id: newItemId(), name: '', qty: 1, rate: 0, isCustom: true });
     renderItemsTable();
   });
 
@@ -1362,11 +1431,16 @@
       `).join('');
     }
 
-    tbody.querySelectorAll('tr[data-id]').forEach(row => {
+   tbody.querySelectorAll('tr[data-id]').forEach(row => {
       const id = row.dataset.id;
       const item = wizardItems.find(i => i.id === id);
       if (!item) return;
       row.querySelector('.item-name')?.addEventListener('input', e => { item.name = e.target.value; });
+      row.querySelector('.item-name')?.addEventListener('blur', () => {
+        if (item.isCustom && !item.productId && !item._synced) {
+          syncCustomItemToProductCatalog(item);
+        }
+      });
       row.querySelector('.item-qty')?.addEventListener('input', e => { item.qty = parseFloat(e.target.value) || 0; updateItemAmount(item); });
       row.querySelector('.item-rate')?.addEventListener('input', e => { item.rate = parseFloat(e.target.value) || 0; updateItemAmount(item); });
       row.querySelector('.item-remove')?.addEventListener('click', () => {

@@ -103,6 +103,18 @@
         </div>
       </div>
 
+      <!-- Reports tab switcher: Overview vs GST Report -->
+      <div class="bg-cream rounded-xl p-2.5 shadow-sm border border-peach-300 mb-2.5 flex items-center flex-wrap gap-2">
+        <span class="text-[10.5px] font-semibold text-gray-500 uppercase tracking-wide pl-1">View</span>
+        <div class="flex items-center gap-1 bg-peach-100/60 rounded-lg px-1.5 py-1" id="reportsTabToggle">
+          <button class="kpi-toggle-btn active" data-tab="overview">OVERVIEW</button>
+          <button class="kpi-toggle-btn" data-tab="gst">GST REPORT</button>
+        </div>
+      </div>
+
+      <!-- ============ TAB: Overview (existing charts/KPIs) ============ -->
+      <div id="tabOverview">
+
       <!-- Date range filter -->
       <div class="bg-cream rounded-xl p-2.5 shadow-sm border border-peach-300 mb-2.5 flex items-center flex-wrap gap-2">
         <span class="text-[10.5px] font-semibold text-gray-500 uppercase tracking-wide pl-1">Date Range</span>
@@ -241,6 +253,120 @@
           <div id="topClientsList" class="flex flex-col gap-1"></div>
         </div>
       </div>
+
+      </div>
+      <!-- ============ /TAB: Overview ============ -->
+
+      <!-- ============ TAB: GST Report ============ -->
+      <div id="tabGst" class="hidden">
+
+        <!-- GST period selector + export toolbar -->
+        <div class="bg-cream rounded-xl p-2.5 shadow-sm border border-peach-300 mb-2.5 flex items-center flex-wrap gap-2">
+          <span class="text-[10.5px] font-semibold text-gray-500 uppercase tracking-wide pl-1">Period</span>
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <span class="text-[10.5px] text-gray-400">From</span>
+            <select id="gstFromMonth" class="field-input report-date-input"></select>
+            <select id="gstFromYear" class="field-input report-date-input"></select>
+            <span class="text-[10.5px] text-gray-400">to</span>
+            <select id="gstToMonth" class="field-input report-date-input"></select>
+            <select id="gstToYear" class="field-input report-date-input"></select>
+            <button id="gstApplyBtn" class="btn-primary report-apply-btn">Apply</button>
+          </div>
+          <div class="flex items-center gap-2 ml-auto flex-wrap">
+            <span class="text-[10.5px] text-gray-400 pr-1" id="gstRangeLabel"></span>
+            <div class="flex items-center gap-1.5">
+              <button id="exportGstCsvBtn" class="export-btn" title="Export as CSV">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><polyline points="9 15 12 12 15 15"></polyline></svg>
+                CSV
+              </button>
+              <button id="exportGstExcelBtn" class="export-btn" title="Export as Excel">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="9" x2="9" y2="21"></line></svg>
+                Excel
+              </button>
+              <button id="exportGstPdfBtn" class="export-btn" title="Export as PDF">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><polyline points="9 15 12 12 15 15"></polyline></svg>
+                PDF
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Letterhead -->
+        <div class="bg-cream rounded-xl p-3.5 shadow-sm border border-peach-300 mb-2.5" id="gstLetterhead">
+          <div class="flex items-start justify-between flex-wrap gap-3">
+            <div class="min-w-0">
+              <h2 class="text-sm font-bold text-peach-700" id="gstCompanyName">—</h2>
+              <p class="text-[11px] text-gray-500 max-w-md mt-0.5" id="gstCompanyAddress">—</p>
+              <p class="text-[11px] text-gray-500 mt-0.5">GSTIN/UIN: <span class="font-semibold text-gray-700" id="gstCompanyGstin">—</span></p>
+            </div>
+            <div class="text-left sm:text-right text-[11px] text-gray-500 shrink-0">
+              <p id="gstCompanyPhone">—</p>
+              <p id="gstCompanyEmail">—</p>
+            </div>
+          </div>
+          <div class="border-t border-peach-300 mt-2.5 pt-2 text-center">
+            <p class="text-xs font-semibold text-gray-700 uppercase tracking-wide">GST Summary Report</p>
+            <p class="text-[10.5px] text-gray-400" id="gstPeriodLabel">—</p>
+          </div>
+        </div>
+
+        <!-- Sales / Outward Supplies -->
+        <div class="bg-cream rounded-xl p-3.5 shadow-sm border border-peach-300 mb-2.5">
+          <div class="mb-2">
+            <h2 class="chart-card-title">Sales / Outward Supplies</h2>
+            <p class="chart-card-sub">GSTR-style summary built from invoice data, selected period</p>
+          </div>
+          <div class="table-scope gst-table-wrap">
+            <table class="data-table gst-table">
+              <thead>
+                <tr>
+                  <th>GSTIN/UIN of Customer</th>
+                  <th>Invoice No.</th>
+                  <th>Invoice Date</th>
+                  <th>Invoice Value</th>
+                  <th>Rate (%)</th>
+                  <th>Taxable Value</th>
+                  <th>Integrated Tax</th>
+                  <th>Central Tax</th>
+                  <th>State/UT Tax</th>
+                  <th>CESS</th>
+                  <th>Place of Supply</th>
+                </tr>
+              </thead>
+              <tbody id="gstSalesTbody"></tbody>
+              <tfoot id="gstSalesTfoot"></tfoot>
+            </table>
+          </div>
+        </div>
+
+        <!-- Purchase / Inward Supplies (or empty state) -->
+        <div class="bg-cream rounded-xl p-3.5 shadow-sm border border-peach-300 mb-2.5">
+          <div class="mb-2">
+            <h2 class="chart-card-title">Purchase / Inward Supplies</h2>
+            <p class="chart-card-sub">Vendor bills, selected period</p>
+          </div>
+          <div id="gstPurchaseSection"></div>
+        </div>
+
+        <!-- GST KPI strip -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-3">
+          <div class="bg-cream rounded-xl p-3 shadow-sm border border-peach-300">
+            <p class="text-lg font-semibold text-gray-800" id="gstKpiTaxable">—</p>
+            <p class="text-[10px] text-gray-400">Total Taxable Value</p>
+          </div>
+          <div class="bg-cream rounded-xl p-3 shadow-sm border border-peach-300">
+            <p class="text-lg font-semibold text-gray-800" id="gstKpiTax">—</p>
+            <p class="text-[10px] text-gray-400">Total GST Collected (CGST + SGST + IGST)</p>
+          </div>
+          <div class="bg-cream rounded-xl p-3 shadow-sm border border-peach-300">
+            <p class="text-lg font-semibold text-gray-800" id="gstKpiInvoices">—</p>
+            <p class="text-[10px] text-gray-400">Total Invoices in Period</p>
+          </div>
+        </div>
+
+      </div>
+      <!-- ============ /TAB: GST Report ============ -->
+
     </main>
   </div>
 

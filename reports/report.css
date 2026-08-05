@@ -149,6 +149,74 @@
   flex-shrink: 0;
 }
 
+/* ============================================================
+   GST Report tab (letterhead, GSTR-style tables, KPI strip)
+   Base .data-table / .table-scope rules come from dashboard.css —
+   the rules below only add the bits that module doesn't cover:
+   sticky header, zebra tint, wider fixed columns, totals row,
+   letterhead spacing and the "no purchase data" empty state.
+   ============================================================ */
+.gst-table-wrap {
+  max-height: 440px;
+  overflow: auto;
+  border: 1px solid #E8B9CE;
+  border-radius: 10px;
+}
+.gst-table { table-layout: fixed; min-width: 960px; }
+.gst-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #FCEEF3;
+  box-shadow: 0 1px 0 #E8B9CE;
+}
+.gst-table tbody tr:nth-child(even) { background: #FCEEF3; }
+.gst-table tbody tr:nth-child(even):hover { background: #F6DCE8; }
+.gst-table tbody td, .gst-table thead th { white-space: normal; }
+.gst-table tfoot td {
+  font-weight: 700;
+  color: #1F2937;
+  border-top: 2px solid #800021;
+  background: #F6DCE8;
+  padding: 9px 8px;
+  position: sticky;
+  bottom: 0;
+}
+
+.gst-table th:nth-child(1),  .gst-table td:nth-child(1)  { width: 14%; }
+.gst-table th:nth-child(2),  .gst-table td:nth-child(2)  { width: 9%; }
+.gst-table th:nth-child(3),  .gst-table td:nth-child(3)  { width: 8%; }
+.gst-table th:nth-child(4),  .gst-table td:nth-child(4)  { width: 9%; }
+.gst-table th:nth-child(5),  .gst-table td:nth-child(5)  { width: 6%; }
+.gst-table th:nth-child(6),  .gst-table td:nth-child(6)  { width: 10%; }
+.gst-table th:nth-child(7),  .gst-table td:nth-child(7)  { width: 9%; }
+.gst-table th:nth-child(8),  .gst-table td:nth-child(8)  { width: 9%; }
+.gst-table th:nth-child(9),  .gst-table td:nth-child(9)  { width: 9%; }
+.gst-table th:nth-child(10), .gst-table td:nth-child(10) { width: 6%; }
+.gst-table th:nth-child(11), .gst-table td:nth-child(11) { width: 11%; }
+
+@media (max-width: 720px) {
+  .gst-table-wrap { max-height: none; overflow: visible; }
+  .gst-table tfoot td { position: static; }
+}
+
+/* ---- Purchase / Inward Supplies empty state ---- */
+.gst-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 28px 12px;
+  border: 1px dashed #E8B9CE;
+  border-radius: 12px;
+  background: #FCEEF3;
+  text-align: center;
+}
+.gst-empty-state svg { width: 26px; height: 26px; color: #E8B9CE; }
+.gst-empty-state p.gst-empty-title { font-size: 12px; font-weight: 600; color: #374151; }
+.gst-empty-state p.gst-empty-sub { font-size: 10.5px; color: #9CA3AF; }
+
 @media (max-width: 480px) {
   .report-date-input { font-size: 10.5px; padding: 4px 6px; }
 }

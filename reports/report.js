@@ -503,6 +503,440 @@ function renderTopClients() {
 }
 
 // ============================================================
+// Reports tab switcher — Overview vs GST Report
+// ============================================================
+const tabOverview = document.getElementById("tabOverview");
+const tabGst = document.getElementById("tabGst");
+const reportsTabToggle = document.getElementById("reportsTabToggle");
+let gstReportInitialized = false;
+
+reportsTabToggle?.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-tab]");
+  if (!btn) return;
+  const tab = btn.getAttribute("data-tab");
+  reportsTabToggle.querySelectorAll(".kpi-toggle-btn").forEach((b) => {
+    b.classList.toggle("active", b.getAttribute("data-tab") === tab);
+  });
+  tabOverview.classList.toggle("hidden", tab !== "overview");
+  tabGst.classList.toggle("hidden", tab !== "gst");
+  if (tab === "gst" && !gstReportInitialized) {
+    initGstReport();
+    gstReportInitialized = true;
+  }
+});
+
+// ============================================================
+// GST Report tab
+// ------------------------------------------------------------
+// COMPANY_INFO and the CGST/SGST/IGST split below are copies of
+// the COMPANY constant and computeTotals() function defined in
+// billinginvoice/bill.js. bill.js wraps its whole module in a
+// private IIFE and this project has no shared module system or
+// backend, so nothing in it can literally be imported across a
+// separate page load — these are kept as an exact mirror instead
+// and should be updated alongside bill.js if either ever changes.
+// MOCK_GST_INVOICES stands in for a live invoice feed the same
+// way every other MOCK_* in this file does: swap the lookup below
+// for a fetch('/api/invoices?...') call once a backend exists —
+// renderGstReport() already expects the same invoice shape bill.js
+// works with (customer, items total, gstPercent, date).
+// ============================================================
+const COMPANY_INFO = {
+  name: "Vaishnokripa Mercantile",
+  address: "Gata No. 60, Agra-Mathura Bypass Road, Near Roshanlal College, Arsena, Agra – 282007",
+  phone: "9837143745 / 7055008833",
+  email: "vaishnoworks8@gmail.com",
+  gstin: "09AMXP5472SR1ZO",
+  state: "Uttar Pradesh",
+};
+
+function isIntrastateGst(customerState) {
+  return (customerState || "").trim().toLowerCase() === COMPANY_INFO.state.trim().toLowerCase();
+}
+
+// Mirrors bill.js computeTotals(): same CGST/SGST vs IGST split
+// based on whether the customer's state matches the seller's (UP).
+function computeGstSplit(taxable, gstPercent, intrastate) {
+  const gst = taxable * (gstPercent / 100);
+  if (intrastate) return { taxable, gst, cgst: gst / 2, sgst: gst / 2, igst: 0 };
+  return { taxable, gst, cgst: 0, sgst: 0, igst: gst };
+}
+
+const MOCK_GST_INVOICES = [
+  { invoiceNo: "INV-2026-001", date: "2026-06-22", customer: { name: "Yashpal Singh", gst: "", state: "Uttar Pradesh" }, itemsTotal: 5160000, gstPercent: 18 },
+  { invoiceNo: "INV-2026-002", date: "2026-07-05", customer: { name: "Priya Enterprises", gst: "09AAECP1234F1Z5", state: "Uttar Pradesh" }, itemsTotal: 1400000, gstPercent: 18 },
+  { invoiceNo: "INV-2026-003", date: "2026-07-18", customer: { name: "Global Foods Pvt Ltd", gst: "27AAACG5678H1Z9", state: "Maharashtra" }, itemsTotal: 2000000, gstPercent: 18 },
+  { invoiceNo: "INV-2026-004", date: "2026-08-01", customer: { name: "Sunrise Apartments", gst: "09AACCS4321K1Z2", state: "Uttar Pradesh" }, itemsTotal: 1600000, gstPercent: 18 },
+  { invoiceNo: "INV-2026-005", date: "2026-08-03", customer: { name: "Meena Textiles", gst: "24AAGCM8765L1Z6", state: "Gujarat" }, itemsTotal: 1800000, gstPercent: 18 },
+  { invoiceNo: "INV-2026-006", date: "2026-08-04", customer: { name: "Ravi Constructions", gst: "", state: "Uttar Pradesh" }, itemsTotal: 715000, gstPercent: 12 },
+];
+
+function buildGstRow(inv) {
+  const intrastate = isIntrastateGst(inv.customer.state);
+  const split = computeGstSplit(inv.itemsTotal, inv.gstPercent, intrastate);
+  const invoiceValue = split.taxable + split.gst;
+  return {
+    invoiceNo: inv.invoiceNo,
+    date: inv.date,
+    customerGstin: inv.customer.gst || "Unregistered",
+    invoiceValue,
+    rate: inv.gstPercent,
+    taxable: split.taxable,
+    igst: split.igst,
+    cgst: split.cgst,
+    sgst: split.sgst,
+    cess: 0,
+    placeOfSupply: inv.customer.state || "—",
+  };
+}
+
+const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+function populateGstPeriodSelects() {
+  const now = new Date();
+  const years = [];
+  for (let y = now.getFullYear() - 2; y <= now.getFullYear() + 1; y++) years.push(y);
+
+  const monthSelects = [document.getElementById("gstFromMonth"), document.getElementById("gstToMonth")];
+  const yearSelects = [document.getElementById("gstFromYear"), document.getElementById("gstToYear")];
+
+  monthSelects.forEach((sel) => {
+    if (!sel) return;
+    sel.innerHTML = MONTH_NAMES.map((m, i) => `<option value="${String(i + 1).padStart(2, "0")}">${m}</option>`).join("");
+    sel.value = String(now.getMonth() + 1).padStart(2, "0");
+  });
+  yearSelects.forEach((sel) => {
+    if (!sel) return;
+    sel.innerHTML = years.map((y) => `<option value="${y}">${y}</option>`).join("");
+    sel.value = String(now.getFullYear());
+  });
+}
+
+function getGstPeriod() {
+  const fromYM = `${document.getElementById("gstFromYear").value}-${document.getElementById("gstFromMonth").value}`;
+  const toYM = `${document.getElementById("gstToYear").value}-${document.getElementById("gstToMonth").value}`;
+  return { fromYM, toYM };
+}
+
+function getGstPeriodLabel(fromYM, toYM) {
+  const label = (ym) => {
+    const [y, m] = ym.split("-");
+    return `${MONTH_NAMES[Number(m) - 1]} ${y}`;
+  };
+  return fromYM === toYM ? label(fromYM) : `${label(fromYM)} – ${label(toYM)}`;
+}
+
+function getGstFilteredRows() {
+  const { fromYM, toYM } = getGstPeriod();
+  const lo = fromYM <= toYM ? fromYM : toYM;
+  const hi = fromYM <= toYM ? toYM : fromYM;
+  return MOCK_GST_INVOICES
+    .filter((inv) => {
+      const ym = inv.date.slice(0, 7);
+      return ym >= lo && ym <= hi;
+    })
+    .map(buildGstRow)
+    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+}
+
+function renderGstReport() {
+  const { fromYM, toYM } = getGstPeriod();
+  setText("gstPeriodLabel", `Period: ${getGstPeriodLabel(fromYM, toYM)}`);
+  setText("gstRangeLabel", getGstPeriodLabel(fromYM, toYM));
+
+  setText("gstCompanyName", COMPANY_INFO.name);
+  setText("gstCompanyAddress", COMPANY_INFO.address);
+  setText("gstCompanyGstin", COMPANY_INFO.gstin);
+  setText("gstCompanyPhone", `Phone: ${COMPANY_INFO.phone}`);
+  setText("gstCompanyEmail", `Email: ${COMPANY_INFO.email}`);
+
+  const rows = getGstFilteredRows();
+  const tbody = document.getElementById("gstSalesTbody");
+  const tfoot = document.getElementById("gstSalesTfoot");
+
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="11" class="text-center text-gray-400 text-xs py-6">No sales invoices in this period</td></tr>`;
+    tfoot.innerHTML = "";
+  } else {
+    tbody.innerHTML = rows.map((r) => `
+      <tr>
+        <td data-label="GSTIN/UIN of Customer">${r.customerGstin}</td>
+        <td data-label="Invoice No.">${r.invoiceNo}</td>
+        <td data-label="Invoice Date">${new Date(r.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</td>
+        <td data-label="Invoice Value">${formatINR(r.invoiceValue)}</td>
+        <td data-label="Rate (%)">${r.rate}%</td>
+        <td data-label="Taxable Value">${formatINR(r.taxable)}</td>
+        <td data-label="Integrated Tax">${r.igst ? formatINR(r.igst) : "—"}</td>
+        <td data-label="Central Tax">${r.cgst ? formatINR(r.cgst) : "—"}</td>
+        <td data-label="State/UT Tax">${r.sgst ? formatINR(r.sgst) : "—"}</td>
+        <td data-label="CESS">${r.cess ? formatINR(r.cess) : "—"}</td>
+        <td data-label="Place of Supply">${r.placeOfSupply}</td>
+      </tr>
+    `).join("");
+
+    const totals = rows.reduce((acc, r) => {
+      acc.invoiceValue += r.invoiceValue;
+      acc.taxable += r.taxable;
+      acc.igst += r.igst;
+      acc.cgst += r.cgst;
+      acc.sgst += r.sgst;
+      acc.cess += r.cess;
+      return acc;
+    }, { invoiceValue: 0, taxable: 0, igst: 0, cgst: 0, sgst: 0, cess: 0 });
+
+    tfoot.innerHTML = `
+      <tr>
+        <td data-label="">Totals</td>
+        <td data-label="">${rows.length} invoice${rows.length === 1 ? "" : "s"}</td>
+        <td data-label=""></td>
+        <td data-label="">${formatINR(totals.invoiceValue)}</td>
+        <td data-label=""></td>
+        <td data-label="">${formatINR(totals.taxable)}</td>
+        <td data-label="">${formatINR(totals.igst)}</td>
+        <td data-label="">${formatINR(totals.cgst)}</td>
+        <td data-label="">${formatINR(totals.sgst)}</td>
+        <td data-label="">${formatINR(totals.cess)}</td>
+        <td data-label=""></td>
+      </tr>
+    `;
+  }
+
+  // No vendor-bill / purchase module exists yet in this app, so
+  // Purchase / Inward Supplies always renders the empty state below.
+  // If a purchase-side data source is added later, build its rows
+  // the same way buildGstRow() does above and swap this block out
+  // for a second .gst-table, matching the Sales table markup.
+  document.getElementById("gstPurchaseSection").innerHTML = `
+    <div class="gst-empty-state">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+      <p class="gst-empty-title">No purchase data recorded</p>
+      <p class="gst-empty-sub">Vendor bills aren't tracked in this app yet — this table will populate automatically once that module exists.</p>
+    </div>
+  `;
+
+  const taxTotal = rows.reduce((s, r) => s + r.igst + r.cgst + r.sgst, 0);
+  const taxableTotal = rows.reduce((s, r) => s + r.taxable, 0);
+  setText("gstKpiTaxable", formatCompactINR(taxableTotal));
+  setText("gstKpiTax", formatCompactINR(taxTotal));
+  setText("gstKpiInvoices", rows.length);
+}
+
+document.getElementById("gstApplyBtn")?.addEventListener("click", renderGstReport);
+
+function initGstReport() {
+  populateGstPeriodSelects();
+  renderGstReport();
+}
+
+// ---- GST tab exports (CSV / Excel / PDF) ----
+function getGstSnapshot() {
+  const { fromYM, toYM } = getGstPeriod();
+  const rows = getGstFilteredRows();
+  return {
+    periodLabel: getGstPeriodLabel(fromYM, toYM),
+    generatedAt: new Date().toLocaleString("en-IN"),
+    rows: rows.map((r) => ({
+      "GSTIN/UIN of Customer": r.customerGstin,
+      "Invoice No.": r.invoiceNo,
+      "Invoice Date": new Date(r.date).toLocaleDateString("en-GB"),
+      "Invoice Value": Math.round(r.invoiceValue),
+      "Rate (%)": r.rate,
+      "Taxable Value": Math.round(r.taxable),
+      "Integrated Tax": Math.round(r.igst),
+      "Central Tax": Math.round(r.cgst),
+      "State/UT Tax": Math.round(r.sgst),
+      "CESS": Math.round(r.cess),
+      "Place of Supply": r.placeOfSupply,
+    })),
+  };
+}
+
+function exportGstCSV() {
+  const snap = getGstSnapshot();
+  const sections = [
+    [`${COMPANY_INFO.name} — GST Summary Report`],
+    [`GSTIN/UIN: ${COMPANY_INFO.gstin}`],
+    [`Period: ${snap.periodLabel}`],
+    [`Generated on ${snap.generatedAt}`],
+    [],
+    ["SALES / OUTWARD SUPPLIES"],
+    rowsToCsv(snap.rows),
+    [],
+    ["PURCHASE / INWARD SUPPLIES"],
+    ["No purchase data recorded"],
+  ];
+  const csvContent = sections.map((s) => (Array.isArray(s) ? s.join(",") : s)).join("\n");
+  downloadBlob(csvContent, `VKM-GST-Report-${Date.now()}.csv`, "text/csv;charset=utf-8;");
+  showToast("CSV downloaded");
+}
+
+function exportGstExcel() {
+  if (!window.XLSX) {
+    showToast("Excel library failed to load — check your connection");
+    return;
+  }
+  const snap = getGstSnapshot();
+  const wb = XLSX.utils.book_new();
+  const infoSheet = XLSX.utils.aoa_to_sheet([
+    [COMPANY_INFO.name],
+    [`GSTIN/UIN: ${COMPANY_INFO.gstin}`],
+    [COMPANY_INFO.address],
+    [`Period: ${snap.periodLabel}`],
+  ]);
+  XLSX.utils.book_append_sheet(wb, infoSheet, "Letterhead");
+  const salesSheet = XLSX.utils.json_to_sheet(snap.rows.length ? snap.rows : [{ "No data": "No sales invoices in this period" }]);
+  XLSX.utils.book_append_sheet(wb, salesSheet, "Sales - Outward Supplies");
+  const purchaseSheet = XLSX.utils.aoa_to_sheet([["No purchase data recorded"]]);
+  XLSX.utils.book_append_sheet(wb, purchaseSheet, "Purchase - Inward Supplies");
+  XLSX.writeFile(wb, `VKM-GST-Report-${Date.now()}.xlsx`);
+  showToast("Excel file downloaded");
+}
+
+function exportGstPDF() {
+  if (!window.jspdf) {
+    showToast("PDF library failed to load — check your connection");
+    return;
+  }
+  const snap = getGstSnapshot();
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: "pt", format: "a4", orientation: "landscape" });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const marginLeft = 30;
+  const marginRight = pageWidth - 30;
+  let y = 40;
+
+  // ---- Letterhead ----
+  doc.setFontSize(15);
+  doc.setTextColor(128, 0, 33);
+  doc.text(COMPANY_INFO.name, marginLeft, y);
+  doc.setFontSize(9);
+  doc.setTextColor(107, 114, 128);
+  doc.text(`GSTIN/UIN: ${COMPANY_INFO.gstin}`, marginRight, y - 10, { align: "right" });
+  doc.text(COMPANY_INFO.phone, marginRight, y + 4, { align: "right" });
+  y += 14;
+  doc.setFontSize(9);
+  doc.text(COMPANY_INFO.address, marginLeft, y);
+  y += 12;
+  doc.text(COMPANY_INFO.email, marginLeft, y);
+  y += 10;
+  doc.setDrawColor(128, 0, 33);
+  doc.setLineWidth(1.2);
+  doc.line(marginLeft, y, marginRight, y);
+  y += 20;
+
+  doc.setFontSize(12);
+  doc.setTextColor(31, 41, 55);
+  doc.text("GST Summary Report", pageWidth / 2, y, { align: "center" });
+  y += 14;
+  doc.setFontSize(9.5);
+  doc.setTextColor(107, 114, 128);
+  doc.text(`Period: ${snap.periodLabel}`, pageWidth / 2, y, { align: "center" });
+  y += 20;
+
+  // ---- Bordered grid table (GSTR-style), Sales / Outward Supplies ----
+  doc.setFontSize(10.5);
+  doc.setTextColor(31, 41, 55);
+  doc.text("Sales / Outward Supplies", marginLeft, y);
+  y += 10;
+
+  const headers = ["GSTIN/UIN", "Invoice No.", "Date", "Invoice Value", "Rate (%)", "Taxable Value", "Integrated Tax", "Central Tax", "State/UT Tax", "CESS", "Place of Supply"];
+  const colWidths = [95, 65, 55, 65, 40, 65, 65, 65, 65, 40, 75];
+  const tableWidth = colWidths.reduce((a, b) => a + b, 0);
+  const rowHeight = 18;
+
+  function drawGridRow(cells, x0, rowY, bold) {
+    let x = x0;
+    doc.setFont(undefined, bold ? "bold" : "normal");
+    cells.forEach((cell, i) => {
+      doc.rect(x, rowY, colWidths[i], rowHeight);
+      doc.text(String(cell), x + 4, rowY + rowHeight - 6, { maxWidth: colWidths[i] - 6 });
+      x += colWidths[i];
+    });
+    doc.setFont(undefined, "normal");
+  }
+
+  function ensureSpace(next) {
+    if (y + next > pageHeight - 40) {
+      doc.addPage();
+      y = 40;
+    }
+  }
+
+  ensureSpace(rowHeight);
+  doc.setFontSize(8);
+  doc.setFillColor(246, 220, 232);
+  doc.rect(marginLeft, y, tableWidth, rowHeight, "F");
+  drawGridRow(headers, marginLeft, y, true);
+  y += rowHeight;
+
+  if (!snap.rows.length) {
+    ensureSpace(rowHeight);
+    doc.rect(marginLeft, y, tableWidth, rowHeight);
+    doc.setFontSize(9);
+    doc.text("No sales invoices in this period", marginLeft + 6, y + rowHeight - 6);
+    y += rowHeight;
+  } else {
+    doc.setFontSize(8);
+    snap.rows.forEach((r) => {
+      ensureSpace(rowHeight);
+      drawGridRow([
+        r["GSTIN/UIN of Customer"], r["Invoice No."], r["Invoice Date"],
+        formatINR(r["Invoice Value"]), `${r["Rate (%)"]}%`, formatINR(r["Taxable Value"]),
+        r["Integrated Tax"] ? formatINR(r["Integrated Tax"]) : "—",
+        r["Central Tax"] ? formatINR(r["Central Tax"]) : "—",
+        r["State/UT Tax"] ? formatINR(r["State/UT Tax"]) : "—",
+        r["CESS"] ? formatINR(r["CESS"]) : "—",
+        r["Place of Supply"],
+      ], marginLeft, y, false);
+      y += rowHeight;
+    });
+
+    const totals = snap.rows.reduce((acc, r) => {
+      acc.invoiceValue += r["Invoice Value"];
+      acc.taxable += r["Taxable Value"];
+      acc.igst += r["Integrated Tax"];
+      acc.cgst += r["Central Tax"];
+      acc.sgst += r["State/UT Tax"];
+      acc.cess += r["CESS"];
+      return acc;
+    }, { invoiceValue: 0, taxable: 0, igst: 0, cgst: 0, sgst: 0, cess: 0 });
+
+    ensureSpace(rowHeight);
+    doc.setFillColor(246, 220, 232);
+    doc.rect(marginLeft, y, tableWidth, rowHeight, "F");
+    drawGridRow([
+      "Totals", `${snap.rows.length} inv.`, "",
+      formatINR(totals.invoiceValue), "", formatINR(totals.taxable),
+      formatINR(totals.igst), formatINR(totals.cgst), formatINR(totals.sgst), formatINR(totals.cess), "",
+    ], marginLeft, y, true);
+    y += rowHeight;
+  }
+
+  y += 22;
+  ensureSpace(40);
+  doc.setFontSize(10.5);
+  doc.setTextColor(31, 41, 55);
+  doc.text("Purchase / Inward Supplies", marginLeft, y);
+  y += 14;
+  doc.setFontSize(9);
+  doc.setTextColor(156, 163, 175);
+  doc.text("No purchase data recorded.", marginLeft, y);
+
+  ensureSpace(30);
+  doc.setFontSize(8);
+  doc.setTextColor(156, 163, 175);
+  doc.text(`Generated on ${snap.generatedAt} — for internal / accountant use`, marginLeft, pageHeight - 20);
+
+  doc.save(`VKM-GST-Report-${Date.now()}.pdf`);
+  showToast("PDF downloaded");
+}
+
+document.getElementById("exportGstCsvBtn")?.addEventListener("click", exportGstCSV);
+document.getElementById("exportGstExcelBtn")?.addEventListener("click", exportGstExcel);
+document.getElementById("exportGstPdfBtn")?.addEventListener("click", exportGstPDF);
+
+// ============================================================
 // Export — CSV / Excel / PDF
 // Builds one snapshot object from the currently selected date
 // range and renders it three ways. Swap MOCK_* reads here for the
