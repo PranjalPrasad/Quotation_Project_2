@@ -1,3 +1,4 @@
+<!-- ============ dashboard.html ============ -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -10,15 +11,15 @@
     theme: {
       extend: {
         colors: {
-          peach: {
-            50:  "#FCEEF3",
-            100: "#F6DCE8",
-            200: "#EFC8DC",
-            300: "#E8B9CE",
-            400: "#B8285F",
-            500: "#800021",
-            600: "#6B001C",
-            700: "#540016",
+          brand: {
+            50:  "#FFF5F7",
+            100: "#FFE4EC",
+            200: "#FFC9D9",
+            300: "#FF69B4",
+            400: "#C24366",
+            500: "#881144",
+            600: "#800021",
+            700: "#5C0018",
           },
           cream: "#FCEEF3",
         },
@@ -43,44 +44,51 @@
   <div class="app-shell w-full flex">
     <div id="sidebarBackdrop" class="sidebar-backdrop hidden"></div>
 
-    <!-- ============ Sidebar ============ -->
-    <aside id="sidebar" class="sidebar app-sidebar relative flex flex-col items-center py-5 gap-6 bg-cream border-r border-peach-300 transition-all duration-300 ease-in-out w-20 shrink-0">
-      <button id="sidebarToggle" aria-label="Toggle sidebar" class="absolute -right-3 top-8 w-6 h-6 rounded-full bg-cream shadow-md border border-peach-300 flex items-center justify-center text-peach-500 hover:scale-110 transition-transform">
+    <!-- ===================== SIDEBAR (matches customer.html / productm.html / quotation.html) ===================== -->
+    <aside id="sidebar" class="sidebar app-sidebar relative flex flex-col items-center py-5 gap-6 bg-cream border-r border-brand-200 transition-all duration-300 ease-in-out w-20 shrink-0">
+      <button id="sidebarToggle" aria-label="Toggle sidebar" class="absolute -right-3 top-8 w-6 h-6 rounded-full bg-cream shadow-md border border-brand-200 flex items-center justify-center text-brand-500 hover:scale-110 transition-transform">
         <svg id="toggleIcon" class="w-3.5 h-3.5 transition-transform duration-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="15 18 9 12 15 6"></polyline>
         </svg>
       </button>
+
       <div class="flex items-center justify-center shrink-0">
         <img src="/img/image.png" alt="VKM Logo" class="w-auto h-10 object-contain" />
       </div>
+
       <nav class="nav-list w-full flex-1 flex flex-col items-center gap-1.5 mt-3 px-3">
-        <button class="nav-item active" id="menuDashboard" data-label="Dashboard" aria-label="Dashboard" onclick="window.location.href='dashboard.html'">
+        <li data-role="SUPER_ADMIN,ADMIN,SALES" id="menuDashboard" class="nav-item active" data-label="Dashboard" aria-label="Dashboard" onclick="window.location.href='dashboard.html'" style="list-style:none; width:100%;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect></svg>
           <span>Dashboard</span>
-        </button>
-        <button class="nav-item" id="menuProducts" data-label="Product Management" aria-label="Product Management" onclick="window.location.href='../productM/productm.html'">
+        </li>
+        <li data-role="SUPER_ADMIN,ADMIN,SALES" id="menuProduct" class="nav-item" data-label="Product Management" aria-label="Product Management" onclick="window.location.href='../productM/productm.html'" style="list-style:none; width:100%;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><line x1="12" y1="2" x2="12" y2="4.5"></line><line x1="12" y1="19.5" x2="12" y2="22"></line><line x1="2" y1="12" x2="4.5" y2="12"></line><line x1="4.9" y1="4.9" x2="6.6" y2="6.6"></line><line x1="17.4" y1="17.4" x2="19.1" y2="19.1"></line><line x1="4.9" y1="19.1" x2="6.6" y2="17.4"></line><line x1="17.4" y1="6.6" x2="19.1" y2="4.9"></line></svg>
           <span>Product Management</span>
-        </button>
-        <button class="nav-item" id="menuQuotation" data-label="Quotation Management" aria-label="Quotation Management" onclick="window.location.href='../Quotation/quotation.html'">
+        </li>
+        <li data-role="SUPER_ADMIN,ADMIN,SALES" id="menuQuotation" class="nav-item" data-label="Quotation Management" aria-label="Quotation Management" onclick="window.location.href='../Quotation/quotation.html'" style="list-style:none; width:100%;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="M9 15h1"></path><path d="M9.5 12.5c0-.83.67-1.5 1.5-1.5h.5a1.5 1.5 0 0 1 0 3H11a1.5 1.5 0 0 0 0 3h.5a1.5 1.5 0 0 0 1.5-1.5"></path><line x1="11" y1="10" x2="11" y2="10.7"></line><line x1="11" y1="17.3" x2="11" y2="18"></line></svg>
           <span>Quotation Management</span>
-        </button>
-        <button class="nav-item" id="menuCustomers" data-label="Customer Management" aria-label="Customer Management" onclick="window.location.href='../customer/customer.html'">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect><circle cx="9" cy="11" r="3"></circle><path d="M3 18.5c1.5-2.5 4-4 7-4s5.5 1.5 7 4"></path><path d="M16 9l2 2 4-4"></path></svg>
+        </li>
+        <li id="menuCustomer" class="nav-item" data-label="Customer Management" aria-label="Customer Management" onclick="window.location.href='../customer/customer.html'" style="list-style:none; width:100%;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect>
+            <circle cx="9" cy="11" r="3"></circle>
+            <path d="M3 18.5c1.5-2.5 4-4 7-4s5.5 1.5 7 4"></path>
+            <path d="M16 9l2 2 4-4"></path>
+          </svg>
           <span>Customer Management</span>
-        </button>
-        <button class="nav-item" id="menuReports" data-label="Reports" aria-label="Reports" onclick="window.location.href='../reports/report.html'">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="21" x2="5" y2="11"></line><line x1="12" y1="21" x2="12" y2="6"></line><line x1="19" y1="21" x2="19" y2="14"></line><line x1="3" y1="21" x2="21" y2="21"></line></svg>
+        </li>
+        <li id="menuReports" class="nav-item" data-label="Reports" aria-label="Reports" onclick="window.location.href='../reports/report.html'" style="list-style:none; width:100%;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
           <span>Reports</span>
-        </button>
+        </li>
       </nav>
     </aside>
 
-    <!-- ============ Main ============ -->
+    <!-- ===================== MAIN ===================== -->
     <main class="app-main flex-1 bg-cream px-4 sm:px-5 md:px-6 py-4 min-w-0">
 
-      <!-- Topbar -->
+      <!-- Topbar (matches customer.html / quotation.html exactly) -->
       <div class="flex items-center justify-between mb-4 gap-3 flex-wrap">
         <div>
           <p class="text-sm text-gray-700">👋 Hello, <span class="font-semibold">Admin</span></p>
@@ -88,9 +96,7 @@
         </div>
         <div class="flex items-center gap-2.5 relative">
           <div class="relative">
-            <button id="profileBtn" aria-label="Profile" class="w-8 h-8 rounded-full bg-peach-500 flex items-center justify-center text-white font-semibold text-sm shadow-sm">
-              A
-            </button>
+            <button id="profileBtn" aria-label="Profile" class="w-8 h-8 rounded-full bg-brand-600 flex items-center justify-center text-white font-semibold text-sm shadow-sm">A</button>
             <div id="profileDropdown" class="topbar-dropdown hidden">
               <button id="profileLogoutBtn" class="topbar-logout-btn">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
@@ -101,147 +107,190 @@
         </div>
       </div>
 
-      <!-- Hero KPI row -->
-      <div class="grid grid-cols-1 lg:grid-cols-5 gap-2.5 mb-2.5">
-        <div class="lg:col-span-3 bg-cream rounded-xl p-3.5 shadow-sm border border-peach-300">
-          <h2 class="text-xs font-semibold text-gray-700 mb-2">Quotation Overview</h2>
-          <div class="flex items-center flex-wrap gap-2">
-            <div class="flex items-center gap-1 bg-peach-100/60 rounded-lg px-1.5 py-1">
-              <button class="kpi-toggle-btn active" id="toggleAllTime" onclick="setQuotationRange('all')">ALL TIME</button>
-              <button class="kpi-toggle-btn" id="toggleThisMonth" onclick="setQuotationRange('month')">THIS MONTH</button>
-            </div>
-            <div class="flex items-center gap-1 text-xs font-medium text-gray-600">
-              <span id="kpiTotalQuotations">312</span> quotations
-            </div>
-            <div class="flex-1 min-w-[100px]">
-              <p class="text-[10.5px] text-gray-400">Total Quotation Value</p>
-              <p class="text-base font-semibold text-gray-800" id="kpiTotalValue">₹7.4Cr</p>
-            </div>
-            <div class="min-w-[110px]">
-              <p class="text-[10.5px] text-gray-400">Pending Decision</p>
-              <p class="text-sm font-semibold text-amber-600" id="kpiPendingDecision">47 quotations</p>
-            </div>
-            <button id="newQuotationBtn" class="ml-auto bg-peach-500 hover:bg-peach-600 transition-colors text-white text-xs font-medium px-3.5 py-1.5 rounded-lg shadow-sm">New Quotation</button>
-          </div>
+      <!-- ============================================================
+           DASHBOARD
+           ============================================================ -->
+
+      <!-- Page header -->
+      <div class="dash-header">
+        <div>
+          <h1 class="dash-title">📊 Dashboard</h1>
+          <p class="dash-subtitle">Overview of quotations, customers &amp; production</p>
         </div>
-        <div class="lg:col-span-2 rounded-xl p-3.5 shadow-sm text-white relative overflow-hidden bg-gradient-to-br from-peach-700 to-peach-500 border border-peach-700">
-          <div class="flex justify-between items-start mb-2.5">
-            <p class="text-xs font-medium text-white/90">Total Outstanding Payment</p>
-            <svg class="w-4 h-4 text-white/80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+        <div class="dash-header-actions">
+          <div class="kpi-toggle-wrap" role="group" aria-label="Quotation range">
+            <button class="kpi-toggle-btn active" id="toggleAllTime" onclick="setQuotationRange('all')">ALL TIME</button>
+            <button class="kpi-toggle-btn" id="toggleThisMonth" onclick="setQuotationRange('month')">THIS MONTH</button>
           </div>
-          <p class="text-xl font-semibold mb-1" id="kpiOutstanding">₹38.6L</p>
-          <p class="text-[10.5px] text-white/80"><span id="kpiOverdueCount">6</span> invoices overdue · staged payments pending</p>
         </div>
       </div>
 
-      <!-- Stat grid -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5 mb-2.5">
-        <div class="bg-cream rounded-xl p-3 shadow-sm border border-peach-300 flex items-center gap-2.5">
-          <div class="w-8 h-8 rounded-lg bg-peach-500 flex items-center justify-center shrink-0">
-            <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
+      <!-- Summary cards -->
+      <div class="summary-grid">
+        <div class="summary-card">
+          <div class="summary-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
           </div>
           <div class="min-w-0">
-            <p class="text-sm font-semibold text-gray-800 truncate" id="statTotalCustomers">—</p>
-            <p class="text-[10px] text-gray-400">Total Customers</p>
+            <p class="summary-title">Total Customers</p>
+            <p class="summary-count" id="statTotalCustomers">—</p>
+            <p class="summary-trend">Across all types</p>
           </div>
         </div>
-        <div class="bg-cream rounded-xl p-3 shadow-sm border border-peach-300 flex items-center gap-2.5">
-          <div class="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center shrink-0">
-            <svg class="w-4 h-4 text-purple-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 8h14l-1 12H6z"></path><path d="M9 8V6a3 3 0 0 1 6 0v2"></path></svg>
+        <div class="summary-card">
+          <div class="summary-icon tint-value">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
           </div>
           <div class="min-w-0">
-            <p class="text-sm font-semibold text-gray-800 truncate" id="statDispatched">—</p>
-            <p class="text-[10px] text-gray-400">Machines Dispatched (Month)</p>
+            <p class="summary-title">Quotations · <span id="kpiTotalQuotations">0</span></p>
+            <p class="summary-count" id="kpiTotalValue">₹0</p>
+            <p class="summary-trend">Total quotation value</p>
           </div>
         </div>
-        <div class="bg-cream rounded-xl p-3 shadow-sm border border-peach-300 flex items-center gap-2.5">
-          <div class="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
-            <svg class="w-4 h-4 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
+        <div class="summary-card">
+          <div class="summary-icon tint-prospect">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
           </div>
           <div class="min-w-0">
-            <p class="text-sm font-semibold text-gray-800 truncate" id="statTotalInvoices">—</p>
-            <p class="text-[10px] text-gray-400">Total Invoices Raised</p>
+            <p class="summary-title">Pending Decision</p>
+            <p class="summary-count" id="kpiPendingDecision">0</p>
+            <p class="summary-trend">Awaiting customer response</p>
           </div>
         </div>
-        <div class="bg-cream rounded-xl p-3 shadow-sm border border-peach-300 flex items-center gap-2.5">
-          <div class="w-8 h-8 rounded-lg bg-rose-50 flex items-center justify-center shrink-0">
-            <svg class="w-4 h-4 text-rose-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+        <div class="summary-card">
+          <div class="summary-icon tint-active">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
           </div>
           <div class="min-w-0">
-            <p class="text-sm font-semibold text-gray-800 truncate" id="statAvgQuotation">—</p>
-            <p class="text-[10px] text-gray-400">Avg. Quotation Value</p>
+            <p class="summary-title">Conversion Rate</p>
+            <p class="summary-count" id="kpiConversionRate">0%</p>
+            <p class="summary-trend" id="kpiConversionSub">0 of 0 quotations</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Secondary stats -->
+      <div class="mini-stat-grid">
+        <div class="mini-stat-card">
+          <div class="mini-stat-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h14l-1 12H6z"></path><path d="M9 8V6a3 3 0 0 1 6 0v2"></path></svg>
+          </div>
+          <div class="min-w-0">
+            <p class="mini-stat-value" id="statDispatched">—</p>
+            <p class="mini-stat-label">Machines Dispatched (Month)</p>
+          </div>
+        </div>
+        <div class="mini-stat-card">
+          <div class="mini-stat-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+          </div>
+          <div class="min-w-0">
+            <p class="mini-stat-value" id="statAvgQuotation">—</p>
+            <p class="mini-stat-label">Avg. Quotation Value</p>
+          </div>
+        </div>
+        <div class="mini-stat-card">
+          <div class="mini-stat-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          </div>
+          <div class="min-w-0">
+            <p class="mini-stat-value" id="statPendingQuotations">—</p>
+            <p class="mini-stat-label">Pending Quotations</p>
+          </div>
+        </div>
+        <div class="mini-stat-card">
+          <div class="mini-stat-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="18" height="7" rx="1.5"></rect></svg>
+          </div>
+          <div class="min-w-0">
+            <p class="mini-stat-value" id="statTotalProducts">—</p>
+            <p class="mini-stat-label">Products in Catalog</p>
           </div>
         </div>
       </div>
 
       <!-- Charts -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5 mb-2.5">
-        <div class="bg-cream rounded-xl p-3.5 shadow-sm border border-peach-300">
-          <div class="mb-1">
-            <h2 class="chart-card-title">Monthly Quotation Value Trend</h2>
-            <p class="chart-card-sub">Last 6 months, quotation value raised</p>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5 mb-3.5">
+        <div class="table-card">
+          <div class="table-card-head">
+            <div>
+              <h2>Monthly Quotation Value Trend</h2>
+              <p>Last 6 months, quotation value raised</p>
+            </div>
           </div>
-          <div class="pie-wrap"><canvas id="chartMonthlyTrend"></canvas></div>
+          <div class="table-card-body">
+            <div class="pie-wrap"><canvas id="chartMonthlyTrend"></canvas></div>
+          </div>
         </div>
-        <div class="bg-cream rounded-xl p-3.5 shadow-sm border border-peach-300">
-          <div class="mb-1">
-            <h2 class="chart-card-title">Revenue by Machine Category</h2>
-            <p class="chart-card-sub">Brick machines vs. components vs. consumables</p>
+        <div class="table-card">
+          <div class="table-card-head">
+            <div>
+              <h2>Quotation Value by Machine Category</h2>
+              <p>Brick machines vs. components vs. consumables</p>
+            </div>
           </div>
-          <div class="pie-wrap"><canvas id="chartCategoryRevenue"></canvas></div>
+          <div class="table-card-body">
+            <div class="pie-wrap"><canvas id="chartCategoryRevenue"></canvas></div>
+          </div>
         </div>
       </div>
 
       <!-- Top Selling Machines -->
-      <div class="bg-cream rounded-xl p-3.5 shadow-sm border border-peach-300 mb-2.5">
-        <div class="mb-2">
-          <h2 class="text-xs font-semibold text-gray-700">Top Selling Machines</h2>
-          <p class="text-[10.5px] text-gray-400">Ranked by units sold this month</p>
+      <div class="table-card">
+        <div class="table-card-head">
+          <div>
+            <h2>Top Selling Machines</h2>
+            <p>Ranked by units sold this month</p>
+          </div>
         </div>
-        <div class="table-scope overflow-x-auto">
-          <table class="data-table" id="topMachinesTable">
-            <thead>
-              <tr>
-                <th style="cursor:default">Rank</th>
-                <th style="cursor:default">Machine Model</th>
-                <th style="cursor:default">Units Sold (Month)</th>
-                <th style="cursor:default">Units Sold (YTD)</th>
-                <th style="cursor:default">Revenue Generated</th>
-              </tr>
-            </thead>
-            <tbody id="topMachinesTbody">
-              <tr><td colspan="5" class="text-center text-gray-400 py-3">Loading…</td></tr>
-            </tbody>
-          </table>
+        <div class="table-card-body">
+          <div class="table-scope overflow-x-auto">
+            <table class="data-table" id="topMachinesTable">
+              <thead>
+                <tr>
+                  <th style="cursor:default">Rank</th>
+                  <th style="cursor:default">Machine Model</th>
+                  <th style="cursor:default">Units Sold (Month)</th>
+                  <th style="cursor:default">Units Sold (YTD)</th>
+                  <th style="cursor:default">Value Generated</th>
+                </tr>
+              </thead>
+              <tbody id="topMachinesTbody">
+                <tr><td colspan="5" class="text-center text-gray-400 py-3">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
       <!-- Recent Quotations full table -->
-      <div class="bg-cream rounded-xl p-3.5 shadow-sm border border-peach-300 mb-3">
-        <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
+      <div class="table-card">
+        <div class="table-card-head">
           <div>
-            <h2 class="text-xs font-semibold text-gray-700">Recent Quotations</h2>
-            <p class="text-[10.5px] text-gray-400">Latest quotations across all customers</p>
+            <h2>Recent Quotations</h2>
+            <p>Latest quotations across all customers</p>
           </div>
-          <a href="../Quotation/quotation.html" id="viewAllBtn" class="text-xs font-medium text-peach-600 hover:underline">View all</a>
+          <a href="../Quotation/quotation.html" id="viewAllBtn" class="text-xs font-medium text-brand-600 hover:underline">View all</a>
         </div>
-        <div class="table-scope overflow-x-auto">
-          <table class="data-table quotations-table" id="quotationsTable">
-            <thead>
-              <tr>
-                <th data-key="no">Quotation No. <span class="sort-icon">⇅</span></th>
-                <th data-key="customer">Customer <span class="sort-icon">⇅</span></th>
-                <th data-key="machine">Machine <span class="sort-icon">⇅</span></th>
-                <th data-key="amount">Amount <span class="sort-icon">⇅</span></th>
-                <th data-key="status">Status <span class="sort-icon">⇅</span></th>
-                <th data-key="date">Date <span class="sort-icon">⇅</span></th>
-                <th class="actions-th">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="quotationsTbody"></tbody>
-          </table>
+        <div class="table-card-body">
+          <div class="table-scope overflow-x-auto">
+            <table class="data-table quotations-table" id="quotationsTable">
+              <thead>
+                <tr>
+                  <th data-key="no">Quotation No. <span class="sort-icon">⇅</span></th>
+                  <th data-key="customer">Customer <span class="sort-icon">⇅</span></th>
+                  <th data-key="machine">Machine <span class="sort-icon">⇅</span></th>
+                  <th data-key="amount">Amount <span class="sort-icon">⇅</span></th>
+                  <th data-key="status">Status <span class="sort-icon">⇅</span></th>
+                  <th data-key="date">Date <span class="sort-icon">⇅</span></th>
+                  <th class="actions-th">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="quotationsTbody"></tbody>
+            </table>
+          </div>
         </div>
-        <div class="flex items-center justify-between mt-2 flex-wrap gap-2">
+        <div class="table-footer">
           <div class="flex items-center gap-2 text-[10.5px] text-gray-400">
             <span>Rows per page</span>
             <select id="rowsPerPage" class="rows-select">
@@ -257,14 +306,14 @@
     </main>
 
     <!-- ============ Right panel ============ -->
-    <aside class="app-right hidden xl:flex w-64 shrink-0 flex-col bg-cream border-l border-peach-300 px-4 py-4">
-      <p class="text-xs font-semibold text-gray-500 mb-2">Quick Actions</p>
+    <aside class="app-right hidden xl:flex w-64 shrink-0 flex-col bg-cream border-l border-brand-200 px-4 py-4">
+      <p class="right-panel-label mb-2">Quick Actions</p>
       <div class="flex flex-col gap-2 mb-4">
         <button class="quick-action-btn" onclick="window.location.href='../Quotation/quotation.html'">
           <span class="quick-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></span>
           New Quotation
         </button>
-        <button class="quick-action-btn" onclick="window.location.href='../customers/customers.html'">
+        <button class="quick-action-btn" onclick="window.location.href='../customer/customer.html'">
           <span class="quick-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="19" y1="8" x2="19" y2="14"></line><line x1="22" y1="11" x2="16" y2="11"></line></svg></span>
           Add Customer
         </button>
@@ -272,32 +321,19 @@
           <span class="quick-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="18" height="7" rx="1.5"></rect></svg></span>
           Add Product / Machine
         </button>
-        <button class="quick-action-btn" onclick="window.location.href='../payments/payments.html'">
-          <span class="quick-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg></span>
-          Record Payment
+        <button class="quick-action-btn" onclick="window.location.href='../reports/report.html'">
+          <span class="quick-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg></span>
+          View Reports
         </button>
-      </div>
-
-      <p class="text-xs font-semibold text-gray-500 mb-2">Conversion Rate</p>
-      <div class="rounded-xl p-3 mb-4 relative overflow-hidden bg-gradient-to-br from-peach-500 to-peach-300 text-white border border-peach-500">
-        <div class="flex justify-between items-center mb-4">
-          <span class="text-[9.5px] bg-white/25 px-2 py-1 rounded-md">VKM</span>
-          <span class="font-bold italic text-sm">MACHINES</span>
-        </div>
-        <p class="text-base font-semibold" id="kpiConversionRate">50% confirmed</p>
-        <p class="text-[10.5px] text-white/80" id="kpiConversionSub">156 of 312 quotations</p>
       </div>
 
       <div class="flex items-center justify-between mb-2">
-        <p class="text-xs font-semibold text-gray-500">Recent Payments</p>
-        <button aria-label="options" class="text-gray-300">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="19" cy="12" r="2"></circle></svg>
-        </button>
+        <p class="right-panel-label">Recent Quotations</p>
       </div>
-      <div id="recentPaymentsList" class="flex flex-col gap-2.5 mb-4"></div>
+      <div id="recentQuotationsList" class="flex flex-col gap-1.5 mb-4"></div>
 
-      <p class="text-xs font-semibold text-gray-500 mb-2">Machines in Production</p>
-      <div class="bg-peach-100/60 rounded-xl p-3 border border-peach-300 flex-1">
+      <p class="right-panel-label mb-2">Machines in Production</p>
+      <div class="bg-brand-100/60 rounded-xl p-3 border border-brand-200 flex-1">
         <p class="text-lg font-semibold text-gray-800" id="rightInProduction">—</p>
         <p class="text-[10.5px] text-gray-400 mb-2">Units currently on the shop floor</p>
         <div id="rightProductionBreakdown" class="flex flex-col gap-1.5 text-[11px] text-gray-600"></div>

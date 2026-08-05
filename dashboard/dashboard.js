@@ -89,9 +89,7 @@ const MOCK_DASHBOARD_SUMMARY = {
   totalQuotationValueMonth: 8200000,
   pendingDecision: 47,
   machinesDispatchedMonth: 11,
-  totalInvoicesRaised: 268,
-  totalOutstanding: 3860000,
-  overdueInvoiceCount: 6,
+  totalProducts: 58,
   acceptedAllTime: 156,
 };
 
@@ -115,18 +113,16 @@ function renderDashboardSummary(data) {
   const isMonth = quotationRange === 'month';
   setText('kpiTotalQuotations', isMonth ? data.totalQuotationsMonth : data.totalQuotationsAllTime);
   setText('kpiTotalValue', formatCompactINR(isMonth ? data.totalQuotationValueMonth : data.totalQuotationValueAllTime));
-  setText('kpiPendingDecision', `${data.pendingDecision} quotations`);
-  setText('kpiOutstanding', formatCompactINR(data.totalOutstanding));
-  setText('kpiOverdueCount', data.overdueInvoiceCount);
+  setText('kpiPendingDecision', data.pendingDecision);
 
   setText('statTotalCustomers', data.totalCustomers);
   setText('statDispatched', data.machinesDispatchedMonth);
-  setText('statTotalInvoices', data.totalInvoicesRaised);
+  setText('statTotalProducts', data.totalProducts);
   const avgQuotation = data.totalQuotationValueAllTime / data.totalQuotationsAllTime;
   setText('statAvgQuotation', formatCompactINR(avgQuotation));
 
   const convPct = Math.round((data.acceptedAllTime / data.totalQuotationsAllTime) * 100);
-  setText('kpiConversionRate', `${convPct}% confirmed`);
+  setText('kpiConversionRate', `${convPct}%`);
   setText('kpiConversionSub', `${data.acceptedAllTime} of ${data.totalQuotationsAllTime} quotations`);
 }
 
@@ -136,9 +132,9 @@ function renderDashboardSummary(data) {
 Chart.defaults.font.family = "'Poppins', sans-serif";
 Chart.defaults.font.size = 11;
 
-const paletteBerry = "#800021";  /* peach-500 */
-const paletteMaroon = "#540016"; /* peach-700 */
-const paletteTan = "#E8B9CE";    /* peach-300 */
+const paletteBerry = "#800021";  /* brand-600 */
+const paletteMaroon = "#5C0018"; /* brand-700 */
+const paletteTan = "#FFC9D9";    /* brand-200 */
 
 const tooltipOpts = {
   backgroundColor: "#fff",
@@ -200,7 +196,7 @@ new Chart(document.getElementById('chartCategoryRevenue'), {
     datasets: [{
       data: Object.values(categoryRevenue),
       backgroundColor: [paletteBerry, paletteTan, paletteMaroon],
-      borderColor: '#F6DCE8',
+      borderColor: '#FFE4EC',
       borderWidth: 3,
       hoverOffset: 6,
     }]
@@ -246,28 +242,36 @@ function renderTopMachines() {
 }
 
 // ============================================================
-// Right panel — Recent Payments + Machines in Production
+// Right panel — Recent Quotations (mini) + Machines in Production
 // ============================================================
-const MOCK_RECENT_PAYMENTS = [
-  { customer: 'Priya Enterprises', amount: 250000, status: 'paid', date: '2026-07-28' },
-  { customer: 'Global Foods Pvt Ltd', amount: 480000, status: 'paid', date: '2026-07-27' },
-  { customer: 'Star Cold Storage', amount: 850000, status: 'overdue', date: '2026-07-06' },
-  { customer: 'Sunrise Apartments', amount: 795000, status: 'paid', date: '2026-07-24' },
-];
+const MINI_BADGE_CLASS = { Pending: 'badge-pending', Accepted: 'badge-accepted', Rejected: 'badge-rejected' };
 
-function renderRecentPayments() {
-  const list = document.getElementById('recentPaymentsList');
+function renderRecentQuotationsMini() {
+  const list = document.getElementById('recentQuotationsList');
   if (!list) return;
-  list.innerHTML = MOCK_RECENT_PAYMENTS.map(p => `
-    <div class="quote-row">
-      <div class="w-9 h-9 rounded-full ${p.status === 'paid' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-500'} flex items-center justify-center text-xs font-bold">${p.status === 'paid' ? '✓' : '!'}</div>
+  const recent = [...quotations]
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .slice(0, 4);
+
+  if (!recent.length) {
+    list.innerHTML = `<p class="text-[11px] text-gray-400 px-1">No quotations yet</p>`;
+    return;
+  }
+
+  list.innerHTML = recent.map(q => `
+    <div class="quote-row" data-no="${q.no}">
+      <div class="quote-avatar">${q.customer.charAt(0).toUpperCase()}</div>
       <div class="quote-info">
-        <p>${p.customer}</p>
-        <p>${formatINR(p.amount)} · ${formatDate(p.date)}</p>
+        <p>${q.customer}</p>
+        <p>${formatINR(q.amount)} · ${formatDate(q.date)}</p>
       </div>
-      <span class="quote-pill ${p.status}">${p.status === 'paid' ? 'Paid' : 'Overdue'}</span>
+      <span class="badge ${MINI_BADGE_CLASS[q.status] || 'badge-neutral'}">${q.status}</span>
     </div>
   `).join('');
+
+  list.querySelectorAll('.quote-row[data-no]').forEach(row => {
+    row.addEventListener('click', () => openModal(row.getAttribute('data-no'), 'view'));
+  });
 }
 
 function renderProductionBreakdown() {
@@ -385,6 +389,7 @@ function renderTable() {
 
   renderPagination(totalPages);
   updateSortIcons();
+  setText('statPendingQuotations', quotations.filter(q => q.status === 'Pending').length);
 }
 
 function renderPagination(totalPages) {
@@ -514,6 +519,7 @@ modalSaveBtn?.addEventListener('click', () => {
   q.amount = parseFloat(fldAmount.value) || q.amount;
   q.status = fldStatus.value;
   renderTable();
+  renderRecentQuotationsMini();
   closeModal();
   showToast(`Saved changes to ${q.no}`);
 });
@@ -594,6 +600,7 @@ function duplicateQuotation(no) {
   quotations.unshift(copy);
   sortKey = 'date'; sortDir = 'desc'; currentPage = 1;
   renderTable();
+  renderRecentQuotationsMini();
   showToast(`Duplicated as ${newNo}`);
 }
 
@@ -702,7 +709,7 @@ profileLogoutBtn?.addEventListener('click', handleLogout);
 // Init
 // ============================================================
 renderTopMachines();
-renderRecentPayments();
+renderRecentQuotationsMini();
 renderProductionBreakdown();
 renderTable();
 loadDashboardData();
