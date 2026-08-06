@@ -111,19 +111,27 @@ function setQuotationRange(range) {
 
 function renderDashboardSummary(data) {
   const isMonth = quotationRange === 'month';
+  
+  // Card 1: Total Customers
+  setText('statTotalCustomers', data.totalCustomers);
+  
+  // Card 2: Quotations count + total value
   setText('kpiTotalQuotations', isMonth ? data.totalQuotationsMonth : data.totalQuotationsAllTime);
   setText('kpiTotalValue', formatCompactINR(isMonth ? data.totalQuotationValueMonth : data.totalQuotationValueAllTime));
+  
+  // Card 3: Pending Decision
   setText('kpiPendingDecision', data.pendingDecision);
-
-  setText('statTotalCustomers', data.totalCustomers);
+  
+  // Card 4: Pending Quotation (show count of pending quotations)
+  const pendingCount = quotations.filter(q => q.status === 'Pending').length;
+  setText('kpiConversionRate', pendingCount);
+  setText('kpiConversionSub', `${pendingCount} quotations pending`);
+  
+  // Additional stats that may be used elsewhere
   setText('statDispatched', data.machinesDispatchedMonth);
   setText('statTotalProducts', data.totalProducts);
   const avgQuotation = data.totalQuotationValueAllTime / data.totalQuotationsAllTime;
   setText('statAvgQuotation', formatCompactINR(avgQuotation));
-
-  const convPct = Math.round((data.acceptedAllTime / data.totalQuotationsAllTime) * 100);
-  setText('kpiConversionRate', `${convPct}%`);
-  setText('kpiConversionSub', `${data.acceptedAllTime} of ${data.totalQuotationsAllTime} quotations`);
 }
 
 // ============================================================
