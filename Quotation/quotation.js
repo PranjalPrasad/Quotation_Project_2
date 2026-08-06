@@ -1,34 +1,13 @@
 /* ============================================================
    Quotation Management — Complete Module
    VKM Brick & Block Machinery (Vaishnokripa Mercantile)
-
-   CHANGELOG (this revision):
-   - Fixed Hindi (Devanagari) terms rendering for PDF export:
-     more robust font-loading/measurement, correct CSS targeting
-     of the rasterized <canvas> (not just <img>), safe fallbacks
-     if the webfont fails to load.
-   - Added Plant Overview fields (Model, Production Capacity,
-     Bricks Size, Pallet Size, Required Shed Area, Total Land,
-     Connected Power, Labour Requirement) to the wizard + PDF,
-     matching the ENDEAVOUR-i reference layout.
-   - Added per-quotation History (audit trail: created, edited,
-     approved, rejected) + a global History Log, both persisted.
-   - Added an Approval section (Approve / Reject with notes) in
-     the View modal, wired to status + history.
-   - All changes persist to localStorage immediately (previously
-     edits were lost on refresh).
-   - NEW: "Generate Report" action button — shows ONLY on
-     quotations whose status is "Accepted". Opens a GST-style
-     report (format inspired by the GSTR2 report reference: bordered
-     tables, company header block, metadata rows, highlighted totals
-     row) and lets the admin download it as a PDF.
    ============================================================ */
 
 (function () {
   'use strict';
 
   // ============================================================
-  // COMPANY INFO — matches the actual VKM letterhead
+  // COMPANY INFO
   // ============================================================
   const COMPANY = {
     name: 'Vaishnokripa Mercantile',
@@ -54,192 +33,21 @@
   const API_BASE = 'http://localhost:8092/api';
 
   // ============================================================
-  // PRODUCT CATALOG — synced live from Product Management
-  // ============================================================
-  const PRODUCT_CATALOG_STORAGE_KEY = 'vkmProductCatalog';
-
-  const FALLBACK_PRODUCTS = [
-    { id: 'fb1',  name: 'FLYASH BRICKS MACHINE 10 CAVITY', category: 'Brick Machine', brand: 'VKM', spec: '180T Pressure, Auto Feed, PLC', unit: 'Nos',  price: 1900000, status: 'Active', hsnCode: '84743100', gstRate: 18, sectionCode: 'A', imageUrl: '' },
-    { id: 'fb2',  name: 'PAN MIXER 500 KG',                category: 'Component', brand: 'VKM', spec: '1-Stage Gear Box, Replaceable Rollers', unit: 'Nos', price: 500000, status: 'Active', hsnCode: '84743100', gstRate: 18, sectionCode: 'B', imageUrl: '' },
-    { id: 'fb3',  name: 'CONVEYOR BELT 22 Feet',            category: 'Component', brand: 'VKM', spec: 'JK Make, 450mm width, 2HP Motor', unit: 'Nos', price: 350000, status: 'Active', hsnCode: '84283900', gstRate: 18, sectionCode: 'B', imageUrl: '' },
-    { id: 'fb4',  name: 'POWER PACK SYSTEM',                category: 'Component', brand: 'VKM', spec: '450 Ltr, 10 HP, Yuken/Polyhydron pump', unit: 'Nos', price: 450000, status: 'Active', hsnCode: '84129000', gstRate: 18, sectionCode: 'A', powerHP: 10, imageUrl: '' },
-    { id: 'fb5',  name: 'PLC PANEL FULLY AI BASED',         category: 'Component', brand: 'VKM', spec: 'Hydraulic speed & vibrator control', unit: 'Nos', price: 400000, status: 'Active', hsnCode: '85371000', gstRate: 18, sectionCode: 'A', imageUrl: '' },
-    { id: 'fb6',  name: 'BRICK TROLLY',                     category: 'Accessory', brand: 'VKM', spec: '', unit: 'Nos', price: 7500, status: 'Active', hsnCode: '', gstRate: 18, sectionCode: 'D', imageUrl: '' },
-    { id: 'fb7',  name: 'MATERIAL TROLLY',                  category: 'Accessory', brand: 'VKM', spec: '', unit: 'Nos', price: 9000, status: 'Active', hsnCode: '', gstRate: 18, sectionCode: 'D', imageUrl: '' },
-    { id: 'fb8',  name: 'VIBRATOR TABLE',                   category: 'Accessory', brand: 'VKM', spec: '', unit: 'Nos', price: 90000, status: 'Active', hsnCode: '', gstRate: 18, sectionCode: 'D', imageUrl: '' },
-    { id: 'fb9',  name: 'MIXER MACHINE WITH MOTOR',         category: 'Brick Machine', brand: 'VKM', spec: '', unit: 'Nos', price: 150000, status: 'Active', hsnCode: '', gstRate: 18, sectionCode: 'B', imageUrl: '' },
-    { id: 'fb10', name: 'COLOUR MIXER',                     category: 'Brick Machine', brand: 'VKM', spec: '', unit: 'Nos', price: 90000, status: 'Active', hsnCode: '', gstRate: 18, sectionCode: 'B', imageUrl: '' },
-    { id: 'fb11', name: 'MOULD ZIG ZAG WITH DUMBLE',        category: 'Mould', brand: 'VKM', spec: '', unit: 'Piece', price: 55, status: 'Active', hsnCode: '', gstRate: 18, sectionCode: 'E', imageUrl: '' },
-    { id: 'fb12', name: 'CHEMICAL DRUM',                    category: 'Accessory', brand: 'VKM', spec: '', unit: 'Drum', price: 12000, status: 'Active', hsnCode: '', gstRate: 18, sectionCode: 'D', imageUrl: '' },
-    { id: 'fb13', name: 'COLOUR BAG RED & YELLOW',          category: 'Accessory', brand: 'VKM', spec: '', unit: 'Bag', price: 7500, status: 'Active', hsnCode: '', gstRate: 18, sectionCode: 'D', imageUrl: '' },
-    { id: 'fb14', name: 'PLY BOARD 8X4',                    category: 'Accessory', brand: 'VKM', spec: '', unit: 'Sheet', price: 2500, status: 'Active', hsnCode: '', gstRate: 18, sectionCode: 'D', imageUrl: '' },
-
-    { id: 'ms1', name: 'NANO MACHINE', category: 'Brick Machine', brand: 'VKM', spec: '1200-1400 blocks/8hr, 25T pressure, 100L oil tank, 10HP (5+5), incl. 300kg Pan Mixer', unit: 'Nos', price: 515000, status: 'Active', production: '1200-1400 blocks / 8 hr', pressure: '25 Ton', power: '10 HP (5+5)', powerHP: 10, oilTank: '100 Ltr', shedSize: '15x20 ft', labor: 4, hsnCode: '84743100', gstRate: 18, sectionCode: 'A', imageUrl: '' },
-    { id: 'ms2', name: 'DOUBLE STATION NANO MACHINE', category: 'Brick Machine', brand: 'VKM', spec: '2400-2800 blocks/8hr, 25T pressure, 170L oil tank, 17.5HP (10+7.5), incl. 500kg Pan Mixer', unit: 'Nos', price: 715000, status: 'Active', production: '2400-2800 blocks / 8 hr', pressure: '25 Ton', power: '17.5 HP (10+7.5)', powerHP: 17.5, oilTank: '170 Ltr', shedSize: '15x20 ft', labor: 6, hsnCode: '84743100', gstRate: 18, sectionCode: 'A', imageUrl: '' },
-    { id: 'ms3', name: 'BUDGET MACHINE (NANO RANGE)', category: 'Brick Machine', brand: 'VKM', spec: '2500-2800 blocks/8hr, 40T pressure, 170L oil tank, 10HP (5+5), incl. 500kg Pan Mixer', unit: 'Nos', price: 800000, status: 'Active', production: '2500-2800 blocks / 8 hr', pressure: '40 Ton', power: '10 HP (5+5)', powerHP: 10, oilTank: '170 Ltr', shedSize: '12x15 ft', labor: 5, hsnCode: '84743100', gstRate: 18, sectionCode: 'A', imageUrl: '' },
-    { id: 'ms4', name: 'METAL TO METAL MACHINE', category: 'Brick Machine', brand: 'VKM', spec: '3500-3800 blocks/8hr, 60T pressure, 300L oil tank, 17HP (7.5+7.5+2), incl. 500kg Pan Mixer + 20ft Conveyor', unit: 'Nos', price: 1325000, status: 'Active', production: '3500-3800 blocks / 8 hr', pressure: '60 Ton', power: '17 HP (7.5+7.5+2)', powerHP: 17, oilTank: '300 Ltr', shedSize: '30x20 ft', labor: 6, hsnCode: '84743100', gstRate: 18, sectionCode: 'A', imageUrl: '' },
-
-    { id: 'fbm1', name: 'FLYASH BRICK BUDGET MACHINE', category: 'Brick Machine', brand: 'VKM', spec: '4500-5000 bricks/8hr, 40T pressure, 22 sec/stock cycle, 160L oil tank, 10HP, Full Set Up incl.', unit: 'Nos', price: 625000, status: 'Active', production: '4500-5000 bricks / 8 hr', pressure: '40 Ton', power: '10 HP', powerHP: 10, oilTank: '160 Ltr', shedSize: '20x15 ft', labor: 5, vibration: 'No', hsnCode: '84743100', gstRate: 18, sectionCode: 'A', imageUrl: '' },
-    { id: 'fbm2', name: 'ROTARY TYPE MACHINE', category: 'Brick Machine', brand: 'VKM', spec: '14000-15000 bricks/8hr, 40T pressure, 200L oil tank, 20.5HP, 30 KVA genset, incl. 500kg Pan Mixer', unit: 'Nos', price: 1250000, status: 'Active', production: '14000-15000 bricks / 8 hr', pressure: '40 Ton', power: '20.5 HP', powerHP: 20.5, oilTank: '200 Ltr', shedSize: '15x35 ft', labor: 7, vibration: 'No', hsnCode: '84743100', gstRate: 18, sectionCode: 'A', imageUrl: '' },
-    { id: 'fbm3', name: 'VK001 — 4 BRICK METAL TO METAL', category: 'Brick Machine', brand: 'VKM', spec: '8000+ bricks/8hr, 120T pressure, 300L oil tank, 17HP, 25 KVA genset, incl. 500kg Pan Mixer + 20ft Conveyor, Pallet 14x24', unit: 'Nos', price: 1200000, status: 'Active', production: '8000+ bricks / 8 hr', pressure: '120 Ton', power: '17 HP', powerHP: 17, oilTank: '300 Ltr', shedSize: '40x60 ft (Height 15 ft)', labor: 7, vibration: 'No', hsnCode: '84743100', gstRate: 18, sectionCode: 'A', imageUrl: '' },
-    { id: 'fbm4', name: 'VK002 — 6 BRICK METAL TO METAL', category: 'Brick Machine', brand: 'VKM', spec: '12000+ bricks/8hr, 140T pressure, 400L oil tank, 21HP, 30 KVA genset, incl. 700kg Pan Mixer + 20ft Conveyor, Pallet 14x32', unit: 'Nos', price: 1400000, status: 'Active', production: '12000+ bricks / 8 hr', pressure: '140 Ton', power: '21 HP', powerHP: 21, oilTank: '400 Ltr', shedSize: '40x60 ft (Height 15 ft)', labor: 7, vibration: 'No', hsnCode: '84743100', gstRate: 18, sectionCode: 'A', imageUrl: '' },
-    { id: 'fbm5', name: 'VK003 — 8 BRICK FULLY AUTOMATIC', category: 'Brick Machine', brand: 'VKM', spec: '12000+ bricks/8hr, 150T pressure, 400L oil tank, 26.5HP, 45 KVA genset, incl. 500kg (2 Pcs) Pan Mixer + 20ft Conveyor, Pallet 24x24, Vibration Yes', unit: 'Nos', price: 1600000, status: 'Active', production: '12000+ bricks / 8 hr', pressure: '150 Ton', power: '26.5 HP', powerHP: 26.5, oilTank: '400 Ltr', shedSize: '40x60 ft (Height 15 ft)', labor: 7, vibration: 'Yes', hsnCode: '84743100', gstRate: 18, sectionCode: 'A', imageUrl: '' },
-    { id: 'fbm6', name: 'VK004 — 10 BRICK FULLY AUTOMATIC', category: 'Brick Machine', brand: 'VKM', spec: '14000+ bricks/8hr, 170T pressure, 400L oil tank, 27.5HP, 45 KVA genset, incl. 700kg (2 Pcs) Pan Mixer + 28ft Conveyor, Pallet 24x28, Vibration Yes', unit: 'Nos', price: 1800000, status: 'Active', production: '14000+ bricks / 8 hr', pressure: '170 Ton', power: '27.5 HP', powerHP: 27.5, oilTank: '400 Ltr', shedSize: '40x60 ft (Height 15 ft)', labor: 7, vibration: 'Yes', hsnCode: '84743100', gstRate: 18, sectionCode: 'A', imageUrl: '' },
-    { id: 'fbm7', name: 'VK005 — 12 BRICK FULLY AUTOMATIC', category: 'Brick Machine', brand: 'VKM', spec: '16000+ bricks/8hr, 200T pressure, 450L oil tank, 30HP, 62 KVA genset, incl. 700kg (2 Pcs) Pan Mixer + 28ft Conveyor, Pallet 32x24, Vibration Yes', unit: 'Nos', price: 2000000, status: 'Active', production: '16000+ bricks / 8 hr', pressure: '200 Ton', power: '30 HP', powerHP: 30, oilTank: '450 Ltr', shedSize: '40x60 ft (Height 15 ft)', labor: 7, vibration: 'Yes', hsnCode: '84743100', gstRate: 18, sectionCode: 'A', imageUrl: '' }
-  ];
-
-  function getProductCatalog() {
-    try {
-      const raw = localStorage.getItem(PRODUCT_CATALOG_STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length) {
-          const active = parsed.filter(p => p.status !== 'Inactive');
-          if (active.length) return active;
-        }
-      }
-    } catch (_) { /* fall through to fallback list */ }
-    return FALLBACK_PRODUCTS;
-  }
-
-  // Fetch products from backend and update localStorage
-  async function fetchProductsFromBackend() {
-    try {
-      const response = await fetch(`${API_BASE}/products/get-all-products`);
-      const json = await response.json();
-      if (response.ok && json && json.success) {
-        const products = json.data.map(dto => ({
-          id: dto.id,
-          name: dto.name,
-          category: dto.category,
-          brand: dto.brand,
-          spec: dto.description || '',
-          unit: 'Nos',
-          price: dto.finalPrice || 0,
-          status: dto.status || 'Active',
-          hsnCode: dto.hsn || '',
-          gstRate: dto.gst || 18,
-          sectionCode: '',
-          imageUrl: dto.thumbnail || '',
-          powerHP: dto.powerConsumptionKw || 0,
-          production: '',
-          shedSize: '',
-          labor: 0,
-          inCustomerScope: false
-        }));
-
-        // Store in localStorage
-        try {
-          localStorage.setItem(PRODUCT_CATALOG_STORAGE_KEY, JSON.stringify(products));
-        } catch (_) {}
-
-        // Update the catalog dropdown if it exists
-        if (window.__quotationProductCatalog) {
-          window.__quotationProductCatalog = products;
-          populateProductPicker();
-        }
-
-        return products;
-      }
-    } catch (err) {
-      console.error('Failed to fetch products from backend:', err);
-    }
-    return null;
-  }
-
-  function findCatalogProduct(catalog, productId) {
-    return catalog.find(c => String(c.id) === String(productId));
-  }
-
-
-  // ============================================================
-  // SYNC CUSTOM ITEM -> PRODUCT MANAGEMENT
-  // Jab quotation mein ek naya "Custom Item" add hota hai (jo
-  // catalog mein pehle se maujood nahi tha), usko automatically
-  // Product Management (backend /api/create-product) mein bhi
-  // ek product ke roop mein create kar dete hain.
-  // ============================================================
-  async function syncCustomItemToProductCatalog(item) {
-    if (!item || item._syncing || item._synced) return;
-    const name = (item.name || '').trim();
-    if (!name) return; // naam khaali hai toh product mat banao
-
-    item._syncing = true;
-
-    const sku = 'CUSTOM-' + Date.now().toString(36).toUpperCase() + '-' + Math.floor(Math.random() * 1000);
-
-    const productPayload = {
-      name: name,
-      sku: sku,
-      brand: 'VKM',
-      type: 'Custom',
-      category: item.category || 'Custom',
-      subCategory: '',
-      hsn: item.hsnCode || '',
-      gst: item.gstRate || 18,
-      mrp: Number(item.rate) || 0,
-      discountType: 'flat',
-      discountValue: 0,
-      calculatedPrice: Number(item.rate) || 0,
-      finalPrice: Number(item.rate) || 0,
-      stock: 0,
-      threshold: 0,
-      reorderQuantity: 0,
-      leadTimeDays: 0,
-      status: 'Active',
-      powerConsumptionKw: Number(item.powerHP) || 0,
-      weightKg: 0,
-      description: 'Auto-added from Quotation Management (Custom Item)'
-    };
-
-    try {
-      const formData = new FormData();
-      formData.append('product', JSON.stringify(productPayload));
-
-      const response = await fetch(`${API_BASE}/create-product`, {
-        method: 'POST',
-        body: formData
-      });
-      const json = await response.json();
-
-      if (response.ok && json && json.success && json.data) {
-        item.productId = String(json.data.id);
-        item._synced = true;
-        showToast(`"${name}" Product Management mein bhi add ho gaya`, 'success');
-        // local catalog cache refresh kar do taaki dropdown mein bhi dikhe
-        fetchProductsFromBackend();
-      } else {
-        console.error('Failed to sync custom item to product catalog:', json);
-        showToast(`"${name}" ko Product Management mein save nahi kar paya`, 'error');
-      }
-    } catch (err) {
-      console.error('Error syncing custom item to product catalog:', err);
-      showToast('Product Management se connect nahi ho paya', 'error');
-    } finally {
-      item._syncing = false;
-    }
-  }
-
-  // ============================================================
   // UTILITIES
   // ============================================================
   function escapeAttr(str) { return String(str ?? '').replace(/"/g, '&quot;'); }
-
   function escapeHtml(text) {
     if (text === null || text === undefined) return '';
     const div = document.createElement('div');
     div.textContent = String(text);
     return div.innerHTML;
   }
-
   function formatINR(n) {
     return '₹' + Math.round(Number(n) || 0).toLocaleString('en-IN');
   }
-
   function formatNumberPlain(n) {
     return Math.round(Number(n) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
-
   function formatDateTime(iso) {
     if (!iso) return '—';
     try {
@@ -280,8 +88,14 @@
     setTimeout(() => { if (toast.parentNode) toast.remove(); }, 4000);
   }
 
-  // Normalizes a state name for comparison (case/whitespace insensitive)
   function normState(s) { return String(s || '').trim().toLowerCase(); }
+
+  // Backend date fields (LocalDate) throw a 500 ("Text '' could not be
+  // parsed") if sent as an empty string instead of null/omitted.
+  function dateOrNull(v) {
+    const s = (v === null || v === undefined) ? '' : String(v).trim();
+    return s ? s : null;
+  }
 
   function computeTotals(itemsTotal, costs, gstPercent, discountType, discountValue, customerState) {
     const itemsTotalN = Number(itemsTotal) || 0;
@@ -329,17 +143,9 @@
   // ============================================================
   function buildTermsText(items) {
     const cfg = window.TERMS_CONFIG || { version: 'DEFAULT_TC_V1', base: { english: [], hindi: [] }, categoryExtras: {} };
-    const catalog = getProductCatalog();
-
-    const categories = [...new Set((items || []).map(it => {
-      if (it.category) return it.category;
-      const p = findCatalogProduct(catalog, it.productId);
-      return p ? p.category : null;
-    }).filter(Boolean))];
-
+    const categories = [...new Set((items || []).map(it => it.category || '').filter(Boolean))];
     let english = [...(cfg.base?.english || [])];
     let hindi = [...(cfg.base?.hindi || [])];
-
     categories.forEach(cat => {
       const extra = cfg.categoryExtras?.[cat];
       if (extra) {
@@ -347,25 +153,12 @@
         if (extra.hindi) hindi = hindi.concat(extra.hindi);
       }
     });
-
     return { version: cfg.version || 'DEFAULT_TC_V1', english, hindi, categoriesApplied: categories };
   }
 
   // ============================================================
   // QUOTATION DATA MODEL
   // ============================================================
-  const QUOTE_COUNTER_STORAGE_KEY = 'quoteCounter';
-  const QUOTATIONS_STORAGE_KEY = 'quotations';
-  const GLOBAL_HISTORY_LOG_KEY = 'quotationHistoryLog';
-
-  function nextQuoteNo() {
-    let counter = parseInt(localStorage.getItem(QUOTE_COUNTER_STORAGE_KEY), 10);
-    if (!Number.isFinite(counter)) counter = 1000;
-    counter += 1;
-    try { localStorage.setItem(QUOTE_COUNTER_STORAGE_KEY, String(counter)); } catch (_) { /* ignore quota errors */ }
-    return `SQ-${counter}`;
-  }
-
   let quotations = [];
   let wizardItems = [];
   let itemIdCounter = 1;
@@ -375,50 +168,9 @@
     return items.reduce((sum, it) => sum + (Number(it.qty) || 0) * (Number(it.rate) || 0), 0);
   }
 
-  // ------------------------------------------------------------
-  // Persistence — every mutation to `quotations` should end with
-  // a call to persistQuotations() so nothing is lost on refresh.
-  // ------------------------------------------------------------
-  function persistQuotations() {
-    try { localStorage.setItem(QUOTATIONS_STORAGE_KEY, JSON.stringify(quotations)); } catch (_) { /* storage full/unavailable */ }
-  }
-
-  // ------------------------------------------------------------
-  // History — per-quotation audit trail + a flat global log so
-  // "Quotation History" can be viewed both per-record and overall.
-  // ------------------------------------------------------------
-  function addHistoryEntry(q, action, details) {
-    if (!q) return;
-    if (!Array.isArray(q.history)) q.history = [];
-    const entry = {
-      ts: new Date().toISOString(),
-      action: action,
-      by: 'Admin',
-      details: details || ''
-    };
-    q.history.unshift(entry);
-
-    try {
-      const raw = localStorage.getItem(GLOBAL_HISTORY_LOG_KEY);
-      const log = raw ? JSON.parse(raw) : [];
-      log.unshift({ quoteNo: q.quoteNo, customer: q.customer?.name || '', ...entry });
-      // keep the flat log from growing forever
-      const trimmed = log.slice(0, 300);
-      localStorage.setItem(GLOBAL_HISTORY_LOG_KEY, JSON.stringify(trimmed));
-    } catch (_) { /* ignore storage errors for the log */ }
-  }
-
-  function getGlobalHistoryLog() {
-    try {
-      const raw = localStorage.getItem(GLOBAL_HISTORY_LOG_KEY);
-      const log = raw ? JSON.parse(raw) : [];
-      return Array.isArray(log) ? log : [];
-    } catch (_) { return []; }
-  }
-
   function makeQuotation(overrides) {
     const base = {
-      quoteNo: nextQuoteNo(),
+      quoteNo: '',
       date: new Date().toISOString().slice(0, 10),
       status: 'Pending',
       customer: { name: '', mobilePrimary: '', mobileSecondary: '', email: '', address: '', city: '', state: '', pincode: '', gst: '' },
@@ -432,16 +184,8 @@
       paymentTerms: { advance: 50, material: 25, installation: 15, balance: 10 },
       paymentType: 'full',
       validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
-      // Plant Overview — optional summary block shown at the top of the PDF,
-      // mirrors the reference ENDEAVOUR-i layout (Model / Production
-      // Capacity / Bricks Size / Pallet Size / Shed Area / Land / Power / Labour)
-      plantOverview: {
-        model: '', productionCapacity: '', bricksSize: '', palletSize: '',
-        requiredShedArea: '', totalLand: '', connectedPower: '', labourRequirement: ''
-      },
-      // Approval workflow
+      plantOverview: { model: '', productionCapacity: '', bricksSize: '', palletSize: '', requiredShedArea: '', totalLand: '', connectedPower: '', labourRequirement: '' },
       approval: { approvedBy: '', approvalDate: '', notes: '' },
-      // Audit trail
       history: []
     };
     const merged = { ...base, ...(overrides || {}) };
@@ -465,14 +209,269 @@
   }
 
   // ============================================================
-  // BACKEND API INTEGRATION
+  // BACKEND API INTEGRATION - PRODUCTS
   // ============================================================
-  async function saveQuotationToBackend(quotationData) {
+  // In-memory cache only (per page load). No localStorage — always sourced
+  // fresh from the backend (/api/products/get-all-products).
+  let productCatalog = [];
+
+  async function fetchProductsFromBackend() {
+    try {
+      const response = await fetch(`${API_BASE}/products/get-all-products`);
+      const json = await response.json();
+      if (response.ok && json && json.success && json.data) {
+        const products = json.data.map(dto => ({
+          id: dto.id,
+          name: dto.name,
+          category: dto.category || 'Other',
+          brand: dto.brand || 'VKM',
+          spec: dto.description || '',
+          unit: 'Nos',
+          price: dto.finalPrice || 0,
+          status: dto.status || 'Active',
+          hsnCode: dto.hsn || '',
+          gstRate: dto.gst || 18,
+          sectionCode: '',
+          imageUrl: dto.thumbnail || '',
+          powerHP: dto.powerConsumptionKw || 0,
+          production: '',
+          shedSize: '',
+          labor: 0,
+          inCustomerScope: false
+        }));
+        productCatalog = products;
+        return products;
+      }
+    } catch (err) {
+      console.error('Failed to fetch products:', err);
+      showToast('Could not load products from server (port 8092).', 'error');
+    }
+    productCatalog = [];
+    return [];
+  }
+
+  function getProductCatalog() {
+    return (productCatalog || []).filter(p => p.status !== 'Inactive');
+  }
+
+  function findCatalogProduct(catalog, productId) {
+    return catalog.find(c => String(c.id) === String(productId));
+  }
+
+  // ============================================================
+  // BACKEND API INTEGRATION - CUSTOMERS
+  // ============================================================
+  let customersCache = [];
+  let selectedCustomerId = null;
+
+  async function fetchCustomersFromBackend(name) {
+    try {
+      const url = name ? `${API_BASE}/customers/get-all-customers?name=${encodeURIComponent(name)}` : `${API_BASE}/customers/get-all-customers`;
+      const response = await fetch(url);
+      const json = await response.json();
+      if (response.ok && json && json.success && Array.isArray(json.data)) {
+        return json.data;
+      }
+      return [];
+    } catch (err) {
+      console.error('Error fetching customers:', err);
+      return [];
+    }
+  }
+
+  async function getCustomerFromBackend(id) {
+    try {
+      const response = await fetch(`${API_BASE}/customers/get-customer/${id}`);
+      const json = await response.json();
+      if (response.ok && json && json.success && json.data) return json.data;
+      return null;
+    } catch (err) {
+      console.error('Error fetching customer:', err);
+      return null;
+    }
+  }
+
+  async function createCustomerInBackend(customerDto) {
+    try {
+      const response = await fetch(`${API_BASE}/customers/create-customer`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(customerDto)
+      });
+      const json = await response.json();
+      if (response.ok && json && json.success && json.data) return json.data;
+      console.error('Backend error creating customer:', json);
+      return null;
+    } catch (err) {
+      console.error('Error creating customer:', err);
+      return null;
+    }
+  }
+
+  // Populate a <datalist> with customer names for the customer-name field so
+  // suggestions come straight from the backend (no hard-coded/dummy names).
+  async function refreshCustomerSuggestions(query) {
+    customersCache = await fetchCustomersFromBackend(query || '');
+    let datalist = document.getElementById('customer-name-suggestions');
+    if (!datalist) {
+      datalist = document.createElement('datalist');
+      datalist.id = 'customer-name-suggestions';
+      document.body.appendChild(datalist);
+      const nameInput = document.getElementById('f-customerName');
+      if (nameInput) nameInput.setAttribute('list', 'customer-name-suggestions');
+    }
+    datalist.innerHTML = customersCache.map(c => `<option value="${escapeAttr(c.name || '')}">`).join('');
+  }
+
+  let customerSearchTimer = null;
+  document.getElementById('f-customerName')?.addEventListener('input', (e) => {
+    const val = e.target.value.trim();
+    clearTimeout(customerSearchTimer);
+    customerSearchTimer = setTimeout(async () => {
+      if (val.length < 2) return;
+      await refreshCustomerSuggestions(val);
+      const match = customersCache.find(c => (c.name || '').toLowerCase() === val.toLowerCase());
+      if (match) {
+        selectedCustomerId = match.id;
+        fillCustomerForm({
+          name: match.name,
+          mobilePrimary: match.mobilePrimary || match.mobile || '',
+          mobileSecondary: match.mobileSecondary || '',
+          email: match.email || '',
+          address: match.address || '',
+          city: match.city || '',
+          state: match.state || '',
+          pincode: match.pincode || '',
+          gst: match.gst || ''
+        }, true);
+      } else {
+        selectedCustomerId = null;
+      }
+    }, 350);
+  });
+
+  // Create quotation in backend
+  async function createQuotationInBackend(quotationData) {
     try {
       const requestDto = {
         quoteNo: quotationData.quoteNo,
         date: quotationData.date,
         status: quotationData.status,
+        customerId: quotationData.customer.id || selectedCustomerId || null,
+        customer: {
+          name: quotationData.customer.name || '',
+          mobilePrimary: quotationData.customer.mobilePrimary || '',
+          mobileSecondary: quotationData.customer.mobileSecondary || '',
+          email: quotationData.customer.email || '',
+          address: quotationData.customer.address || '',
+          city: quotationData.customer.city || '',
+          state: quotationData.customer.state || '',
+          pincode: quotationData.customer.pincode || '',
+          gst: quotationData.customer.gst || ''
+        },
+        items: quotationData.items.map(item => ({
+          productId: item.productId || null,
+          name: item.name || '',
+          category: item.category || '',
+          qty: Number(item.qty) || 0,
+          rate: Number(item.rate) || 0,
+          amount: (Number(item.qty) || 0) * (Number(item.rate) || 0),
+          hsnCode: item.hsnCode || '',
+          gstRate: Number(item.gstRate) || 18,
+          powerHP: Number(item.powerHP) || 0,
+          powerKW: Number(item.powerKW) || 0,
+          inCustomerScope: item.inCustomerScope || false,
+          shedSize: item.shedSize || '',
+          labor: Number(item.labor) || 0,
+          production: item.production || '',
+          imageUrl: (item.imageUrl || '').substring(0, 255) 
+        })),
+        costs: {
+          transport: Number(quotationData.costs.transport) || 0,
+          loading: Number(quotationData.costs.loading) || 0,
+          otherLabel: quotationData.costs.otherLabel || 'Other Charges',
+          other: Number(quotationData.costs.other) || 0
+        },
+        gstPercent: Number(quotationData.gstPercent) || 18,
+        discountType: quotationData.discountType || 'percent',
+        discountValue: Number(quotationData.discountValue) || 0,
+        subtotal: Number(quotationData.subtotal) || 0,
+        discountAmount: Number(quotationData.discountAmount) || 0,
+        taxable: Number(quotationData.taxable) || 0,
+        total: Number(quotationData.total) || 0,
+        amount: Number(quotationData.amount) || 0,
+        deliveryTimeline: quotationData.deliveryTimeline || '',
+        validUntil: dateOrNull(quotationData.validUntil),
+        paymentTerms: {
+          advance: Number(quotationData.paymentTerms.advance) || 0,
+          material: Number(quotationData.paymentTerms.material) || 0,
+          installation: Number(quotationData.paymentTerms.installation) || 0,
+          balance: Number(quotationData.paymentTerms.balance) || 0
+        },
+        paymentType: quotationData.paymentType || 'full',
+        bank: {
+          accountName: quotationData.bank.accountName || '',
+          bankName: quotationData.bank.bankName || '',
+          accountNumber: quotationData.bank.accountNumber || '',
+          ifscCode: quotationData.bank.ifscCode || '',
+          branch: quotationData.bank.branch || ''
+        },
+        termsAndConditions: quotationData.termsAndConditions || {},
+        additionalNotes: quotationData.additionalNotes || '',
+        productImages: quotationData.productImages || [],
+        plantOverview: quotationData.plantOverview || {},
+        approval: {
+          approvedBy: quotationData.approval?.approvedBy || '',
+          approvalDate: dateOrNull(quotationData.approval?.approvalDate),
+          notes: quotationData.approval?.notes || ''
+        },
+        history: quotationData.history || []
+      };
+
+      const response = await fetch(`${API_BASE}/quotations/create-quotation`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestDto)
+      });
+      const json = await response.json();
+      if (response.ok && json && json.success && json.data) {
+        return json.data;
+      } else {
+        console.error('Backend error:', json);
+        showToast(json?.message || 'Failed to create quotation', 'error');
+        return null;
+      }
+    } catch (err) {
+      console.error('Error creating quotation:', err);
+      showToast('Could not connect to server on port 8092.', 'error');
+      return null;
+    }
+  }
+
+  // Fetch quotations from backend
+  async function fetchQuotationsFromBackend(page = 0, size = 100) {
+    try {
+      const response = await fetch(`${API_BASE}/quotations/get-quotations?page=${page}&size=${size}`);
+      const json = await response.json();
+      if (response.ok && json && json.success && json.data) {
+        const content = json.data.content || [];
+        return content.map(q => convertBackendToFrontend(q));
+      }
+      return [];
+    } catch (err) {
+      console.error('Error fetching quotations:', err);
+      return [];
+    }
+  }
+
+  // Update quotation in backend
+  async function updateQuotationInBackend(id, quotationData) {
+    try {
+      const requestDto = {
+        quoteNo: quotationData.quoteNo,
+        date: quotationData.date,
+        status: quotationData.status,
+        customerId: quotationData.customer.id || null,
         customer: {
           name: quotationData.customer.name || '',
           mobilePrimary: quotationData.customer.mobilePrimary || '',
@@ -516,7 +515,7 @@
         total: Number(quotationData.total) || 0,
         amount: Number(quotationData.amount) || 0,
         deliveryTimeline: quotationData.deliveryTimeline || '',
-        validUntil: quotationData.validUntil || '',
+        validUntil: dateOrNull(quotationData.validUntil),
         paymentTerms: {
           advance: Number(quotationData.paymentTerms.advance) || 0,
           material: Number(quotationData.paymentTerms.material) || 0,
@@ -535,54 +534,101 @@
         additionalNotes: quotationData.additionalNotes || '',
         productImages: quotationData.productImages || [],
         plantOverview: quotationData.plantOverview || {},
-        approval: quotationData.approval || {},
+        approval: {
+          approvedBy: quotationData.approval?.approvedBy || '',
+          approvalDate: dateOrNull(quotationData.approval?.approvalDate),
+          notes: quotationData.approval?.notes || ''
+        },
         history: quotationData.history || []
       };
 
-      const response = await fetch(`${API_BASE}/quotations`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+      const response = await fetch(`${API_BASE}/quotations/update-quotation/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestDto)
       });
-
       const json = await response.json();
-      if (response.ok && json && json.success) {
+      if (response.ok && json && json.success && json.data) {
         return json.data;
       } else {
         console.error('Backend error:', json);
-        showToast(json?.message || 'Failed to save quotation', 'error');
+        showToast(json?.message || 'Failed to update quotation', 'error');
         return null;
       }
     } catch (err) {
-      console.error('Error saving quotation:', err);
-      showToast('Could not connect to server on port 8092.', 'error');
+      console.error('Error updating quotation:', err);
+      showToast('Could not connect to server.', 'error');
       return null;
     }
   }
 
-  async function fetchQuotationsFromBackend() {
+  // Update status in backend
+  async function updateStatusInBackend(id, status, notes) {
     try {
-      const response = await fetch(`${API_BASE}/quotations`);
+      const response = await fetch(`${API_BASE}/quotations/update-status/${id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status, notes })
+      });
+      const json = await response.json();
+      if (response.ok && json && json.success && json.data) {
+        return json.data;
+      } else {
+        console.error('Backend error:', json);
+        return null;
+      }
+    } catch (err) {
+      console.error('Error updating status:', err);
+      return null;
+    }
+  }
+
+  // Delete quotation in backend
+  async function deleteQuotationInBackend(id) {
+    try {
+      const response = await fetch(`${API_BASE}/quotations/delete-quotation/${id}`, {
+        method: 'DELETE'
+      });
       const json = await response.json();
       if (response.ok && json && json.success) {
-        const backendQuotations = json.data.content || json.data || [];
-        return backendQuotations.map(q => convertBackendToFrontend(q));
+        return true;
+      } else {
+        console.error('Backend error:', json);
+        return false;
       }
-      return [];
     } catch (err) {
-      console.error('Error fetching quotations:', err);
-      return [];
+      console.error('Error deleting quotation:', err);
+      return false;
+    }
+  }
+
+  // Duplicate quotation in backend
+  async function duplicateQuotationInBackend(id) {
+    try {
+      const response = await fetch(`${API_BASE}/quotations/duplicate-quotation/${id}/duplicate`, {
+        method: 'POST'
+      });
+      const json = await response.json();
+      if (response.ok && json && json.success && json.data) {
+        return json.data;
+      } else {
+        console.error('Backend error:', json);
+        return null;
+      }
+    } catch (err) {
+      console.error('Error duplicating quotation:', err);
+      return null;
     }
   }
 
   function convertBackendToFrontend(backendData) {
     return {
+      id: backendData.id,
       quoteNo: backendData.quoteNo || '',
       date: backendData.date || new Date().toISOString().slice(0, 10),
       status: backendData.status || 'Pending',
       customer: {
+        id: backendData.customer?.id || backendData.customerId || null,
         name: backendData.customer?.name || '',
         mobilePrimary: backendData.customer?.mobilePrimary || '',
         mobileSecondary: backendData.customer?.mobileSecondary || '',
@@ -653,159 +699,62 @@
   }
 
   // ============================================================
-  // SAMPLE QUOTATIONS
-  // ============================================================
-  function generateSampleQuotations() {
-    const q1 = makeQuotation({
-      customer: {
-        name: 'YASHPAL SINGH',
-        mobilePrimary: '6395840394',
-        mobileSecondary: '',
-        email: 'yashpal@example.com',
-        address: 'Shamshabad',
-        city: 'Agra',
-        state: 'Uttar Pradesh',
-        pincode: '282001'
-      },
-      items: [
-        { id: newItemId(), name: 'FLYASH BRICKS MACHINE 10 CAVITY', category: 'Brick Machine', qty: 1, rate: 1900000 },
-        { id: newItemId(), name: 'PAN MIXER 500 KG', category: 'Component', qty: 2, rate: 500000 },
-        { id: newItemId(), name: 'CONVEYOR BELT 22 Feet', category: 'Component', qty: 1, rate: 350000 },
-        { id: newItemId(), name: 'POWER PACK SYSTEM', category: 'Component', qty: 1, rate: 450000 },
-        { id: newItemId(), name: 'PLC PANEL FULLY AI BASED', category: 'Component', qty: 1, rate: 400000 },
-        { id: newItemId(), name: 'BRICK TROLLY', category: 'Accessory', qty: 6, rate: 7500 },
-        { id: newItemId(), name: 'MATERIAL TROLLY', category: 'Accessory', qty: 10, rate: 9000 },
-        { id: newItemId(), name: 'VIBRATOR TABLE', category: 'Accessory', qty: 1, rate: 90000 },
-        { id: newItemId(), name: 'MIXER MACHINE WITH MOTOR', category: 'Brick Machine', qty: 1, rate: 150000 },
-        { id: newItemId(), name: 'COLOUR MIXER', category: 'Brick Machine', qty: 1, rate: 90000 },
-        { id: newItemId(), name: 'MOULD ZIG ZAG WITH DUMBLE', category: 'Mould', qty: 5000, rate: 55 },
-        { id: newItemId(), name: 'CHEMICAL DRUM', category: 'Accessory', qty: 10, rate: 12000 },
-        { id: newItemId(), name: 'COLOUR BAG RED & YELLOW', category: 'Accessory', qty: 10, rate: 7500 },
-        { id: newItemId(), name: 'PLY BOARD 8X4', category: 'Accessory', qty: 50, rate: 2500 }
-      ],
-      status: 'Pending',
-      date: '2026-06-22',
-      deliveryTimeline: '45 days from advance payment',
-      plantOverview: {
-        model: 'VKM-FB10', productionCapacity: '4200-4800 Bricks per Hour', bricksSize: '230mm x 110mm x 75mm',
-        palletSize: '880mm x 1100mm x 30mm', requiredShedArea: '60 ft X 80 ft', totalLand: '1-1.25 Acre',
-        connectedPower: '95 HP / 71.25 KW', labourRequirement: '1 Skilled Operator / 20-22 Unskilled laborer'
-      }
-    });
-    q1.quoteNo = 'SQ-1001';
-    addHistoryEntry(q1, 'Created', 'Sample quotation generated on first load');
-
-    const q2 = makeQuotation({
-      customer: {
-        name: 'Ramesh Traders',
-        mobilePrimary: '9876500001',
-        mobileSecondary: '',
-        email: 'ramesh@example.com',
-        address: 'MG Road',
-        city: 'Ahmedabad',
-        state: 'Gujarat',
-        pincode: '380001',
-        gst: '24ABCDE5678F1Z2'
-      },
-      items: [
-        { id: newItemId(), name: 'FLYASH BRICKS MACHINE 10 CAVITY', category: 'Brick Machine', qty: 1, rate: 1900000 },
-        { id: newItemId(), name: 'PAN MIXER 500 KG', category: 'Component', qty: 1, rate: 500000 }
-      ],
-      status: 'Accepted',
-      date: '2026-07-14',
-      approval: { approvedBy: 'Admin', approvalDate: '2026-07-15', notes: 'Customer confirmed telephonically.' }
-    });
-    q2.quoteNo = 'SQ-1002';
-    addHistoryEntry(q2, 'Created', 'Sample quotation generated on first load');
-    addHistoryEntry(q2, 'Approved', 'Customer confirmed telephonically.');
-
-    const q3 = makeQuotation({
-      customer: {
-        name: 'Priya Nair',
-        mobilePrimary: '9876500002',
-        mobileSecondary: '',
-        email: 'priya@example.com',
-        address: 'Marine Drive',
-        city: 'Kochi',
-        state: 'Kerala',
-        pincode: '682001'
-      },
-      items: [
-        { id: newItemId(), name: 'CONVEYOR BELT 22 Feet', category: 'Component', qty: 2, rate: 350000 },
-        { id: newItemId(), name: 'VIBRATOR TABLE', category: 'Accessory', qty: 1, rate: 90000 }
-      ],
-      status: 'Rejected',
-      date: '2026-07-13',
-      approval: { approvedBy: 'Admin', approvalDate: '2026-07-14', notes: 'Budget mismatch.' }
-    });
-    q3.quoteNo = 'SQ-1003';
-    addHistoryEntry(q3, 'Created', 'Sample quotation generated on first load');
-    addHistoryEntry(q3, 'Rejected', 'Budget mismatch.');
-
-    const q4 = makeQuotation({
-      customer: {
-        name: 'Suresh Patel',
-        mobilePrimary: '9876500003',
-        mobileSecondary: '',
-        email: 'suresh@example.com',
-        address: 'Ring Road',
-        city: 'Rajkot',
-        state: 'Gujarat',
-        pincode: '360001'
-      },
-      items: [
-        { id: newItemId(), name: 'FLYASH BRICKS MACHINE 10 CAVITY', category: 'Brick Machine', qty: 1, rate: 1900000 },
-        { id: newItemId(), name: 'PAN MIXER 500 KG', category: 'Component', qty: 1, rate: 500000 },
-        { id: newItemId(), name: 'CONVEYOR BELT 22 Feet', category: 'Component', qty: 1, rate: 350000 },
-        { id: newItemId(), name: 'PLC PANEL FULLY AI BASED', category: 'Component', qty: 1, rate: 400000 }
-      ],
-      status: 'Pending',
-      date: '2026-07-12'
-    });
-    q4.quoteNo = 'SQ-1004';
-    addHistoryEntry(q4, 'Created', 'Sample quotation generated on first load');
-
-    return [q1, q2, q3, q4];
-  }
-
-  // ============================================================
   // DOM SHORTCUTS
   // ============================================================
   const $ = (s) => document.querySelector(s);
 
   // ============================================================
-  // SIDEBAR / TOPBAR CHROME
+  // SIDEBAR
   // ============================================================
   const sidebar = $('#sidebar');
   const sidebarToggle = $('#sidebarToggle');
   const toggleIcon = $('#toggleIcon');
   const sidebarBackdrop = $('#sidebarBackdrop');
 
-  function isDrawerBreakpoint() { return window.innerWidth < 1024; }
+  function isMobileView() { return window.innerWidth < 1024; }
 
   function setSidebarExpanded(expand) {
-    sidebar?.classList.toggle('expanded', expand);
-    sidebar?.classList.toggle('collapsed', !expand);
-    toggleIcon?.classList.toggle('rotate-180', expand);
-    if (isDrawerBreakpoint()) {
+    if (isMobileView()) {
+      sidebar?.classList.toggle('expanded', expand);
+      sidebar?.classList.toggle('collapsed', !expand);
       sidebarBackdrop?.classList.toggle('visible', expand);
     } else {
+      sidebar?.classList.toggle('expanded', expand);
+      sidebar?.classList.toggle('collapsed', !expand);
       sidebarBackdrop?.classList.remove('visible');
+    }
+    if (toggleIcon) {
+      toggleIcon.style.transform = expand ? 'rotate(180deg)' : 'rotate(0deg)';
     }
   }
 
-  setSidebarExpanded(false);
-  sidebarToggle?.addEventListener('click', () => setSidebarExpanded(!sidebar.classList.contains('expanded')));
+  // Sidebar open by default on desktop
+  if (!isMobileView()) {
+    setSidebarExpanded(true);
+  } else {
+    setSidebarExpanded(false);
+  }
+
+  sidebarToggle?.addEventListener('click', () => {
+    const isExpanded = sidebar?.classList.contains('expanded');
+    setSidebarExpanded(!isExpanded);
+  });
+
   sidebarBackdrop?.addEventListener('click', () => setSidebarExpanded(false));
 
   document.querySelectorAll('.nav-item').forEach(item => {
     item.addEventListener('click', () => {
-      if (isDrawerBreakpoint() && sidebar?.classList.contains('expanded')) setSidebarExpanded(false);
+      if (isMobileView() && sidebar?.classList.contains('expanded')) setSidebarExpanded(false);
     });
   });
 
   window.addEventListener('resize', () => {
-    if (!isDrawerBreakpoint()) sidebarBackdrop?.classList.remove('visible');
+    if (!isMobileView()) {
+      sidebarBackdrop?.classList.remove('visible');
+      if (!sidebar?.classList.contains('expanded') && !sidebar?.classList.contains('collapsed')) {
+        setSidebarExpanded(true);
+      }
+    }
   });
 
   function setupDropdown(btnId, menuId) {
@@ -817,7 +766,6 @@
       menu?.classList.toggle('hidden');
     });
   }
-  setupDropdown('notifBtn', 'notifDropdown');
   setupDropdown('profileBtn', 'profileDropdown');
   document.addEventListener('click', () => {
     document.querySelectorAll('.topbar-dropdown').forEach(m => m.classList.add('hidden'));
@@ -856,11 +804,29 @@
   function getFiltered() {
     const q = $('#search-input')?.value.trim().toLowerCase() || '';
     const status = $('#filter-status')?.value || '';
+    const customerFilter = $('#filter-customer')?.value || '';
+    const dateFilter = $('#filter-date')?.value || '';
+
     let list = quotations.filter(row => {
       const matchesSearch = !q || row.customer.name.toLowerCase().includes(q) || row.quoteNo.toLowerCase().includes(q);
       const matchesStatus = !status || row.status === status;
-      return matchesSearch && matchesStatus;
+      const matchesCustomer = !customerFilter || row.customer.name === customerFilter;
+      let matchesDate = true;
+      if (dateFilter === 'today') {
+        const today = new Date().toISOString().slice(0, 10);
+        matchesDate = row.date === today;
+      } else if (dateFilter === 'week') {
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        matchesDate = new Date(row.date) >= weekAgo;
+      } else if (dateFilter === 'month') {
+        const monthAgo = new Date();
+        monthAgo.setDate(monthAgo.getDate() - 30);
+        matchesDate = new Date(row.date) >= monthAgo;
+      }
+      return matchesSearch && matchesStatus && matchesCustomer && matchesDate;
     });
+
     if (sortKey) {
       list = [...list].sort((a, b) => {
         const map = { quoteNo: a.quoteNo, customer: a.customer.name, amount: a.amount, status: a.status, date: a.date };
@@ -885,6 +851,16 @@
     $('#stat-pending').textContent = quotations.filter(q => q.status === 'Pending').length;
   }
 
+  function populateCustomerFilter() {
+    const select = $('#filter-customer');
+    if (!select) return;
+    const customers = [...new Set(quotations.map(q => q.customer.name).filter(Boolean))].sort();
+    const currentVal = select.value;
+    select.innerHTML = '<option value="">All Customers</option>' +
+      customers.map(c => `<option value="${escapeAttr(c)}">${escapeHtml(c)}</option>`).join('');
+    if (currentVal) select.value = currentVal;
+  }
+
   function buildPaginationButtons(totalPages) {
     const pages = [];
     if (totalPages <= 7) {
@@ -903,6 +879,7 @@
 
   function renderTable() {
     updateStats();
+    populateCustomerFilter();
     const filtered = getFiltered();
     const totalPages = Math.max(1, Math.ceil(filtered.length / rowsPerPage));
     if (currentPage > totalPages) currentPage = totalPages;
@@ -919,17 +896,18 @@
         <td data-label="Amount">${formatINR(row.amount)}</td>
         <td data-label="Status"><span class="badge ${badgeClass(row.status)}">${row.status}</span></td>
         <td data-label="Date">${row.date ? new Date(row.date).toLocaleDateString('en-GB') : '—'}</td>
-        <td data-label="Actions" class="text-right">
-          <div class="action-icons">
-            <button class="icon-action-btn" title="View / Approve" data-action="view" data-quote="${escapeAttr(row.quoteNo)}"><i class="fas fa-eye"></i></button>
-            <button class="icon-action-btn" title="Edit" data-action="edit" data-quote="${escapeAttr(row.quoteNo)}"><i class="fas fa-pen"></i></button>
-            ${row.status === 'Accepted' ? `<button class="icon-action-btn report-btn" title="Generate Report" data-action="report" data-quote="${escapeAttr(row.quoteNo)}"><i class="fas fa-file-circle-check"></i></button>` : ''}
-            <button class="icon-action-btn" title="History" data-action="history" data-quote="${escapeAttr(row.quoteNo)}"><i class="fas fa-clock-rotate-left"></i></button>
-            <button class="icon-action-btn danger" title="Delete" data-action="delete" data-quote="${escapeAttr(row.quoteNo)}"><i class="fas fa-trash"></i></button>
+        <td data-label="Actions" style="text-align:center;">
+          <div class="action-icons" style="justify-content:center;">
+            <button class="icon-action-btn" title="View / Approve" data-action="view" data-quote="${escapeAttr(row.quoteNo)}" data-id="${row.id || ''}"><i class="fas fa-eye"></i></button>
+            <button class="icon-action-btn" title="Edit" data-action="edit" data-quote="${escapeAttr(row.quoteNo)}" data-id="${row.id || ''}"><i class="fas fa-pen"></i></button>
+            ${row.status === 'Accepted' ? `<button class="icon-action-btn report-btn" title="Generate Report" data-action="report" data-quote="${escapeAttr(row.quoteNo)}" data-id="${row.id || ''}"><i class="fas fa-file-circle-check"></i></button>` : ''}
+            <button class="icon-action-btn" title="Duplicate" data-action="duplicate" data-quote="${escapeAttr(row.quoteNo)}" data-id="${row.id || ''}"><i class="fas fa-copy"></i></button>
+            <button class="icon-action-btn" title="History" data-action="history" data-quote="${escapeAttr(row.quoteNo)}" data-id="${row.id || ''}"><i class="fas fa-clock-rotate-left"></i></button>
+            <button class="icon-action-btn danger" title="Delete" data-action="delete" data-quote="${escapeAttr(row.quoteNo)}" data-id="${row.id || ''}"><i class="fas fa-trash"></i></button>
           </div>
         </td>
       </tr>
-    `).join('') || `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No quotations match your filters.</td></tr>`;
+    `).join('') || `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No quotations found. Create a new quotation to get started.</td></tr>`;
 
     const rangeEl = $('#table-range');
     if (rangeEl) {
@@ -962,8 +940,33 @@
         if (btn.dataset.action === 'report') openReportModal(quote);
         if (btn.dataset.action === 'history') openHistoryModal(quote);
         if (btn.dataset.action === 'delete') openDeleteModal(quote);
+        if (btn.dataset.action === 'duplicate') duplicateQuotation(quote);
       });
     });
+  }
+
+  // ============================================================
+  // DUPLICATE QUOTATION
+  // ============================================================
+  async function duplicateQuotation(q) {
+    if (!q.id) {
+      showToast('Cannot duplicate: quotation ID not found.', 'error');
+      return;
+    }
+    try {
+      const result = await duplicateQuotationInBackend(q.id);
+      if (result) {
+        const newQuote = convertBackendToFrontend(result);
+        quotations.unshift(newQuote);
+        renderTable();
+        showToast(`Quotation ${q.quoteNo} duplicated successfully as ${newQuote.quoteNo}`, 'success');
+      } else {
+        showToast('Failed to duplicate quotation.', 'error');
+      }
+    } catch (err) {
+      console.error('Error duplicating:', err);
+      showToast('Error duplicating quotation.', 'error');
+    }
   }
 
   // ============================================================
@@ -985,10 +988,6 @@
     return images;
   }
 
-  // ------------------------------------------------------------
-  // Groups the quotation's items into "Sections" (A, B, C, ...)
-  // by their product category
-  // ------------------------------------------------------------
   function groupItemsBySection(items) {
     const letters = 'ABCDEFGHIJ';
     const order = [];
@@ -1005,10 +1004,6 @@
     }));
   }
 
-  // ------------------------------------------------------------
-  // Plant Overview table — renders only the rows that were
-  // actually filled in, matching the reference PDF layout.
-  // ------------------------------------------------------------
   function buildPlantOverviewMarkup(q) {
     const po = q.plantOverview || {};
     const rows = [
@@ -1021,9 +1016,7 @@
       ['Connected Power', po.connectedPower],
       ['Labour Requirement', po.labourRequirement]
     ].filter(r => (r[1] || '').toString().trim());
-
     if (!rows.length) return '';
-
     return `
       <div class="section-block">
         <div class="section-header">Plant Overview</div>
@@ -1044,20 +1037,17 @@
     sections.forEach(sec => {
       let secTotal = 0;
       let secPower = 0;
-
       const rows = sec.items.map((it, i) => {
         const amount = (Number(it.qty) || 0) * (Number(it.rate) || 0);
         if (!it.inCustomerScope) secTotal += amount;
         const powerHP = Number(it.powerHP) || 0;
         secPower += powerHP * (Number(it.qty) || 0);
-
         const specBits = [
           it.production ? it.production : '',
           it.power ? `Power: ${it.power}` : '',
           it.shedSize ? `Shed: ${it.shedSize}` : '',
           it.labor ? `Labour: ${it.labor}` : ''
         ].filter(Boolean).join(' • ');
-
         return `
           <tr>
             <td>${i + 1}</td>
@@ -1070,7 +1060,6 @@
             <td class="num">${it.inCustomerScope ? 'In Customer Scope' : formatINR(amount)}</td>
           </tr>`;
       }).join('');
-
       sectionsHtml += `
         <div class="section-block">
           <div class="section-header">Section: ${sec.code} <span>${escapeHtml(sec.title)}</span></div>
@@ -1254,11 +1243,7 @@
   }
 
   // ============================================================
-  // GENERATE REPORT — GST-style report for APPROVED (Accepted)
-  // quotations only. Layout inspired by the GSTR2 report
-  // reference: centered company header, underlined report title,
-  // bordered metadata rows, a bordered data table with a
-  // highlighted "Totals" row, followed by an items summary table.
+  // GST REPORT MARKUP
   // ============================================================
   function buildGstReportMarkup(q) {
     const gb = q.gstBreakup || {
@@ -1373,9 +1358,6 @@
 
   // ============================================================
   // HINDI TERMS RASTERIZATION
-  // (fix: robust font loading + fallback font stack + correct
-  //  CSS targeting so the rasterized text is crisp both on
-  //  screen and in the exported PDF)
   // ============================================================
   const DEVANAGARI_FONT_STACK = "'Noto Sans Devanagari', 'Nirmala UI', 'Mangal', 'Poppins', sans-serif";
 
@@ -1438,9 +1420,6 @@
     return canvas;
   }
 
-  // Loads the Devanagari webfont (both weights actually used) and
-  // resolves even if the network request fails, so PDF export never
-  // hangs — it just falls back to the OS's own Devanagari font.
   async function ensureDevanagariFontLoaded() {
     const loaders = [
       `400 20px 'Noto Sans Devanagari'`,
@@ -1450,52 +1429,44 @@
     try {
       await Promise.race([
         Promise.all(loaders.map(f => document.fonts.load(f).catch(() => null))),
-        new Promise(resolve => setTimeout(resolve, 2500)) // don't block export forever
+        new Promise(resolve => setTimeout(resolve, 2500))
       ]);
       if (document.fonts.ready) {
         await Promise.race([document.fonts.ready, new Promise(resolve => setTimeout(resolve, 2500))]);
       }
-    } catch (_) { /* font API unavailable — canvas will still draw with a fallback font */ }
+    } catch (_) {}
   }
 
   async function prepareHindiTextForExport(container) {
     await ensureDevanagariFontLoaded();
-
     const blocks = container.querySelectorAll('.hindi-col .terms-text');
     const restoreFns = [];
-
     blocks.forEach(block => {
       const bulletLines = Array.from(block.children)
         .map(div => div.textContent.replace(/^•\s*/, '').trim())
         .filter(Boolean);
       if (!bulletLines.length) return;
-
       const cssWidth = block.clientWidth || block.parentElement?.clientWidth || 260;
       const canvas = renderHindiTermsCanvas(bulletLines, cssWidth);
-
       const originalHTML = block.innerHTML;
       block.classList.add('hindi-canvas-block');
       block.innerHTML = '';
       block.appendChild(canvas);
-
       restoreFns.push(() => {
         block.classList.remove('hindi-canvas-block');
         block.innerHTML = originalHTML;
       });
     });
-
     return () => restoreFns.forEach(fn => fn());
   }
 
   async function downloadInvoicePDF(elementId, filename) {
     const element = document.getElementById(elementId);
     if (!element || typeof html2pdf === 'undefined') {
-      showToast('PDF library failed to load. Check your internet connection.', 'error');
+      showToast('PDF library failed to load.', 'error');
       return;
     }
-
     const restoreHindiText = await prepareHindiTextForExport(element);
-
     const opt = {
       margin: 8,
       filename: filename,
@@ -1503,7 +1474,6 @@
       html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
-
     try {
       await html2pdf().set(opt).from(element).save();
     } finally {
@@ -1512,14 +1482,13 @@
   }
 
   // ============================================================
-  // VIEW MODAL (+ Approval section)
+  // VIEW MODAL
   // ============================================================
   let viewingQuoteNo = null;
 
   function renderApprovalBox(q) {
     const box = $('#approval-box');
     if (!box) return;
-
     const isDecided = q.status === 'Accepted' || q.status === 'Rejected';
     const metaHtml = isDecided ? `
       <div class="approval-meta">
@@ -1545,35 +1514,38 @@
       </div>
     `;
 
-    $('#btn-approve-quote')?.addEventListener('click', () => decideQuotation(q.quoteNo, 'Accepted'));
-    $('#btn-reject-quote')?.addEventListener('click', () => decideQuotation(q.quoteNo, 'Rejected'));
-    $('#btn-reset-pending')?.addEventListener('click', () => decideQuotation(q.quoteNo, 'Pending'));
+    $('#btn-approve-quote')?.addEventListener('click', () => decideQuotation(q, 'Accepted'));
+    $('#btn-reject-quote')?.addEventListener('click', () => decideQuotation(q, 'Rejected'));
+    $('#btn-reset-pending')?.addEventListener('click', () => decideQuotation(q, 'Pending'));
   }
 
-  function decideQuotation(quoteNo, newStatus) {
-    const q = quotations.find(x => x.quoteNo === quoteNo);
-    if (!q) return;
+  async function decideQuotation(q, newStatus) {
+    if (!q || !q.id) {
+      showToast('Quotation ID not found.', 'error');
+      return;
+    }
     const notes = $('#approval-notes-input')?.value.trim() || '';
 
-    q.status = newStatus;
-    if (newStatus === 'Pending') {
-      q.approval = { approvedBy: '', approvalDate: '', notes: '' };
-      addHistoryEntry(q, 'Reset to Pending', notes);
-    } else {
-      q.approval = {
-        approvedBy: 'Admin',
-        approvalDate: new Date().toISOString().slice(0, 10),
-        notes: notes
-      };
-      addHistoryEntry(q, newStatus === 'Accepted' ? 'Approved' : 'Rejected', notes);
+    try {
+      const result = await updateStatusInBackend(q.id, newStatus, notes);
+      if (result) {
+        const updated = convertBackendToFrontend(result);
+        const index = quotations.findIndex(x => x.id === q.id);
+        if (index !== -1) {
+          quotations[index] = updated;
+        }
+        renderTable();
+        renderApprovalBox(updated);
+        const preview = $('#view-invoice-preview');
+        if (preview) preview.innerHTML = buildInvoiceMarkup(updated);
+        showToast(`${q.quoteNo} marked as ${newStatus}`, newStatus === 'Rejected' ? 'error' : 'success');
+      } else {
+        showToast('Failed to update status.', 'error');
+      }
+    } catch (err) {
+      console.error('Error updating status:', err);
+      showToast('Error updating status.', 'error');
     }
-
-    persistQuotations();
-    renderTable();
-    renderApprovalBox(q);
-    const preview = $('#view-invoice-preview');
-    if (preview) preview.innerHTML = buildInvoiceMarkup(q);
-    showToast(`${q.quoteNo} marked as ${newStatus}`, newStatus === 'Rejected' ? 'error' : 'success');
   }
 
   function openViewModal(q) {
@@ -1590,9 +1562,7 @@
   });
 
   // ============================================================
-  // GENERATE REPORT MODAL — only reachable via the report-btn
-  // action icon, which renderTable() only shows for quotations
-  // whose status is "Accepted".
+  // REPORT MODAL
   // ============================================================
   let reportingQuoteNo = null;
 
@@ -1615,6 +1585,51 @@
   });
 
   // ============================================================
+  // BULK GST REPORT
+  // ============================================================
+  function openBulkReportModal() {
+    const acceptedQuotes = quotations.filter(q => q.status === 'Accepted');
+    if (!acceptedQuotes.length) {
+      showToast('No Accepted quotations found to generate report.', 'error');
+      return;
+    }
+
+    const preview = $('#bulk-report-preview');
+    if (!preview) return;
+
+    let combinedHtml = `
+      <div class="report-header">
+        <div class="report-company-name">${escapeHtml(COMPANY.name)}</div>
+        <div class="report-company-line">${escapeHtml(COMPANY.address)}</div>
+        <div class="report-company-line">Phone no.: ${escapeHtml(COMPANY.phone)} Email: ${escapeHtml(COMPANY.email)}</div>
+        <div class="report-company-line">GSTIN: ${escapeHtml(COMPANY.gstin)}, State: ${escapeHtml(COMPANY.state)}</div>
+      </div>
+      <div class="report-title">Bulk GST Report — All Accepted Quotations</div>
+      <div style="font-size:11px;text-align:center;margin-bottom:12px;color:#555;">
+        Total: ${acceptedQuotes.length} quotations | Total Value: ${formatINR(acceptedQuotes.reduce((s, q) => s + q.total, 0))}
+      </div>
+    `;
+
+    acceptedQuotes.forEach((q, idx) => {
+      combinedHtml += `
+        <div style="page-break-after:always;margin-top:20px;border-top:2px dashed #ccc;padding-top:16px;">
+          <div style="font-size:12px;font-weight:700;color:var(--accent-dark);margin-bottom:6px;">${idx + 1}. ${escapeHtml(q.quoteNo)} — ${escapeHtml(q.customer.name || '')}</div>
+          ${buildGstReportMarkup(q)}
+        </div>
+      `;
+    });
+
+    preview.innerHTML = combinedHtml;
+    openModal('modal-bulk-report');
+  }
+
+  $('#btn-bulk-report-download-pdf')?.addEventListener('click', () => {
+    downloadInvoicePDF('bulk-report-preview', 'Bulk-GST-Report.pdf');
+  });
+
+  $('#btn-bulk-gst-report')?.addEventListener('click', openBulkReportModal);
+
+  // ============================================================
   // HISTORY MODAL
   // ============================================================
   function openHistoryModal(q) {
@@ -1622,7 +1637,6 @@
     if (titleEl) titleEl.textContent = q.quoteNo;
     const list = $('#history-list');
     if (!list) return;
-
     const entries = Array.isArray(q.history) ? q.history : [];
     if (!entries.length) {
       list.innerHTML = `<div class="history-empty">No history recorded yet for ${escapeHtml(q.quoteNo)}.</div>`;
@@ -1644,12 +1658,21 @@
     if (titleEl) titleEl.textContent = 'All Quotations';
     const list = $('#history-list');
     if (!list) return;
+    // Build history from all quotations
+    const allHistory = [];
+    quotations.forEach(q => {
+      if (Array.isArray(q.history)) {
+        q.history.forEach(e => {
+          allHistory.push({ quoteNo: q.quoteNo, customer: q.customer.name || '', ...e });
+        });
+      }
+    });
+    allHistory.sort((a, b) => new Date(b.ts) - new Date(a.ts));
 
-    const log = getGlobalHistoryLog();
-    if (!log.length) {
+    if (!allHistory.length) {
       list.innerHTML = `<div class="history-empty">No activity recorded yet.</div>`;
     } else {
-      list.innerHTML = log.map(e => `
+      list.innerHTML = allHistory.map(e => `
         <div class="history-item">
           <div class="hi-main">
             <div class="hi-title">${escapeHtml(e.quoteNo || '—')} — ${escapeHtml(e.action)}</div>
@@ -1665,10 +1688,10 @@
   // ============================================================
   // EDIT MODAL
   // ============================================================
-  let editingQuoteNo = null;
+  let editingQuote = null;
 
   function openEditModal(q) {
-    editingQuoteNo = q.quoteNo;
+    editingQuote = q;
     $('#edit-quoteno').textContent = q.quoteNo;
     $('#edit-customerName').value = q.customer.name || '';
     $('#edit-mobile').value = q.customer.mobilePrimary || '';
@@ -1684,10 +1707,9 @@
   }
 
   function updateEditSummary() {
-    const q = quotations.find(x => x.quoteNo === editingQuoteNo);
-    if (!q) return;
+    if (!editingQuote) return;
     const discountValue = parseFloat($('#edit-discountValue')?.value) || 0;
-    const totals = computeTotals(q.itemsTotal, q.costs, q.gstPercent, q.discountType, discountValue, q.customer.state);
+    const totals = computeTotals(editingQuote.itemsTotal, editingQuote.costs, editingQuote.gstPercent, editingQuote.discountType, discountValue, editingQuote.customer.state);
     const el = $('#edit-summary');
     if (el) {
       const taxLine = totals.isInterState
@@ -1703,9 +1725,8 @@
   }
   document.getElementById('edit-discountValue')?.addEventListener('input', updateEditSummary);
 
-  $('#btn-save-edit')?.addEventListener('click', () => {
-    const q = quotations.find(x => x.quoteNo === editingQuoteNo);
-    if (!q) return;
+  $('#btn-save-edit')?.addEventListener('click', async () => {
+    if (!editingQuote) return;
 
     const name = $('#edit-customerName')?.value.trim() || '';
     const mobile = $('#edit-mobile')?.value.trim() || '';
@@ -1714,65 +1735,77 @@
 
     if (!name) { $('#err-edit-customerName').textContent = 'Required'; valid = false; }
     else { $('#err-edit-customerName').textContent = ''; }
-
     if (!/^[6-9]\d{9}$/.test(mobile)) { $('#err-edit-mobile').textContent = 'Enter valid 10-digit mobile'; valid = false; }
     else { $('#err-edit-mobile').textContent = ''; }
-
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { $('#err-edit-email').textContent = 'Enter valid email'; valid = false; }
     else { $('#err-edit-email').textContent = ''; }
 
     if (!valid) { showToast('Please fix the highlighted fields.', 'error'); return; }
 
-    const changeNotes = [];
-    if (q.customer.name !== name) changeNotes.push(`name → ${name}`);
-    if (q.customer.mobilePrimary !== mobile) changeNotes.push(`mobile → ${mobile}`);
-    if (q.customer.email !== email) changeNotes.push(`email → ${email}`);
     const newDiscount = parseFloat($('#edit-discountValue')?.value) || 0;
-    if (q.discountValue !== newDiscount) changeNotes.push(`discount → ${newDiscount}`);
     const newStatus = $('#edit-status')?.value || 'Pending';
-    const statusChanged = q.status !== newStatus;
 
-    q.customer.name = name;
-    q.customer.mobilePrimary = mobile;
-    q.customer.email = email;
-    q.discountValue = newDiscount;
-    q.status = newStatus;
-    if (statusChanged && newStatus !== 'Pending') {
-      q.approval = { approvedBy: 'Admin', approvalDate: new Date().toISOString().slice(0, 10), notes: q.approval?.notes || '' };
-    } else if (statusChanged && newStatus === 'Pending') {
-      q.approval = { approvedBy: '', approvalDate: '', notes: '' };
+    // Update the quotation object
+    editingQuote.customer.name = name;
+    editingQuote.customer.mobilePrimary = mobile;
+    editingQuote.customer.email = email;
+    editingQuote.discountValue = newDiscount;
+    editingQuote.status = newStatus;
+
+    const totals = computeTotals(editingQuote.itemsTotal, editingQuote.costs, editingQuote.gstPercent, editingQuote.discountType, editingQuote.discountValue, editingQuote.customer.state);
+    Object.assign(editingQuote, totals);
+    editingQuote.amount = Math.round(totals.total);
+
+    try {
+      const result = await updateQuotationInBackend(editingQuote.id, editingQuote);
+      if (result) {
+        const updated = convertBackendToFrontend(result);
+        const index = quotations.findIndex(x => x.id === editingQuote.id);
+        if (index !== -1) {
+          quotations[index] = updated;
+        }
+        closeModal('modal-edit');
+        renderTable();
+        showToast(`${editingQuote.quoteNo} updated successfully`, 'success');
+      } else {
+        showToast('Failed to update quotation.', 'error');
+      }
+    } catch (err) {
+      console.error('Error updating:', err);
+      showToast('Error updating quotation.', 'error');
     }
-
-    const totals = computeTotals(q.itemsTotal, q.costs, q.gstPercent, q.discountType, q.discountValue, q.customer.state);
-    Object.assign(q, totals);
-    q.amount = Math.round(totals.total);
-
-    if (changeNotes.length) addHistoryEntry(q, 'Edited', changeNotes.join(', '));
-    if (statusChanged) addHistoryEntry(q, `Status changed to ${newStatus}`, '');
-
-    persistQuotations();
-    closeModal('modal-edit');
-    renderTable();
-    showToast(`${q.quoteNo} updated successfully`, 'success');
   });
 
   // ============================================================
   // DELETE MODAL
   // ============================================================
-  let deletingQuoteNo = null;
+  let deletingQuote = null;
 
   function openDeleteModal(q) {
-    deletingQuoteNo = q.quoteNo;
+    deletingQuote = q;
     $('#delete-quoteno').textContent = q.quoteNo;
     openModal('modal-delete');
   }
 
-  $('#btn-confirm-delete')?.addEventListener('click', () => {
-    quotations = quotations.filter(q => q.quoteNo !== deletingQuoteNo);
-    persistQuotations();
-    closeModal('modal-delete');
-    showToast(`${deletingQuoteNo} deleted`, 'success');
-    renderTable();
+  $('#btn-confirm-delete')?.addEventListener('click', async () => {
+    if (!deletingQuote || !deletingQuote.id) {
+      showToast('Cannot delete: quotation ID not found.', 'error');
+      return;
+    }
+    try {
+      const success = await deleteQuotationInBackend(deletingQuote.id);
+      if (success) {
+        quotations = quotations.filter(q => q.id !== deletingQuote.id);
+        closeModal('modal-delete');
+        showToast(`${deletingQuote.quoteNo} deleted`, 'success');
+        renderTable();
+      } else {
+        showToast('Failed to delete quotation.', 'error');
+      }
+    } catch (err) {
+      console.error('Error deleting:', err);
+      showToast('Error deleting quotation.', 'error');
+    }
   });
 
   // ============================================================
@@ -1786,19 +1819,15 @@
     const select = $('#product-catalog-select');
     if (!select) return;
     const catalog = getProductCatalog();
-    window.__quotationProductCatalog = catalog;
-
     if (!catalog.length) {
       select.innerHTML = `<option value="">No products found — add some in Product Management</option>`;
       return;
     }
-
     const byCategory = {};
     catalog.forEach(p => {
       const cat = p.category || 'Other';
       (byCategory[cat] = byCategory[cat] || []).push(p);
     });
-
     select.innerHTML = `<option value="">Select a product to add…</option>` +
       Object.keys(byCategory).sort().map(cat => `
         <optgroup label="${escapeAttr(cat)}">
@@ -1813,13 +1842,13 @@
     const rateInput = $('#product-picker-rate');
     if (!select || !select.value) { showToast('Select a product first.', 'error'); return; }
 
-    const catalog = window.__quotationProductCatalog || [];
+    const catalog = getProductCatalog();
     const p = findCatalogProduct(catalog, select.value);
     if (!p) return;
 
     const qty = parseFloat(qtyInput?.value) || 1;
-    const rate = parseFloat(rateInput?.value) || Number(p.pricing?.sellingPrice ?? p.price) || 0;
-    const inCustomerScope = !!(p.pricing?.inCustomerScope ?? p.inCustomerScope);
+    const rate = parseFloat(rateInput?.value) || Number(p.price) || 0;
+    const inCustomerScope = p.inCustomerScope || false;
 
     wizardItems.push({
       id: newItemId(),
@@ -1831,12 +1860,12 @@
       sectionCode: p.sectionCode || '',
       hsnCode: p.hsnCode || '',
       gstRate: p.gstRate ?? 18,
-      powerHP: p.machineInfo?.powerHP ?? p.powerHP ?? null,
-      powerKW: p.machineInfo?.powerKW ?? p.powerKW ?? null,
+      powerHP: p.powerHP || 0,
+      powerKW: p.powerKW || 0,
       inCustomerScope: inCustomerScope,
       imageUrl: p.imageUrl || '',
-      shedSize: p.machineInfo?.shedRequired || p.shedSize || '',
-      labor: p.machineInfo?.labourRequired || p.labor || 0,
+      shedSize: p.shedSize || '',
+      labor: p.labor || 0,
       production: p.production || '',
       power: p.power || ''
     });
@@ -1845,17 +1874,10 @@
     if (select) select.value = '';
     if (qtyInput) qtyInput.value = 1;
     if (rateInput) rateInput.value = 0;
-
-    if (inCustomerScope) {
-      showToast(`${p.name} added — price is In Customer Scope`, 'info');
-    } else if (p.category === 'Brick Machine' && (p.shedSize || p.labor)) {
-      showToast(`${p.name} added — needs ${p.shedSize || 'N/A'} shed & ~${p.labor || 'N/A'} laborers`, 'info');
-    } else {
-      showToast(`${p.name} added to quotation`, 'success');
-    }
+    showToast(`${p.name} added to quotation`, 'success');
   });
 
- $('#chip-custom')?.addEventListener('click', () => {
+  $('#chip-custom')?.addEventListener('click', () => {
     wizardItems.push({ id: newItemId(), name: '', qty: 1, rate: 0, isCustom: true });
     renderItemsTable();
   });
@@ -1863,7 +1885,6 @@
   function renderItemsTable() {
     const tbody = $('#items-tbody');
     if (!tbody) return;
-
     if (!wizardItems.length) {
       tbody.innerHTML = `<tr class="items-empty-row"><td colspan="6">No products added yet — pick one from the dropdown above to start building this quotation.</td></tr>`;
     } else {
@@ -1881,16 +1902,11 @@
       `).join('');
     }
 
-   tbody.querySelectorAll('tr[data-id]').forEach(row => {
+    tbody.querySelectorAll('tr[data-id]').forEach(row => {
       const id = row.dataset.id;
       const item = wizardItems.find(i => i.id === id);
       if (!item) return;
       row.querySelector('.item-name')?.addEventListener('input', e => { item.name = e.target.value; });
-      row.querySelector('.item-name')?.addEventListener('blur', () => {
-        if (item.isCustom && !item.productId && !item._synced) {
-          syncCustomItemToProductCatalog(item);
-        }
-      });
       row.querySelector('.item-qty')?.addEventListener('input', e => { item.qty = parseFloat(e.target.value) || 0; updateItemAmount(item); });
       row.querySelector('.item-rate')?.addEventListener('input', e => { item.rate = parseFloat(e.target.value) || 0; updateItemAmount(item); });
       row.querySelector('.item-remove')?.addEventListener('click', () => {
@@ -1906,13 +1922,10 @@
   function updateSiteRequirementsBox() {
     const box = $('#site-requirements-box');
     if (!box) return;
-
     const machineItems = wizardItems.filter(it => it.category === 'Brick Machine' && (it.shedSize || it.labor || it.production));
     if (!machineItems.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
-
     const totalLabor = machineItems.reduce((s, it) => s + (Number(it.labor) || 0), 0);
     const shedList = [...new Set(machineItems.map(it => it.shedSize).filter(Boolean))];
-
     box.classList.remove('hidden');
     box.innerHTML = `
       <i class="fas fa-warehouse"></i>
@@ -1942,51 +1955,34 @@
   }
 
   function resetWizardForm() {
-   // Check if we have prefilled customer data to preserve
-  const hasPrefilledData = window._prefilledCustomer !== null;
-
-  ['f-customerName', 'f-mobilePrimary', 'f-mobileSecondary', 'f-email', 'f-address', 'f-city', 'f-state', 'f-pincode', 'f-gst'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) {
-      // Don't clear if we have prefilled data
-      if (!hasPrefilledData) {
-        el.value = '';
-      }
-    }
-  });
-
-    // Plant Overview fields — always reset (per-quotation, not per-customer)
+    const hasPrefilledData = window._prefilledCustomer !== null;
+    ['f-customerName', 'f-mobilePrimary', 'f-mobileSecondary', 'f-email', 'f-address', 'f-city', 'f-state', 'f-pincode', 'f-gst'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el && !hasPrefilledData) el.value = '';
+    });
     ['f-plantModel', 'f-plantProduction', 'f-plantBrickSize', 'f-plantPalletSize',
      'f-plantShedArea', 'f-plantLand', 'f-plantPower', 'f-plantLabour'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = '';
     });
-
     $('#f-deliveryTimeline').value = '45 days from advance payment';
-
     $('#f-accountName').value = COMPANY.bank.accountName;
     $('#f-bankName').value = COMPANY.bank.bankName;
     $('#f-accountNumber').value = COMPANY.bank.accountNumber;
     $('#f-ifscCode').value = COMPANY.bank.ifscCode;
     $('#f-branch').value = COMPANY.bank.branch;
-
     $('#f-paymentType').value = 'full';
     togglePaymentFields();
-
     const date = new Date();
     date.setDate(date.getDate() + 30);
     const validUntilEl = $('#f-validUntil');
     if (validUntilEl) validUntilEl.value = date.toISOString().slice(0, 10);
-
     $('#edit-terms').value = '';
-
     wizardItems = [];
     renderItemsTable();
     populateProductPicker();
-
     $('#product-picker-qty').value = 1;
     $('#product-picker-rate').value = 0;
-
     ['cost-transport', 'cost-loading', 'cost-other'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = 0;
@@ -1996,83 +1992,72 @@
     $('#f-gstPercent').value = 18;
     $('#f-discountType').value = 'percent';
     $('#f-discountValue').value = 0;
-
     document.querySelectorAll('.field-error').forEach(e => e.textContent = '');
     document.querySelectorAll('.invalid').forEach(e => e.classList.remove('invalid'));
     $('#share-grid')?.classList.add('hidden');
     $('#btn-generate')?.classList.remove('hidden');
     if ($('#btn-generate')) $('#btn-generate').disabled = false;
+    if (!hasPrefilledData) selectedCustomerId = null;
   }
 
-function openWizard() {
-  draftQuoteNo = null;
-  resetWizardForm();
+  function fillCustomerForm(customerData, skipToast) {
+    if (!customerData) return;
+    const nameField = document.getElementById('f-customerName');
+    const mobileField = document.getElementById('f-mobilePrimary');
+    const mobileSecondaryField = document.getElementById('f-mobileSecondary');
+    const emailField = document.getElementById('f-email');
+    const addressField = document.getElementById('f-address');
+    const cityField = document.getElementById('f-city');
+    const stateField = document.getElementById('f-state');
+    const pincodeField = document.getElementById('f-pincode');
+    const gstField = document.getElementById('f-gst');
 
-  // If we have prefilled customer data, fill the form
-  if (window._prefilledCustomer) {
-    fillCustomerForm(window._prefilledCustomer);
+    if (nameField) nameField.value = customerData.name || '';
+    if (mobileField) mobileField.value = customerData.mobilePrimary || '';
+    if (mobileSecondaryField) mobileSecondaryField.value = customerData.mobileSecondary || '';
+    if (emailField) emailField.value = customerData.email || '';
+    if (addressField) addressField.value = customerData.address || '';
+    if (cityField) cityField.value = customerData.city || '';
+    if (stateField) stateField.value = customerData.state || '';
+    if (pincodeField) pincodeField.value = customerData.pincode || '';
+    if (gstField) gstField.value = customerData.gst || '';
+
+    if (stateField) {
+      const event = new Event('input');
+      stateField.dispatchEvent(event);
+    }
+
+    const editNameField = document.getElementById('edit-customerName');
+    const editMobileField = document.getElementById('edit-mobile');
+    const editEmailField = document.getElementById('edit-email');
+    if (editNameField) editNameField.value = customerData.name || '';
+    if (editMobileField) editMobileField.value = customerData.mobilePrimary || '';
+    if (editEmailField) editEmailField.value = customerData.email || '';
+
+    if (!skipToast) {
+      showToast(`Customer ${customerData.name} details loaded automatically`, 'success');
+      sessionStorage.removeItem('quotationCustomerData');
+      sessionStorage.removeItem('quotationCustomerId');
+      window._prefilledCustomer = null;
+    }
   }
 
-  // Refresh product catalog from backend
-  fetchProductsFromBackend();
-  currentStep = 1;
-  goToStep(1);
-  openModal('modal-wizard');
-}
-
-/* ============================================================
-   Fill Customer Form with Data from Customer Management
-   ============================================================ */
-function fillCustomerForm(customerData) {
-  if (!customerData) return;
-
-  console.log('Filling customer form with:', customerData);
-
-  // Step 1 fields - Customer Details
-  const nameField = document.getElementById('f-customerName');
-  const mobileField = document.getElementById('f-mobilePrimary');
-  const mobileSecondaryField = document.getElementById('f-mobileSecondary');
-  const emailField = document.getElementById('f-email');
-  const addressField = document.getElementById('f-address');
-  const cityField = document.getElementById('f-city');
-  const stateField = document.getElementById('f-state');
-  const pincodeField = document.getElementById('f-pincode');
-  const gstField = document.getElementById('f-gst');
-
-  if (nameField) nameField.value = customerData.name || '';
-  if (mobileField) mobileField.value = customerData.mobilePrimary || '';
-  if (mobileSecondaryField) mobileSecondaryField.value = customerData.mobileSecondary || '';
-  if (emailField) emailField.value = customerData.email || '';
-  if (addressField) addressField.value = customerData.address || '';
-  if (cityField) cityField.value = customerData.city || '';
-  if (stateField) stateField.value = customerData.state || '';
-  if (pincodeField) pincodeField.value = customerData.pincode || '';
-  if (gstField) gstField.value = customerData.gst || '';
-
-  // Update state field for GST calculation
-  if (stateField) {
-    // Trigger change event to update GST calculations
-    const event = new Event('input');
-    stateField.dispatchEvent(event);
+  async function openWizard() {
+    draftQuoteNo = null;
+    resetWizardForm();
+    if (window._prefilledCustomer) {
+      fillCustomerForm(window._prefilledCustomer);
+      selectedCustomerId = window._prefilledCustomer.id || null;
+    }
+    currentStep = 1;
+    goToStep(1);
+    openModal('modal-wizard');
+    // Always pull the freshest product catalog from the backend before the
+    // picker is used (no stale/cached/dummy data).
+    await fetchProductsFromBackend();
+    populateProductPicker();
   }
 
-  // Also update the edit modal fields if they exist
-  const editNameField = document.getElementById('edit-customerName');
-  const editMobileField = document.getElementById('edit-mobile');
-  const editEmailField = document.getElementById('edit-email');
-
-  if (editNameField) editNameField.value = customerData.name || '';
-  if (editMobileField) editMobileField.value = customerData.mobilePrimary || '';
-  if (editEmailField) editEmailField.value = customerData.email || '';
-
-  // Show toast notification
-  showToast(`Customer ${customerData.name} details loaded automatically`, 'success');
-
-  // Clear session storage after loading
-  sessionStorage.removeItem('quotationCustomerData');
-  sessionStorage.removeItem('quotationCustomerId');
-  window._prefilledCustomer = null;
-}
   $('#btn-new-quotation')?.addEventListener('click', openWizard);
 
   function goToStep(step) {
@@ -2086,7 +2071,6 @@ function fillCustomerForm(customerData) {
     $('#btn-prev').disabled = step === 1;
     $('#btn-next').classList.toggle('hidden', step === totalWizardSteps);
     $('#btn-generate').classList.toggle('hidden', step !== totalWizardSteps);
-
     if (step === 2) { populateProductPicker(); updateSiteRequirementsBox(); }
     if (step === 3) computeCosts();
     if (step === 4) computeGstSummary();
@@ -2123,10 +2107,8 @@ function fillCustomerForm(customerData) {
     let ok = true;
     const name = $('#f-customerName')?.value.trim() || '';
     ok = markError('f-customerName', 'err-customerName', name ? '' : 'Customer name is required') && ok;
-
     const mobilePrimary = $('#f-mobilePrimary')?.value.trim() || '';
     ok = markError('f-mobilePrimary', 'err-mobilePrimary', /^[6-9]\d{9}$/.test(mobilePrimary) ? '' : 'Enter a valid 10-digit mobile number') && ok;
-
     const mobileSecondary = $('#f-mobileSecondary')?.value.trim() || '';
     if (mobileSecondary) {
       ok = markError('f-mobileSecondary', 'err-mobileSecondary', /^[6-9]\d{9}$/.test(mobileSecondary) ? '' : 'Enter a valid 10-digit mobile number') && ok;
@@ -2134,7 +2116,6 @@ function fillCustomerForm(customerData) {
       document.getElementById('err-mobileSecondary').textContent = '';
       document.getElementById('f-mobileSecondary')?.classList.remove('invalid');
     }
-
     const email = $('#f-email')?.value.trim() || '';
     if (email) {
       ok = markError('f-email', 'err-email', /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? '' : 'Enter a valid email address') && ok;
@@ -2142,16 +2123,12 @@ function fillCustomerForm(customerData) {
       document.getElementById('err-email').textContent = '';
       document.getElementById('f-email')?.classList.remove('invalid');
     }
-
     const address = $('#f-address')?.value.trim() || '';
     ok = markError('f-address', 'err-address', address ? '' : 'Installation address is required') && ok;
-
     const state = $('#f-state')?.value.trim() || '';
     ok = markError('f-state', 'err-state', state ? '' : 'State is required') && ok;
-
     const pincode = $('#f-pincode')?.value.trim() || '';
     ok = markError('f-pincode', 'err-pincode', /^\d{6}$/.test(pincode) ? '' : 'Enter a valid 6-digit pincode') && ok;
-
     const gst = $('#f-gst')?.value.trim().toUpperCase() || '';
     if (gst) {
       ok = markError('f-gst', 'err-gst', GSTIN_REGEX.test(gst) ? '' : 'Enter a valid GSTIN (e.g. 09AMXPS4725R1ZO)') && ok;
@@ -2159,7 +2136,6 @@ function fillCustomerForm(customerData) {
       document.getElementById('err-gst').textContent = '';
       document.getElementById('f-gst')?.classList.remove('invalid');
     }
-
     if (!ok) showToast('Please fix the highlighted fields.', 'error');
     return ok;
   }
@@ -2179,7 +2155,6 @@ function fillCustomerForm(customerData) {
         errEl.textContent = '';
       }
     }
-
     const deliveryTimeline = $('#f-deliveryTimeline')?.value.trim() || '';
     if (!deliveryTimeline) {
       $('#err-deliveryTimeline').textContent = 'Delivery timeline is required.';
@@ -2187,7 +2162,6 @@ function fillCustomerForm(customerData) {
     } else {
       $('#err-deliveryTimeline').textContent = '';
     }
-
     if (!ok) showToast('Please fix the highlighted fields.', 'error');
     return ok;
   }
@@ -2197,7 +2171,6 @@ function fillCustomerForm(customerData) {
     const loading = parseFloat($('#cost-loading')?.value) || 0;
     const otherLabel = $('#cost-other-label')?.value || 'Other Charges';
     const other = parseFloat($('#cost-other')?.value) || 0;
-
     return { transport, loading, otherLabel, other };
   }
 
@@ -2282,9 +2255,6 @@ function fillCustomerForm(customerData) {
     document.getElementById(id)?.addEventListener('input', validatePaymentTerms);
   });
 
-  // ============================================================
-  // collectWizardRecord()
-  // ============================================================
   function collectWizardRecord(quoteNo) {
     const costs = getCostTotalsFromForm();
     const itTotal = itemsSubtotal(wizardItems);
@@ -2314,13 +2284,8 @@ function fillCustomerForm(customerData) {
     }
 
     const items = wizardItems.map(it => ({ ...it }));
-
     const terms = buildTermsText(items);
     const productImages = collectProductImages(items);
-
-    const totalPowerHP = items.reduce((s, it) => s + (Number(it.powerHP) || 0) * (Number(it.qty) || 0), 0);
-    const totalPowerKW = items.reduce((s, it) => s + (Number(it.powerKW) || 0) * (Number(it.qty) || 0), 0);
-
     const plantOverview = {
       model: $('#f-plantModel')?.value.trim() || '',
       productionCapacity: $('#f-plantProduction')?.value.trim() || '',
@@ -2338,6 +2303,7 @@ function fillCustomerForm(customerData) {
       date: new Date().toISOString().slice(0, 10),
       status: 'Pending',
       customer: {
+        id: selectedCustomerId || null,
         name: $('#f-customerName')?.value.trim() || '',
         mobilePrimary: $('#f-mobilePrimary')?.value.trim() || '',
         mobileSecondary: $('#f-mobileSecondary')?.value.trim() || '',
@@ -2352,8 +2318,6 @@ function fillCustomerForm(customerData) {
       deliveryTimeline: $('#f-deliveryTimeline')?.value.trim() || '',
       items: items,
       itemsTotal: itTotal,
-      totalPowerHP: totalPowerHP,
-      totalPowerKW: Math.round(totalPowerKW * 100) / 100,
       costs: costs,
       gstPercent: gstPercent,
       discountType: discountType,
@@ -2379,7 +2343,7 @@ function fillCustomerForm(customerData) {
   }
 
   function renderWizardPreview() {
-    draftQuoteNo = draftQuoteNo || nextQuoteNo();
+    draftQuoteNo = draftQuoteNo || 'SQ-' + Date.now().toString().slice(-6);
     const record = collectWizardRecord(draftQuoteNo);
     const preview = $('#invoice-preview');
     if (preview) preview.innerHTML = buildInvoiceMarkup(record);
@@ -2389,84 +2353,48 @@ function fillCustomerForm(customerData) {
     const btn = $('#btn-generate');
     if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...'; }
 
-    const record = collectWizardRecord(draftQuoteNo || nextQuoteNo());
+    const record = collectWizardRecord(draftQuoteNo || 'SQ-' + Date.now().toString().slice(-6));
+    const savedQuotation = await createQuotationInBackend(record);
 
-    // Save to backend
-    const savedQuotation = await saveQuotationToBackend(record);
-
-    let finalQuotation;
     if (savedQuotation) {
-      // Convert backend response to frontend format and add to list
-      finalQuotation = convertBackendToFrontend(savedQuotation);
+      const finalQuotation = convertBackendToFrontend(savedQuotation);
+      quotations.unshift(finalQuotation);
+      renderTable();
+
+      const preview = $('#invoice-preview');
+      if (preview) preview.innerHTML = buildInvoiceMarkup(finalQuotation);
+      $('#share-grid')?.classList.remove('hidden');
+      if (btn) btn.classList.add('hidden');
+
+      downloadInvoicePDF('invoice-preview', `${finalQuotation.quoteNo}.pdf`).then(() => {
+        showToast(`Quotation ${finalQuotation.quoteNo} generated & PDF downloaded`, 'success');
+      }).catch(() => {
+        showToast(`Quotation ${finalQuotation.quoteNo} generated successfully`, 'success');
+      });
+
+      $('#btn-download-pdf').onclick = () => downloadInvoicePDF('invoice-preview', `${finalQuotation.quoteNo}.pdf`);
+      $('#btn-share-email').onclick = () => {
+        const subject = encodeURIComponent(`Quotation ${finalQuotation.quoteNo}`);
+        const body = encodeURIComponent(`Hi ${finalQuotation.customer.name || ''},\n\nPlease find your quotation ${finalQuotation.quoteNo} (Total: ${formatINR(finalQuotation.total)}). We have downloaded the PDF — please attach it to this email before sending.\n\nThanks,\n${COMPANY.name}`);
+        window.location.href = `mailto:${finalQuotation.customer.email || ''}?subject=${subject}&body=${body}`;
+      };
+      $('#btn-share-whatsapp').onclick = () => {
+        const text = encodeURIComponent(`Hi ${finalQuotation.customer.name || ''}, here is your quotation ${finalQuotation.quoteNo} — Total: ${formatINR(finalQuotation.total)}. (PDF downloaded separately)`);
+        window.open(`https://wa.me/?text=${text}`, '_blank');
+      };
+
+      setTimeout(() => closeModal('modal-wizard'), 1200);
     } else {
-      // Fallback: save locally if backend fails
-      finalQuotation = record;
-      finalQuotation.history = [];
+      showToast('Failed to create quotation. Please try again.', 'error');
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-file-invoice"></i> Generate Quotation'; }
     }
-
-    addHistoryEntry(finalQuotation, 'Created', `Quotation generated for ${finalQuotation.customer?.name || 'customer'}`);
-    quotations.unshift(finalQuotation);
-    persistQuotations();
-
-    draftQuoteNo = null;
-
-    const preview = $('#invoice-preview');
-    if (preview) preview.innerHTML = buildInvoiceMarkup(finalQuotation);
-    $('#share-grid')?.classList.remove('hidden');
-    if (btn) btn.classList.add('hidden');
-
-    renderTable();
-
-    downloadInvoicePDF('invoice-preview', `${finalQuotation.quoteNo}.pdf`).then(() => {
-      showToast(`Quotation ${finalQuotation.quoteNo} generated & PDF downloaded`, 'success');
-    }).catch(() => {
-      showToast(`Quotation ${finalQuotation.quoteNo} generated successfully`, 'success');
-    });
-
-    $('#btn-download-pdf').onclick = () => downloadInvoicePDF('invoice-preview', `${finalQuotation.quoteNo}.pdf`);
-    $('#btn-share-email').onclick = () => {
-      const subject = encodeURIComponent(`Quotation ${finalQuotation.quoteNo}`);
-      const body = encodeURIComponent(`Hi ${finalQuotation.customer.name || ''},\n\nPlease find your quotation ${finalQuotation.quoteNo} (Total: ${formatINR(finalQuotation.total)}). We have downloaded the PDF — please attach it to this email before sending.\n\nThanks,\n${COMPANY.name}`);
-      window.location.href = `mailto:${finalQuotation.customer.email || ''}?subject=${subject}&body=${body}`;
-    };
-    $('#btn-share-whatsapp').onclick = () => {
-      const text = encodeURIComponent(`Hi ${finalQuotation.customer.name || ''}, here is your quotation ${finalQuotation.quoteNo} — Total: ${formatINR(finalQuotation.total)}. (PDF downloaded separately)`);
-      window.open(`https://wa.me/?text=${text}`, '_blank');
-    };
-
-    setTimeout(() => closeModal('modal-wizard'), 1200);
   });
-
-  // ============================================================
-  // EXPORTS
-  // ============================================================
-  function exportToCSV() {
-    const filtered = getFiltered();
-    const headers = ['Quotation No.', 'Customer', 'Primary Mobile', 'Email', 'Amount', 'Status', 'Date'];
-    const rows = filtered.map(q => [
-      q.quoteNo,
-      q.customer.name || '',
-      q.customer.mobilePrimary || '',
-      q.customer.email || '',
-      q.amount || 0,
-      q.status || '',
-      q.date || ''
-    ]);
-    const csvContent = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `quotations_${new Date().toISOString().slice(0, 10)}.csv`;
-    link.click();
-    showToast('CSV exported successfully', 'success');
-  }
-
-  $('#btn-export-csv')?.addEventListener('click', exportToCSV);
 
   // ============================================================
   // FILTER EVENTS
   // ============================================================
-  ['search-input', 'filter-status'].forEach(id => {
+  ['search-input', 'filter-status', 'filter-customer', 'filter-date'].forEach(id => {
+    document.getElementById(id)?.addEventListener('change', () => { currentPage = 1; renderTable(); });
     document.getElementById(id)?.addEventListener('input', () => { currentPage = 1; renderTable(); });
   });
   $('#rows-per-page')?.addEventListener('change', (e) => {
@@ -2485,6 +2413,8 @@ function fillCustomerForm(customerData) {
   $('#btn-reset-filters')?.addEventListener('click', () => {
     if ($('#search-input')) $('#search-input').value = '';
     if ($('#filter-status')) $('#filter-status').value = '';
+    if ($('#filter-customer')) $('#filter-customer').value = '';
+    if ($('#filter-date')) $('#filter-date').value = '';
     currentPage = 1;
     renderTable();
   });
@@ -2493,91 +2423,43 @@ function fillCustomerForm(customerData) {
   // INIT
   // ============================================================
   async function init() {
-  // ============================================================
-  // CHECK FOR CUSTOMER DATA FROM CUSTOMER MANAGEMENT
-  // ============================================================
-  const customerDataStr = sessionStorage.getItem('quotationCustomerData');
-  const customerId = sessionStorage.getItem('quotationCustomerId');
-
-  if (customerDataStr) {
-    try {
-      const customerData = JSON.parse(customerDataStr);
-      console.log('Loading customer data:', customerData);
-
-      // Store customer data globally for later use
-      window._prefilledCustomer = customerData;
-
-      // Pre-fill customer details in the wizard (will be applied when wizard opens)
-      setTimeout(() => {
-        fillCustomerForm(customerData);
-      }, 500);
-
-    } catch (err) {
-      console.error('Error loading customer data:', err);
-    }
-  }
-
-  // ============================================================
-  // LOAD QUOTATIONS
-  // ============================================================
-  // Try to load from localStorage first
-  const stored = localStorage.getItem(QUOTATIONS_STORAGE_KEY);
-  if (stored) {
-    try {
-      const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed) && parsed.length) {
-        // backfill new fields for quotations saved before this revision
-        quotations = parsed.map(q => ({
-          plantOverview: { model: '', productionCapacity: '', bricksSize: '', palletSize: '', requiredShedArea: '', totalLand: '', connectedPower: '', labourRequirement: '' },
-          approval: { approvedBy: '', approvalDate: '', notes: '' },
-          history: [],
-          ...q
-        }));
-        populateProductPicker();
-        togglePaymentFields();
-        renderTable();
-
-        // If customer data exists and wizard is not open, open it
-        if (window._prefilledCustomer) {
-          setTimeout(() => {
-            openWizard();
-          }, 300);
-        }
-        return;
+    // Check for customer data handed off from Customer Management page
+    // (kept in sessionStorage only for the single cross-page handoff — this
+    // is navigation state, not a data cache; the customer record itself
+    // always lives in the backend).
+    const customerDataStr = sessionStorage.getItem('quotationCustomerData');
+    if (customerDataStr) {
+      try {
+        const customerData = JSON.parse(customerDataStr);
+        window._prefilledCustomer = customerData;
+        setTimeout(() => {
+          fillCustomerForm(customerData);
+        }, 500);
+      } catch (err) {
+        console.error('Error loading customer data:', err);
       }
-    } catch (_) {}
-  }
-
-  // If nothing in localStorage, try backend
-  try {
-    const backendQuotations = await fetchQuotationsFromBackend();
-    if (backendQuotations && backendQuotations.length) {
-      quotations = backendQuotations;
-      persistQuotations();
-    } else {
-      quotations = generateSampleQuotations();
-      persistQuotations();
     }
-  } catch (err) {
-    console.error('Error loading quotations:', err);
-    quotations = generateSampleQuotations();
-    persistQuotations();
+
+    // Load quotations from backend only
+    try {
+      const backendQuotations = await fetchQuotationsFromBackend();
+      quotations = backendQuotations || [];
+    } catch (err) {
+      console.error('Error loading quotations:', err);
+      quotations = [];
+    }
+
+    // Load product catalog from backend only (in-memory, no localStorage)
+    await fetchProductsFromBackend();
+    populateProductPicker();
+
+    if (window._prefilledCustomer) {
+      setTimeout(openWizard, 300);
+    }
+
+    togglePaymentFields();
+    renderTable();
   }
-
-  // If customer data exists and wizard is not open, open it
-  if (window._prefilledCustomer) {
-    setTimeout(() => {
-      openWizard();
-    }, 300);
-  }
-
-  // Refresh product catalog from backend
-  await fetchProductsFromBackend();
-
-  populateProductPicker();
-  togglePaymentFields();
-  renderTable();
-}
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
