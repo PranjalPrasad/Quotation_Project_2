@@ -551,6 +551,23 @@
     </div>
   </div>
 
+  <!-- MODAL: GENERATE REPORT (GST-style report — only for Accepted quotations) -->
+  <div id="modal-report" class="modal-overlay hidden">
+    <div class="modal-box modal-wide">
+      <div class="modal-head">
+        <div class="modal-title"><i class="fas fa-file-circle-check"></i> Quotation Report — <span id="report-quoteno"></span></div>
+        <button class="modal-close" data-close="modal-report"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="invoice-preview" id="report-preview"></div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn-outline" id="btn-report-download-pdf"><i class="fas fa-download"></i> Download PDF</button>
+        <button class="btn-outline" data-close="modal-report">Close</button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL: EDIT -->
   <div id="modal-edit" class="modal-overlay hidden">
     <div class="modal-box">

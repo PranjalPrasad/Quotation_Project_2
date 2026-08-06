@@ -977,3 +977,85 @@ html { font-size: clamp(13px, 0.85vw + 10.5px, 16px); }
     font-size: 16px;
   }
 }
+
+/* ============================================================
+   GENERATE REPORT — action button + GST-style report layout
+   (Report button dikhta hai sirf un quotations ke liye jinka
+   status "Accepted" hai. Report ka look GSTR2 reference PDF
+   format se milta-julta rakha gaya hai — bordered tables,
+   metadata rows, aur ek highlighted totals row.)
+   ============================================================ */
+
+.icon-action-btn.report-btn {
+  color: #059669;
+  border-color: #A7F3D0;
+}
+.icon-action-btn.report-btn:hover {
+  background: #D1FAE5;
+  color: #047857;
+  border-color: #6EE7B7;
+}
+
+.report-header { text-align: center; margin-bottom: 6px; }
+.report-company-name { font-weight: 700; font-size: 13px; color: var(--ink); }
+.report-company-line { font-size: 10px; color: #555; line-height: 1.5; }
+
+.report-title {
+  text-align: center;
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: underline;
+  margin: 14px 0 12px;
+  color: var(--accent-dark);
+}
+
+.report-section-title {
+  font-weight: 700;
+  text-decoration: underline;
+  margin: 16px 0 6px;
+  font-size: 12px;
+  color: var(--ink);
+}
+
+.report-meta-table,
+.report-info-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 12px;
+  font-size: 11px;
+}
+.report-meta-table td,
+.report-info-table td {
+  border: 1px solid #999;
+  padding: 5px 9px;
+}
+.report-info-table td:first-child { width: 45%; font-weight: 600; color: var(--ink); background: var(--accent-100); }
+
+.report-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10px;
+  margin-bottom: 14px;
+}
+.report-data-table th,
+.report-data-table td {
+  border: 1px solid #999;
+  padding: 6px 6px;
+  text-align: center;
+}
+.report-data-table thead th {
+  background: var(--accent-100);
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+.report-data-table td.report-left { text-align: left; }
+.report-totals-row td {
+  font-weight: 700;
+  background: var(--accent-100);
+  color: var(--accent-dark);
+}
+
+@media (max-width: 480px) {
+  .report-data-table { font-size: 9px; }
+  .report-meta-table, .report-info-table { font-size: 10px; }
+}

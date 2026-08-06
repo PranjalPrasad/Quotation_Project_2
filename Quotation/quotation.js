@@ -17,6 +17,11 @@
      the View modal, wired to status + history.
    - All changes persist to localStorage immediately (previously
      edits were lost on refresh).
+   - NEW: "Generate Report" action button — shows ONLY on
+     quotations whose status is "Accepted". Opens a GST-style
+     report (format inspired by the GSTR2 report reference: bordered
+     tables, company header block, metadata rows, highlighted totals
+     row) and lets the admin download it as a PDF.
    ============================================================ */
 
 (function () {
@@ -229,6 +234,10 @@
 
   function formatINR(n) {
     return '₹' + Math.round(Number(n) || 0).toLocaleString('en-IN');
+  }
+
+  function formatNumberPlain(n) {
+    return Math.round(Number(n) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
   function formatDateTime(iso) {
@@ -914,6 +923,7 @@
           <div class="action-icons">
             <button class="icon-action-btn" title="View / Approve" data-action="view" data-quote="${escapeAttr(row.quoteNo)}"><i class="fas fa-eye"></i></button>
             <button class="icon-action-btn" title="Edit" data-action="edit" data-quote="${escapeAttr(row.quoteNo)}"><i class="fas fa-pen"></i></button>
+            ${row.status === 'Accepted' ? `<button class="icon-action-btn report-btn" title="Generate Report" data-action="report" data-quote="${escapeAttr(row.quoteNo)}"><i class="fas fa-file-circle-check"></i></button>` : ''}
             <button class="icon-action-btn" title="History" data-action="history" data-quote="${escapeAttr(row.quoteNo)}"><i class="fas fa-clock-rotate-left"></i></button>
             <button class="icon-action-btn danger" title="Delete" data-action="delete" data-quote="${escapeAttr(row.quoteNo)}"><i class="fas fa-trash"></i></button>
           </div>
@@ -949,6 +959,7 @@
         if (!quote) return;
         if (btn.dataset.action === 'view') openViewModal(quote);
         if (btn.dataset.action === 'edit') openEditModal(quote);
+        if (btn.dataset.action === 'report') openReportModal(quote);
         if (btn.dataset.action === 'history') openHistoryModal(quote);
         if (btn.dataset.action === 'delete') openDeleteModal(quote);
       });
@@ -1243,6 +1254,124 @@
   }
 
   // ============================================================
+  // GENERATE REPORT — GST-style report for APPROVED (Accepted)
+  // quotations only. Layout inspired by the GSTR2 report
+  // reference: centered company header, underlined report title,
+  // bordered metadata rows, a bordered data table with a
+  // highlighted "Totals" row, followed by an items summary table.
+  // ============================================================
+  function buildGstReportMarkup(q) {
+    const gb = q.gstBreakup || {
+      cgstPercent: (q.gstPercent || 0) / 2, cgstAmount: q.cgst || 0,
+      sgstPercent: (q.gstPercent || 0) / 2, sgstAmount: q.sgst || 0,
+      igstPercent: 0, igstAmount: 0
+    };
+    const dateObj = q.date ? new Date(q.date) : new Date();
+    const monthName = dateObj.toLocaleString('en-US', { month: 'long' });
+    const year = dateObj.getFullYear();
+
+    const igstVal = q.isInterState ? gb.igstAmount : 0;
+    const cgstVal = q.isInterState ? 0 : gb.cgstAmount;
+    const sgstVal = q.isInterState ? 0 : gb.sgstAmount;
+
+    const itemsRows = (q.items || []).map((it, i) => `
+      <tr>
+        <td>${i + 1}</td>
+        <td class="report-left">${escapeHtml(it.name || '—')}</td>
+        <td>${it.qty}</td>
+        <td>${formatINR(it.rate)}</td>
+        <td>${it.inCustomerScope ? 'In Customer Scope' : formatINR((Number(it.qty) || 0) * (Number(it.rate) || 0))}</td>
+      </tr>`).join('');
+
+    return `
+      <div class="report-header">
+        <div class="report-company-name">${escapeHtml(COMPANY.name)}</div>
+        <div class="report-company-line">${escapeHtml(COMPANY.address)}</div>
+        <div class="report-company-line">Phone no.: ${escapeHtml(COMPANY.phone)} Email: ${escapeHtml(COMPANY.email)}</div>
+        <div class="report-company-line">GSTIN: ${escapeHtml(COMPANY.gstin)}, State: ${escapeHtml(COMPANY.state)}</div>
+      </div>
+
+      <div class="report-title">Approved Quotation — Sales Report</div>
+
+      <table class="report-meta-table">
+        <tr><td>From Year</td><td>${year}</td><td>To Year</td><td>${year}</td></tr>
+        <tr><td>From Month</td><td>${escapeHtml(monthName)}</td><td>To Month</td><td>${escapeHtml(monthName)}</td></tr>
+      </table>
+
+      <table class="report-info-table">
+        <tr><td>1. GSTIN:</td><td>${escapeHtml(COMPANY.gstin)}</td></tr>
+        <tr><td>2.(a) Legal name of the registered person:</td><td>${escapeHtml(COMPANY.name)}</td></tr>
+        <tr><td>(b) Customer / Buyer name:</td><td>${escapeHtml(q.customer.name || '—')}</td></tr>
+        <tr><td>3.(a) Quotation Status:</td><td><span class="badge ${badgeClass(q.status)}">${escapeHtml(q.status)}</span></td></tr>
+        <tr><td>(b) Approved By / Date:</td><td>${escapeHtml(q.approval?.approvedBy || '—')}${q.approval?.approvalDate ? ' on ' + new Date(q.approval.approvalDate).toLocaleDateString('en-GB') : ''}</td></tr>
+      </table>
+
+      <div class="report-section-title">Sales</div>
+      <table class="report-data-table">
+        <thead>
+          <tr>
+            <th rowspan="2">GSTIN/UIN No.</th>
+            <th colspan="3">Invoice</th>
+            <th rowspan="2">Reverse Charge</th>
+            <th rowspan="2">Rate</th>
+            <th rowspan="2">CESS Rate</th>
+            <th rowspan="2">Taxable Value</th>
+            <th colspan="4">Amount</th>
+            <th rowspan="2">Place Of Supply</th>
+          </tr>
+          <tr>
+            <th>No.</th><th>Date</th><th>Value</th>
+            <th>Integrated Tax</th><th>Central Tax</th><th>State/UT Tax</th><th>CESS</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>${escapeHtml(q.customer.gst || '—')}</td>
+            <td>${escapeHtml(q.quoteNo)}</td>
+            <td>${q.date ? new Date(q.date).toLocaleDateString('en-GB') : '—'}</td>
+            <td>${formatNumberPlain(q.total)}</td>
+            <td>No</td>
+            <td>${(Number(q.gstPercent) || 0).toFixed(2)}</td>
+            <td>0.00</td>
+            <td>${formatNumberPlain(q.taxable)}</td>
+            <td>${formatNumberPlain(igstVal)}</td>
+            <td>${formatNumberPlain(cgstVal)}</td>
+            <td>${formatNumberPlain(sgstVal)}</td>
+            <td>0.00</td>
+            <td>${escapeHtml(q.customer.state || '—')}</td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr class="report-totals-row">
+            <td colspan="3">Totals</td>
+            <td>${formatNumberPlain(q.total)}</td>
+            <td></td><td></td><td></td>
+            <td>${formatNumberPlain(q.taxable)}</td>
+            <td>${formatNumberPlain(igstVal)}</td>
+            <td>${formatNumberPlain(cgstVal)}</td>
+            <td>${formatNumberPlain(sgstVal)}</td>
+            <td>0.00</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+
+      <div class="report-section-title">Items Summary</div>
+      <table class="report-data-table">
+        <thead>
+          <tr><th>#</th><th>Particulars</th><th>Qty</th><th>Rate (₹)</th><th>Amount (₹)</th></tr>
+        </thead>
+        <tbody>
+          ${itemsRows || `<tr><td colspan="5">No items in this quotation.</td></tr>`}
+        </tbody>
+        <tfoot>
+          <tr class="report-totals-row"><td colspan="4">Grand Total</td><td>${formatINR(q.total)}</td></tr>
+        </tfoot>
+      </table>
+    `;
+  }
+
+  // ============================================================
   // HINDI TERMS RASTERIZATION
   // (fix: robust font loading + fallback font stack + correct
   //  CSS targeting so the rasterized text is crisp both on
@@ -1458,6 +1587,31 @@
   $('#btn-view-download-pdf')?.addEventListener('click', () => {
     if (!viewingQuoteNo) return;
     downloadInvoicePDF('view-invoice-preview', `${viewingQuoteNo}.pdf`);
+  });
+
+  // ============================================================
+  // GENERATE REPORT MODAL — only reachable via the report-btn
+  // action icon, which renderTable() only shows for quotations
+  // whose status is "Accepted".
+  // ============================================================
+  let reportingQuoteNo = null;
+
+  function openReportModal(q) {
+    if (q.status !== 'Accepted') {
+      showToast('Report is available only for Accepted quotations.', 'error');
+      return;
+    }
+    reportingQuoteNo = q.quoteNo;
+    const titleEl = $('#report-quoteno');
+    if (titleEl) titleEl.textContent = q.quoteNo;
+    const preview = $('#report-preview');
+    if (preview) preview.innerHTML = buildGstReportMarkup(q);
+    openModal('modal-report');
+  }
+
+  $('#btn-report-download-pdf')?.addEventListener('click', () => {
+    if (!reportingQuoteNo) return;
+    downloadInvoicePDF('report-preview', `${reportingQuoteNo}-Report.pdf`);
   });
 
   // ============================================================
