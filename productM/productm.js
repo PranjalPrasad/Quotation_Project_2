@@ -1346,6 +1346,69 @@
     }
   }
 
+  function enhanceSelectDropdown(selectId) {
+  const select = document.getElementById(selectId);
+  if (!select || select.dataset.enhanced) return;
+  select.dataset.enhanced = 'true';
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'custom-select-wrapper';
+  select.parentNode.insertBefore(wrapper, select);
+  wrapper.appendChild(select);
+  select.classList.add('custom-select-native');
+
+  const trigger = document.createElement('button');
+  trigger.type = 'button';
+  trigger.className = 'custom-select-trigger select-input';
+  wrapper.appendChild(trigger);
+
+  const menu = document.createElement('div');
+  menu.className = 'custom-select-menu hidden';
+  wrapper.appendChild(menu);
+
+  function buildMenu() {
+    menu.innerHTML = '';
+    Array.from(select.options).forEach(opt => {
+      const item = document.createElement('div');
+      item.className = 'custom-select-option' + (opt.value === select.value ? ' active' : '');
+      item.textContent = opt.textContent;
+      item.addEventListener('click', () => {
+        select.value = opt.value;
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+        menu.classList.add('hidden');
+        syncTrigger();
+      });
+      menu.appendChild(item);
+    });
+  }
+
+  function syncTrigger() {
+    const opt = select.options[select.selectedIndex];
+    trigger.innerHTML = `<span>${opt ? opt.textContent : ''}</span><i class="fas fa-chevron-down"></i>`;
+  }
+
+  trigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isOpen = !menu.classList.contains('hidden');
+    document.querySelectorAll('.custom-select-menu').forEach(m => m.classList.add('hidden'));
+    if (isOpen) return;
+    buildMenu();
+    menu.classList.remove('hidden');
+    menu.style.left = '0px'; menu.style.right = 'auto';
+    requestAnimationFrame(() => {
+      const rect = menu.getBoundingClientRect();
+      if (rect.right > window.innerWidth - 8) {
+        menu.style.left = 'auto'; menu.style.right = '0px';
+      }
+      if (rect.left < 8) { menu.style.left = (8 - rect.left) + 'px'; menu.style.right = 'auto'; }
+    });
+  });
+
+  syncTrigger();
+  select.addEventListener('change', syncTrigger);
+}
+document.addEventListener('click', () => document.querySelectorAll('.custom-select-menu').forEach(m => m.classList.add('hidden')));
+
   // =============================================================
   // EVENT BINDING
   // =============================================================
@@ -1662,12 +1725,31 @@
     });
 
     // Profile Button
+  function positionFixedDropdown(trigger, menu) {
+      const rect = trigger.getBoundingClientRect();
+      menu.style.visibility = 'hidden';
+      menu.classList.remove('hidden');
+      const menuWidth = menu.offsetWidth || 190;
+      let left = rect.right - menuWidth;
+      if (left < 8) left = 8;
+      if (left + menuWidth > window.innerWidth - 8) left = window.innerWidth - menuWidth - 8;
+      menu.style.left = left + 'px';
+      menu.style.top = (rect.bottom + 8) + 'px';
+      menu.style.visibility = '';
+    }
+
+    // Profile Button
     const profileBtn = document.getElementById('profileBtn');
     if (profileBtn) {
       profileBtn.addEventListener('click', function(e) {
         e.stopPropagation();
         const dropdown = document.getElementById('profileDropdown');
-        if (dropdown) dropdown.classList.toggle('hidden');
+        if (!dropdown) return;
+        const willOpen = dropdown.classList.contains('hidden');
+        dropdown.classList.add('hidden');
+        if (willOpen) {
+          positionFixedDropdown(profileBtn, dropdown);
+        }
       });
     }
 
@@ -1737,6 +1819,76 @@
     }
 
     console.log('✅ Events bound successfully');
+
+
+
+
+
+  function enhanceSelectDropdown(selectId) {
+  const select = document.getElementById(selectId);
+  if (!select || select.dataset.enhanced) return;
+  select.dataset.enhanced = 'true';
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'custom-select-wrapper';
+  select.parentNode.insertBefore(wrapper, select);
+  wrapper.appendChild(select);
+  select.classList.add('custom-select-native');
+
+  const trigger = document.createElement('button');
+  trigger.type = 'button';
+  trigger.className = 'custom-select-trigger select-input';
+  wrapper.appendChild(trigger);
+
+  const menu = document.createElement('div');
+  menu.className = 'custom-select-menu hidden';
+  wrapper.appendChild(menu);
+
+  function buildMenu() {
+    menu.innerHTML = '';
+    Array.from(select.options).forEach(opt => {
+      const item = document.createElement('div');
+      item.className = 'custom-select-option' + (opt.value === select.value ? ' active' : '');
+      item.textContent = opt.textContent;
+      item.addEventListener('click', () => {
+        select.value = opt.value;
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+        menu.classList.add('hidden');
+        syncTrigger();
+      });
+      menu.appendChild(item);
+    });
+  }
+
+  function syncTrigger() {
+    const opt = select.options[select.selectedIndex];
+    trigger.innerHTML = `<span>${opt ? opt.textContent : ''}</span><i class="fas fa-chevron-down"></i>`;
+  }
+
+  trigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isOpen = !menu.classList.contains('hidden');
+    document.querySelectorAll('.custom-select-menu').forEach(m => m.classList.add('hidden'));
+    if (isOpen) return;
+    buildMenu();
+    menu.classList.remove('hidden');
+    menu.style.left = ''; menu.style.right = '0';
+    requestAnimationFrame(() => {
+      const rect = menu.getBoundingClientRect();
+      if (rect.left < 8) { menu.style.right = 'auto'; menu.style.left = (8 - rect.left) + 'px'; }
+    });
+  });
+
+  syncTrigger();
+
+  // Reflect programmatic changes (e.g. resetForm/populateForm) back to trigger label
+  const observer = new MutationObserver(syncTrigger);
+  observer.observe(select, { attributes: true, childList: true });
+  select.addEventListener('change', syncTrigger);
+}
+
+
+document.addEventListener('click', () => document.querySelectorAll('.custom-select-menu').forEach(m => m.classList.add('hidden')));
   }
 
   
@@ -1764,4 +1916,5 @@
     init();
   }
 
+['filter-producttype', 'filter-category', 'filter-status', 'rows-per-page', 'sl-type'].forEach(enhanceSelectDropdown);
 })();
