@@ -49,22 +49,11 @@
 
   <div class="app-shell w-full flex">
 
-    <!-- always-visible hamburger button (phone/tablet only) that opens the sidebar drawer.
-         Kept OUTSIDE #sidebar on purpose: #sidebar slides off-screen with a CSS transform
-         when closed, and anything positioned inside it would slide away too. -->
-    <button id="mobileMenuBtn" aria-label="Open menu" class="mobile-menu-btn">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="3" y1="6" x2="21" y2="6"></line>
-        <line x1="3" y1="12" x2="21" y2="12"></line>
-        <line x1="3" y1="18" x2="21" y2="18"></line>
-      </svg>
-    </button>
-
-    <!-- backdrop shown only on phone/tablet when the sidebar drawer is expanded -->
+    <!-- backdrop shown only on phone/tablet once the sidebar is expanded (same pattern as dashboard.html) -->
     <div id="sidebarBackdrop" class="sidebar-backdrop hidden"></div>
 
     <!-- ===================== SIDEBAR ===================== -->
-    <aside id="sidebar" class="sidebar app-sidebar relative flex flex-col items-center py-5 gap-6 bg-cream border-r border-peach-300 transition-all duration-300 ease-in-out w-20 shrink-0 expanded">
+    <aside id="sidebar" class="sidebar app-sidebar relative flex flex-col items-center py-5 gap-6 bg-cream border-r border-peach-300 transition-all duration-300 ease-in-out w-20 shrink-0">
       <!-- collapse toggle -->
       <button id="sidebarToggle" aria-label="Toggle sidebar" class="absolute -right-3 top-8 w-6 h-6 rounded-full bg-cream shadow-md border border-peach-300 flex items-center justify-center text-peach-500 hover:scale-110 transition-transform">
         <svg id="toggleIcon" class="w-3.5 h-3.5 transition-transform duration-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
@@ -106,13 +95,75 @@
       </nav>
     </aside>
 
+    <!-- ============ Sidebar toggle — self-contained, does not depend on
+         productm.js. Kept inline right after the sidebar so it always
+         binds even if productm.js errors out elsewhere. ============ -->
+    <script>
+      (function () {
+        function init() {
+          var sidebar = document.getElementById('sidebar');
+          var toggleBtn = document.getElementById('sidebarToggle');
+          var toggleIcon = document.getElementById('toggleIcon');
+          var backdrop = document.getElementById('sidebarBackdrop');
+          if (!sidebar || !toggleBtn) return;
+
+          function isMobile() { return window.innerWidth <= 1023; }
+
+          function setExpanded(expanded) {
+            sidebar.classList.toggle('expanded', expanded);
+            sidebar.classList.toggle('collapsed', !expanded);
+            if (toggleIcon) toggleIcon.style.transform = expanded ? 'rotate(180deg)' : 'rotate(0deg)';
+            if (backdrop) {
+              if (expanded && isMobile()) {
+                backdrop.classList.remove('hidden');
+                backdrop.classList.add('visible');
+              } else {
+                backdrop.classList.add('hidden');
+                backdrop.classList.remove('visible');
+              }
+            }
+          }
+
+          toggleBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            setExpanded(!sidebar.classList.contains('expanded'));
+          });
+
+          if (backdrop) {
+            backdrop.addEventListener('click', function () { setExpanded(false); });
+          }
+
+          document.querySelectorAll('#sidebar .nav-item').forEach(function (item) {
+            item.addEventListener('click', function () {
+              if (isMobile()) setExpanded(false);
+            });
+          });
+
+          window.addEventListener('resize', function () {
+            if (!isMobile() && backdrop) {
+              backdrop.classList.add('hidden');
+              backdrop.classList.remove('visible');
+            }
+          });
+
+          setExpanded(false);
+        }
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', init);
+        } else {
+          init();
+        }
+      })();
+    </script>
+
     <!-- ===================== MAIN ===================== -->
     <main class="app-main flex-1 bg-cream px-4 sm:px-5 md:px-6 py-4 min-w-0">
 
       <!-- top bar : page title left, notif + profile right (same pattern as dashboard) -->
       <div class="flex items-center justify-between mb-4 gap-3 flex-wrap">
         <div>
-          <p class="text-sm text-gray-700 font-semibold">🧱 Product Management</p>
+          <p class="text-sm text-gray-700 font-semibold"> Product Management</p>
           <p class="text-[11px] text-gray-400">Manage brick machines, mixers, moulds &amp; accessories</p>
         </div>
 

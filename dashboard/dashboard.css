@@ -45,6 +45,7 @@ html, body {
   -webkit-font-smoothing: antialiased;
   overflow: hidden;
   background: var(--cream) !important;
+  -webkit-text-size-adjust: 100%;
 }
 
 /* ============ App shell — sidebar fixed, only main/aside scroll ============ */
@@ -73,6 +74,16 @@ html, body {
   overscroll-behavior: contain;
   padding-bottom: calc(1.25rem + env(safe-area-inset-bottom)) !important;
   background: var(--cream) !important;
+  min-width: 0;
+}
+
+/* Center + cap content width on very large / ultra-wide monitors so
+   summary cards, charts and tables don't stretch into unreadable
+   full-bleed rows. */
+.app-main > * {
+  max-width: 1600px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .app-right {
@@ -185,6 +196,7 @@ html, body {
   gap: 14px;
   margin-bottom: 14px;
 }
+@media (max-width: 1280px) { .summary-grid { grid-template-columns: repeat(4, 1fr); gap: 10px; } }
 @media (max-width: 1100px) { .summary-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 560px) { .summary-grid { grid-template-columns: 1fr; } }
 .summary-card {
@@ -210,9 +222,9 @@ html, body {
 .summary-icon.tint-active { background: #ECFDF5; color: #059669; }
 .summary-icon.tint-prospect { background: #FEF3C7; color: #D97706; }
 .summary-icon.tint-value { background: #F0F9FF; color: #0284C7; }
-.summary-title { font-size: 11.5px; color: var(--muted); margin: 0 0 2px; font-weight: 500; }
-.summary-count { font-size: 20px; font-weight: 700; color: var(--text); margin: 0 0 2px; line-height: 1.2; }
-.summary-trend { font-size: 11px; color: var(--muted); margin: 0; }
+.summary-title { font-size: 11.5px; color: var(--muted); margin: 0 0 2px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.summary-count { font-size: 20px; font-weight: 700; color: var(--text); margin: 0 0 2px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; }
+.summary-trend { font-size: 11px; color: var(--muted); margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ---------- mini stat row (secondary metrics) ---------- */
 .mini-stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 14px; }
@@ -258,6 +270,7 @@ html, body {
 /* ============ Pie / bar chart cards ============ */
 .pie-wrap { position: relative; width: 100%; height: 168px; }
 @media (max-width: 640px) { .pie-wrap { height: 155px; } }
+@media (max-width: 420px) { .pie-wrap { height: 140px; } }
 .chart-card-title { font-size: 12px; font-weight: 600; color: #374151; }
 .chart-card-sub { font-size: 10px; color: #9CA3AF; }
 
@@ -364,6 +377,13 @@ html, body {
   transform: translate(-50%, -8px);
 }
 
+/* touch devices: no floating tooltip clutter, action icons get bigger tap targets */
+@media (hover: none) and (pointer: coarse) {
+  .action-icon-btn { width: 32px; height: 32px; }
+  .action-icon-btn svg { width: 14px; height: 14px; }
+  .pagination-btn { min-width: 28px; height: 28px; }
+}
+
 @media (max-width: 720px) {
   .data-table thead { display: none; }
   .data-table, .data-table tbody, .data-table tr, .data-table td { display: block; width: 100% !important; }
@@ -378,6 +398,12 @@ html, body {
   .row-actions { justify-content: flex-end; flex-wrap: wrap; }
   .action-icon-btn { width: 30px; height: 30px; }
   .action-icon-btn svg { width: 14px; height: 14px; }
+}
+
+@media (max-width: 360px) {
+  .data-table td { flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; }
+  .data-table td:last-child { align-items: flex-end; }
+  .data-table td::before { font-size: 9px; }
 }
 
 .table-footer {
@@ -433,12 +459,26 @@ select.rows-select {
 .field-group:has(#fldCustomer) { grid-column: 1 / -1; }
 .field-label { font-size: 10px; font-weight: 600; color: #9CA3AF; text-transform: uppercase; letter-spacing: .02em; }
 .field-input {
-  font-size: 12.5px; color: #1F2937; border: 1px solid var(--border-strong);
+  font-size: 16px; color: #1F2937; border: 1px solid var(--border-strong);
   border-radius: 9px; padding: 7px 9px; background: #fff; font-family: inherit; width: 100%;
+}
+/* 16px keeps iOS Safari from auto-zooming on focus; step back down on
+   larger screens where zoom isn't a concern */
+@media (min-width: 481px) {
+  .field-input { font-size: 12.5px; }
 }
 .field-input:disabled { background: var(--brand-100); color: #9CA3AF; cursor: not-allowed; }
 .field-input:not(:disabled):focus { outline: none; border-color: var(--brand-600); box-shadow: 0 0 0 3px rgba(128,0,33,0.2); }
-@media (max-width: 480px) { .modal-body { grid-template-columns: 1fr; } .field-group:has(#fldCustomer) { grid-column: auto; } }
+@media (max-width: 480px) {
+  .modal-body { grid-template-columns: 1fr; }
+  .field-group:has(#fldCustomer) { grid-column: auto; }
+  .modal-panel { max-height: 100dvh; border-radius: 16px; }
+}
+@media (max-height: 480px) {
+  .modal-overlay { align-items: flex-start; padding-top: 8px; }
+  .modal-panel { max-height: 96vh; max-height: 96dvh; }
+  .modal-body { grid-template-columns: 1fr 1fr; }
+}
 .modal-footer { display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding: 11px 15px; border-top: 1px solid var(--border-strong); flex-shrink: 0; }
 .btn-secondary, .btn-primary { font-size: 11.5px; font-weight: 600; padding: 8px 14px; border-radius: 9px; cursor: pointer; border: none; transition: background .15s, opacity .15s ease; font-family: inherit; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 .btn-secondary { background: #fff; color: var(--text); border: 1px solid var(--border-strong); }
@@ -466,6 +506,10 @@ select.rows-select {
 /* toast */
 .toast-animate { animation: slideIn 0.2s ease-out; }
 @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 480px) {
+  #toast-container { left: 10px; right: 10px; bottom: 10px; max-width: none !important; }
+  .toast-animate { text-align: center; }
+}
 
 /* ============ Topbar dropdowns (profile) ============ */
 .topbar-dropdown {
@@ -527,7 +571,7 @@ select.rows-select {
 #notifBtn span { width: 7px; height: 7px; background: var(--brand-600); border: 1.5px solid var(--cream); top: 6px; right: 6px; }
 
 /* ============ Profile icon ============ */
-#profileBtn { width: 32px; height: 32px; font-size: 12px; background: var(--brand-600); }
+#profileBtn { width: 32px; height: 32px; font-size: 12px; background: var(--brand-600); flex-shrink: 0; }
 
 /* ============ KPI highlight toggle (ALL TIME / THIS MONTH) ============ */
 .kpi-toggle-btn {
@@ -563,13 +607,30 @@ select.rows-select {
   width: 40px; height: 40px; object-fit: contain; border-radius: 10px;
 }
 
-/* ============ Tablets (768–1023px) ============ */
+/* ============================================================
+   RESPONSIVE BREAKPOINTS — desktop / laptop / tablet / phone
+   ============================================================ */
+
+/* ---------- Large desktop / ultra-wide monitors (1600px+) ---------- */
+@media (min-width: 1600px) {
+  .dash-title { font-size: 20px; }
+  .summary-count { font-size: 22px; }
+}
+
+/* ---------- Small laptop / large tablet landscape (1024–1279px) ----------
+   Right panel is hidden here (Tailwind's `xl:` = 1280px), so main content
+   gets a little breathing room instead of feeling cramped. */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .app-main { padding-left: 22px !important; padding-right: 22px !important; }
+}
+
+/* ---------- Tablets (768–1023px) ---------- */
 @media (min-width: 768px) and (max-width: 1023px) {
   .app-main { padding-left: 20px !important; padding-right: 20px !important; }
   .sidebar.expanded { width: 226px; }
 }
 
-/* ============ Phones (large — 481–767px) ============ */
+/* ---------- Phones (large — 481–767px) ---------- */
 @media (max-width: 767px) {
   .app-main { padding-left: 14px !important; padding-right: 14px !important; padding-top: 14px !important; }
   .sidebar { width: 64px; }
@@ -580,9 +641,11 @@ select.rows-select {
   .modal-panel { max-width: 100%; }
   .dash-header { flex-direction: column; align-items: stretch; }
   .dash-header-actions { width: 100%; justify-content: space-between; }
+  .table-card-head { padding: 12px 14px 8px; }
+  .table-card-body { padding: 12px 14px; }
 }
 
-/* ============ Small phones (≤480px) ============ */
+/* ---------- Small phones (≤480px) ---------- */
 @media (max-width: 480px) {
   .app-main { padding-left: 10px !important; padding-right: 10px !important; }
   .sidebar { width: 56px; }
@@ -593,18 +656,51 @@ select.rows-select {
   #sidebarToggle { width: 22px; height: 22px; right: -10px; }
   #notifBtn, #profileBtn { width: 29px; height: 29px; }
   #notifBtn svg { width: 13px; height: 13px; }
-  .pagination-btn { min-width: 20px; height: 20px; font-size: 10px; }
+  .pagination-btn { min-width: 24px; height: 24px; font-size: 10px; }
   .dash-title { font-size: 16px; }
   .summary-card { padding: 12px; gap: 10px; }
   .summary-count { font-size: 18px; }
+  .table-card-head h2 { font-size: 13px; }
+  .table-footer { flex-direction: column; align-items: flex-start; }
+  #paginationControls { width: 100%; justify-content: center; }
 }
 
-/* ============ Extra small screens ============ */
+/* ---------- Extra small / narrow phones (≤360px) ---------- */
 @media (max-width: 360px) {
   .app-main { padding-left: 8px !important; padding-right: 8px !important; }
   .sidebar { width: 50px; }
   .nav-item { width: 28px; height: 28px; }
   .nav-item svg { width: 12px; height: 12px; }
+  .summary-card { padding: 10px; }
+  .summary-icon { width: 34px; height: 34px; }
+  .summary-icon svg { width: 17px; height: 17px; }
+  .table-card-body { padding: 10px; }
+}
+
+/* ---------- Very small phones (≤320px, e.g. older/small Android) ---------- */
+@media (max-width: 320px) {
+  .dash-title { font-size: 15px; }
+  .dash-subtitle { font-size: 11px; }
+  .kpi-toggle-btn { padding: 4px 7px; font-size: 9px; }
+  .quick-action-btn { padding: 8px; font-size: 11px; }
+}
+
+/* ---------- Short viewports / landscape phones — keep the topbar and
+   first summary row reachable without excess scroll chrome ---------- */
+@media (max-height: 480px) and (max-width: 900px) {
+  .app-main { padding-top: 10px !important; }
+  .dash-header { margin-bottom: 10px; }
+  .summary-grid { gap: 8px; margin-bottom: 10px; }
+  .summary-card { padding: 10px; }
+  .table-card { margin-bottom: 10px; }
+}
+
+/* ---------- Touch devices generally: bigger tap targets ---------- */
+@media (hover: none) and (pointer: coarse) {
+  .nav-item { min-height: 40px; }
+  .quick-action-btn { padding: 11px 10px; }
+  .kpi-toggle-btn { padding: 6px 12px; }
+  .btn-primary, .btn-secondary { padding: 10px 16px; }
 }
 
 /* ============ Card entrance bounce + hover interactions ============ */

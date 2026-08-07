@@ -728,12 +728,11 @@
     }
   }
 
-  // Sidebar open by default on desktop
-  if (!isMobileView()) {
-    setSidebarExpanded(true);
-  } else {
-    setSidebarExpanded(false);
-  }
+  // Start collapsed on every screen size (desktop, tablet, mobile alike) —
+  // matches dashboard.js, which never auto-expands the sidebar on load.
+  // On mobile/tablet this shows a persistent compact icon rail; on desktop
+  // it shows the same compact rail until the user opens it themselves.
+  setSidebarExpanded(false);
 
   sidebarToggle?.addEventListener('click', () => {
     const isExpanded = sidebar?.classList.contains('expanded');
@@ -751,9 +750,6 @@
   window.addEventListener('resize', () => {
     if (!isMobileView()) {
       sidebarBackdrop?.classList.remove('visible');
-      if (!sidebar?.classList.contains('expanded') && !sidebar?.classList.contains('collapsed')) {
-        setSidebarExpanded(true);
-      }
     }
   });
 

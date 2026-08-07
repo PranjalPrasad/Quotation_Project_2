@@ -8,9 +8,6 @@
 <script src="../auth.js"></script>
 <script>
   Auth.requireAuth();
-  // Re-check on bfcache restore too (e.g. user logs out, then hits
-  // the browser Forward button back into this page) — see index.html
-  // for the full explanation of why plain top-level checks aren't enough.
   window.addEventListener('pageshow', function () { Auth.requireAuth(); });
 </script>
 <script src="https://cdn.tailwindcss.com"></script>
@@ -52,7 +49,6 @@
   <div class="app-shell w-full flex">
     <div id="sidebarBackdrop" class="sidebar-backdrop hidden"></div>
 
-    <!-- ===================== SIDEBAR (matches customer.html / productm.html / quotation.html) ===================== -->
     <aside id="sidebar" class="sidebar app-sidebar relative flex flex-col items-center py-5 gap-6 bg-cream border-r border-brand-200 transition-all duration-300 ease-in-out w-20 shrink-0">
       <button id="sidebarToggle" aria-label="Toggle sidebar" class="absolute -right-3 top-8 w-6 h-6 rounded-full bg-cream shadow-md border border-brand-200 flex items-center justify-center text-brand-500 hover:scale-110 transition-transform">
         <svg id="toggleIcon" class="w-3.5 h-3.5 transition-transform duration-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
@@ -93,16 +89,14 @@
       </nav>
     </aside>
 
-    <!-- ===================== MAIN ===================== -->
     <main class="app-main flex-1 bg-cream px-4 sm:px-5 md:px-6 py-4 min-w-0">
 
-      <!-- Topbar (matches customer.html / quotation.html exactly) -->
       <div class="flex items-center justify-between mb-4 gap-3 flex-wrap">
-        <div>
-          <p class="text-sm text-gray-700">👋 Hello, <span class="font-semibold">Admin</span></p>
-          <p class="text-[11px] text-gray-400">Here's what's happening at VKM today</p>
+        <div class="min-w-0">
+          <p class="text-sm text-gray-700 truncate">👋 Hello, <span class="font-semibold">Admin</span></p>
+          <p class="text-[11px] text-gray-400 truncate">Here's what's happening at VKM today</p>
         </div>
-        <div class="flex items-center gap-2.5 relative">
+        <div class="flex items-center gap-2.5 relative shrink-0">
           <div class="relative">
             <button id="profileBtn" aria-label="Profile" class="w-8 h-8 rounded-full bg-brand-600 flex items-center justify-center text-white font-semibold text-sm shadow-sm">A</button>
             <div id="profileDropdown" class="topbar-dropdown hidden">
@@ -115,14 +109,9 @@
         </div>
       </div>
 
-      <!-- ============================================================
-           DASHBOARD
-           ============================================================ -->
-
-      <!-- Page header -->
       <div class="dash-header">
         <div>
-          <h1 class="dash-title">📊 Dashboard</h1>
+          <h1 class="dash-title"> Dashboard</h1>
           <p class="dash-subtitle">Overview of quotations, customers &amp; production</p>
         </div>
         <div class="dash-header-actions">
@@ -133,7 +122,6 @@
         </div>
       </div>
 
-      <!-- Summary cards -->
       <div class="summary-grid">
         <div class="summary-card">
           <div class="summary-icon">
@@ -177,7 +165,6 @@
         </div>
       </div>
 
-      <!-- Charts -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5 mb-3.5">
         <div class="table-card">
           <div class="table-card-head">
@@ -203,7 +190,6 @@
         </div>
       </div>
 
-      <!-- Top Selling Machines -->
       <div class="table-card">
         <div class="table-card-head">
           <div>
@@ -231,7 +217,6 @@
         </div>
       </div>
 
-      <!-- Recent Quotations full table -->
       <div class="table-card">
         <div class="table-card-head">
           <div>
@@ -273,7 +258,6 @@
       </div>
     </main>
 
-    <!-- ============ Right panel ============ -->
     <aside class="app-right hidden xl:flex w-64 shrink-0 flex-col bg-cream border-l border-brand-200 px-4 py-4">
       <p class="right-panel-label mb-2">Quick Actions</p>
       <div class="flex flex-col gap-2 mb-4">
@@ -309,7 +293,6 @@
     </aside>
   </div>
 
-  <!-- ============ View / Edit modal ============ -->
   <div id="quoteModal" class="modal-overlay hidden">
     <div class="modal-panel">
       <div class="modal-header">
@@ -358,7 +341,6 @@
     </div>
   </div>
 
-  <!-- ============ Print slip ============ -->
   <div id="printArea" class="print-area">
     <div class="print-header">
       <div class="print-brand">Vaishnokripa Mercantile Pvt. Ltd.</div>

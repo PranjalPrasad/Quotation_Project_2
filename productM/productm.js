@@ -1221,7 +1221,7 @@
           ${hasGallery ? `<div class="view-media-gallery">${data.gallery.map(g => `<img src="${g.dataUrl || g}" alt="Gallery image">`).join('')}</div>` : ''}
           <div class="view-item" style="margin-top:8px;">
             <div class="view-label">Brochure PDF</div>
-            <div class="view-value">${data.brochure ? `<a href="${data.brochure}" download="${escapeHtml(data.brochureName || 'brochure.pdf')}" style="color:#800021;text-decoration:underline;">${escapeHtml(data.brochureName || 'brochure.pdf')}</a>` : '—'}</div>
+            <div class="view-value">${data.brochure ? `<a href="${data.brochure}" download="${escapeHtml(data.brochureName || 'brochure.pdf')}" title="${escapeHtml(data.brochureName || 'brochure.pdf')}" target="_blank" rel="noopener"><i class="fas fa-file-pdf"></i> View Brochure</a>` : '—'}</div>
           </div>
         </div>
       `;
@@ -1738,6 +1738,8 @@
 
     console.log('✅ Events bound successfully');
   }
+
+  
 
   // =============================================================
   // INIT  (NOW async — loads products from the backend first)

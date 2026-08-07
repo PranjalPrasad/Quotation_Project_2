@@ -87,22 +87,19 @@ html, body {
   }
 }
 
-/* Mobile/Tablet: sidebar drawer */
+/* Mobile/Tablet: sidebar drawer — matches dashboard.css exactly.
+   Collapsed = a persistent 76px icon rail that stays in normal document
+   flow (same as desktop), so it never fully disappears on mobile.
+   Expanded  = that same rail becomes a fixed, full-height overlay drawer
+   with a backdrop, instead of pushing/squeezing page content. */
 @media (max-width: 1023px) {
-  .sidebar {
+  .sidebar.expanded {
     position: fixed;
     top: 0;
     left: 0;
     z-index: 410;
-    transform: translateX(-100%);
     width: 208px;
     box-shadow: 0 16px 40px rgba(90,0,24,0.28);
-  }
-  .sidebar.expanded {
-    transform: translateX(0);
-  }
-  .sidebar.collapsed {
-    transform: translateX(-100%);
   }
   .sidebar-backdrop.visible {
     display: block;
@@ -743,7 +740,13 @@ html, body { max-width: 100vw; overflow-x: hidden; }
 .search-box, .select-input, .btn-primary, .btn-outline, .btn-danger { min-width: 0; }
 
 @media (min-width: 1024px) and (max-width: 1279px) {
-  .app-main { padding-left: 18px !important; padding-right: 18px !important; }
+  .app-main { padding-left: 22px !important; padding-right: 22px !important; }
+}
+
+/* Ultra-wide monitors: cap and center content like dashboard.css does,
+   instead of letting stat cards / tables stretch full-bleed. */
+@media (min-width: 1600px) {
+  .app-main > * { max-width: 1600px; margin-left: auto; margin-right: auto; }
 }
 
 @media (min-width: 768px) and (max-width: 1023px) {
@@ -1057,4 +1060,82 @@ html { font-size: clamp(13px, 0.85vw + 10.5px, 16px); }
 @media (max-width: 480px) {
   .report-data-table { font-size: 9px; }
   .report-meta-table, .report-info-table { font-size: 10px; }
+}
+
+/* ============================================================
+   FINAL RESPONSIVE PATCH — mobile / tablet / desktop hardening
+   ============================================================ */
+
+/* Touch target sizing — real touch devices only (won't shrink mouse UI) */
+@media (hover: none) and (pointer: coarse) {
+  .icon-action-btn { width: 36px; height: 36px; }
+  .btn-icon-sm { width: 34px; height: 34px; }
+  .pagination-btn, .pagination button { min-width: 32px; height: 32px; }
+  .form-field input, .form-field textarea, .form-field select,
+  .items-table input, .items-table select,
+  .cost-input, .select-input { min-height: 40px; }
+  .chip-btn, .btn-primary, .btn-outline, .btn-danger, .btn-success { min-height: 40px; }
+}
+
+/* Tablet portrait (600–1023px): keep the wizard product-picker row usable
+   instead of squeezing the dropdown/qty/rate/buttons into one line */
+@media (min-width: 600px) and (max-width: 1023px) {
+  .quick-add-row select#product-catalog-select { flex: 1 1 100%; }
+  .quick-add-row #product-picker-qty,
+  .quick-add-row #product-picker-rate { flex: 1 1 calc(50% - 4px); width: auto; }
+  .quick-add-row #btn-add-catalog-product,
+  .quick-add-row #chip-custom { flex: 1 1 calc(50% - 4px); justify-content: center; }
+  .items-table { min-width: 560px; }
+}
+
+/* Small phones (<600px): stack the picker fully, one control per row */
+@media (max-width: 599px) {
+  .quick-add-row > * { flex: 1 1 100% !important; width: 100% !important; }
+}
+
+/* Foldables / very narrow phones (≤320px) */
+@media (max-width: 320px) {
+  .sidebar { width: 46px; }
+  .sidebar.expanded { width: 180px; }
+  .nav-item { width: 26px; height: 26px; }
+  .nav-item svg { width: 11px; height: 11px; }
+  html { font-size: 12.5px; }
+  .icon-action-btn { width: 24px; height: 24px; font-size: 10px; }
+}
+
+/* Prevent invoice header/logo from overflowing on very small preview widths */
+@media (max-width: 400px) {
+  .inv-logo { max-width: 90px; height: 34px; }
+  .inv-company-name { font-size: 11px; }
+  .inv-company { font-size: 10px; }
+}
+
+/* Gallery — 2-up grid on phones instead of relying on wrap alone */
+@media (max-width: 480px) {
+  .gallery-grid { gap: 10px; }
+  .gallery-item { width: calc(50% - 5px); }
+  .gallery-item img { width: 100%; height: 90px; }
+}
+
+/* Ultra-wide desktop monitors */
+@media (min-width: 2200px) {
+  .app-main { max-width: 1800px; }
+  html { font-size: 16px; }
+}
+
+/* Large tablets in landscape (iPad Pro etc.) — treat like small desktop,
+   not like a phone, so the sidebar can stay persistent if expanded */
+@media (min-width: 1024px) and (max-width: 1180px) and (orientation: landscape) {
+  .app-main { padding-left: 16px !important; padding-right: 16px !important; }
+}
+
+/* Keep the stats row from ever producing horizontal scroll on narrow tablets */
+@media (min-width: 600px) and (max-width: 767px) {
+  .grid.grid-cols-2 { gap: 8px; }
+}
+
+/* Make sure long customer/quote numbers never force page-level horizontal
+   scroll inside the card-view mobile table */
+@media (max-width: 720px) {
+  .data-table td { word-break: break-word; }
 }
