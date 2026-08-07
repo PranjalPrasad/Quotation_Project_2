@@ -754,14 +754,23 @@
   });
 
   function setupDropdown(btnId, menuId) {
-    const btn = document.getElementById(btnId);
-    const menu = document.getElementById(menuId);
-    btn?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      document.querySelectorAll('.topbar-dropdown').forEach(m => { if (m !== menu) m.classList.add('hidden'); });
-      menu?.classList.toggle('hidden');
-    });
-  }
+  const btn = document.getElementById(btnId);
+  const menu = document.getElementById(menuId);
+  btn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    document.querySelectorAll('.topbar-dropdown').forEach(m => { if (m !== menu) m.classList.add('hidden'); });
+    const willOpen = menu?.classList.contains('hidden');
+    menu?.classList.toggle('hidden');
+    if (willOpen && menu) {
+      menu.style.left = ''; menu.style.right = '0';
+      requestAnimationFrame(() => {
+        const rect = menu.getBoundingClientRect();
+        if (rect.left < 8) { menu.style.right = 'auto'; menu.style.left = (8 - rect.left) + 'px'; }
+      });
+    }
+  });
+}
+
   setupDropdown('profileBtn', 'profileDropdown');
   document.addEventListener('click', () => {
     document.querySelectorAll('.topbar-dropdown').forEach(m => m.classList.add('hidden'));
@@ -940,6 +949,69 @@
       });
     });
   }
+
+
+  function enhanceSelectDropdown(selectId) {
+  const select = document.getElementById(selectId);
+  if (!select || select.dataset.enhanced) return;
+  select.dataset.enhanced = 'true';
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'custom-select-wrapper';
+  select.parentNode.insertBefore(wrapper, select);
+  wrapper.appendChild(select);
+  select.classList.add('custom-select-native');
+
+  const trigger = document.createElement('button');
+  trigger.type = 'button';
+  trigger.className = 'custom-select-trigger select-input';
+  wrapper.appendChild(trigger);
+
+  const menu = document.createElement('div');
+  menu.className = 'custom-select-menu hidden';
+  wrapper.appendChild(menu);
+
+  function buildMenu() {
+    menu.innerHTML = '';
+    Array.from(select.options).forEach(opt => {
+      const item = document.createElement('div');
+      item.className = 'custom-select-option' + (opt.value === select.value ? ' active' : '');
+      item.textContent = opt.textContent;
+      item.addEventListener('click', () => {
+        select.value = opt.value;
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+        menu.classList.add('hidden');
+        syncTrigger();
+      });
+      menu.appendChild(item);
+    });
+  }
+
+  function syncTrigger() {
+    const opt = select.options[select.selectedIndex];
+    trigger.innerHTML = `<span>${opt ? opt.textContent : ''}</span><i class="fas fa-chevron-down"></i>`;
+  }
+
+  trigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isOpen = !menu.classList.contains('hidden');
+    document.querySelectorAll('.custom-select-menu').forEach(m => m.classList.add('hidden'));
+    if (isOpen) return;
+    buildMenu();
+    menu.classList.remove('hidden');
+    menu.style.left = ''; menu.style.right = '0';
+    requestAnimationFrame(() => {
+      const rect = menu.getBoundingClientRect();
+      if (rect.left < 8) { menu.style.right = 'auto'; menu.style.left = (8 - rect.left) + 'px'; }
+    });
+  });
+
+  syncTrigger();
+}
+document.addEventListener('click', () => document.querySelectorAll('.custom-select-menu').forEach(m => m.classList.add('hidden')));
+['filter-status', 'filter-customer', 'filter-date', 'rows-per-page'].forEach(enhanceSelectDropdown);
+
+
 
   // ============================================================
   // DUPLICATE QUOTATION
