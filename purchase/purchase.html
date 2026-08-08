@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Purchase Management — VKM Brick &amp; Block Machinery</title>
+  <script src="/auth.js"></script>
+  <script>
+    Auth.requireAuth();
+    window.addEventListener('pageshow', function () { Auth.requireAuth(); });
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            peach: {
+              50:  "#FCEEF3",
+              100: "#F6DCE8",
+              200: "#EFC8DC",
+              300: "#E8B9CE",
+              400: "#B8285F",
+              500: "#800021",
+              600: "#6B001C",
+              700: "#540016",
+            },
+            cream: "#FCEEF3",
+          },
+          fontFamily: {
+            sans: ["Poppins", "ui-sans-serif", "system-ui"],
+          },
+        },
+      },
+    };
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/purchase/purchase.css" />
+</head>
+<body class="bg-cream">
+
+  <div class="app-shell w-full flex">
+    <div id="sidebarBackdrop" class="sidebar-backdrop hidden"></div>
+
+    <!-- ===================== SIDEBAR (same markup/behaviour as productm.html) ===================== -->
+    <aside id="sidebar" class="sidebar app-sidebar relative flex flex-col items-center py-5 gap-6 bg-cream border-r border-peach-300 transition-all duration-300 ease-in-out w-20 shrink-0">
+      <button id="sidebarToggle" aria-label="Toggle sidebar" class="absolute -right-3 top-8 w-6 h-6 rounded-full bg-cream shadow-md border border-peach-300 flex items-center justify-center text-peach-500 hover:scale-110 transition-transform">
+        <svg id="toggleIcon" class="w-3.5 h-3.5 transition-transform duration-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+      </button>
+
+      <div class="flex items-center justify-center shrink-0">
+        <img src="../img/image.png" alt="VKM Logo" class="w-auto h-10 object-contain" />
+      </div>
+
+      <nav class="nav-list w-full flex-1 flex flex-col items-center gap-1.5 mt-3 px-3">
+        <li class="nav-item" data-label="Dashboard" aria-label="Dashboard" onclick="window.location.href='../dashboard/dashboard.html'" style="list-style:none; width:100%;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect></svg>
+          <span>Dashboard</span>
+        </li>
+        <li class="nav-item" data-label="Product Management" aria-label="Product Management" onclick="window.location.href='../productM/productm.html'" style="list-style:none; width:100%;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><line x1="12" y1="2" x2="12" y2="4.5"></line><line x1="12" y1="19.5" x2="12" y2="22"></line><line x1="2" y1="12" x2="4.5" y2="12"></line><line x1="4.9" y1="4.9" x2="6.6" y2="6.6"></line><line x1="17.4" y1="17.4" x2="19.1" y2="19.1"></line><line x1="4.9" y1="19.1" x2="6.6" y2="17.4"></line><line x1="17.4" y1="6.6" x2="19.1" y2="4.9"></line></svg>
+          <span>Product Management</span>
+        </li>
+        <li class="nav-item" data-label="Quotation Management" aria-label="Quotation Management" onclick="window.location.href='../Quotation/quotation.html'" style="list-style:none; width:100%;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="M9 15h1"></path><path d="M9.5 12.5c0-.83.67-1.5 1.5-1.5h.5a1.5 1.5 0 0 1 0 3H11a1.5 1.5 0 0 0 0 3h.5a1.5 1.5 0 0 0 1.5-1.5"></path><line x1="11" y1="10" x2="11" y2="10.7"></line><line x1="11" y1="17.3" x2="11" y2="18"></line></svg>
+          <span>Quotation Management</span>
+        </li>
+        <li class="nav-item" data-label="Customer Management" aria-label="Customer Management" onclick="window.location.href='../customer/customer.html'" style="list-style:none; width:100%;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect><circle cx="9" cy="11" r="3"></circle><path d="M3 18.5c1.5-2.5 4-4 7-4s5.5 1.5 7 4"></path><path d="M16 9l2 2 4-4"></path></svg>
+          <span>Customer Management</span>
+        </li>
+        <li class="nav-item active" data-label="Purchase" aria-label="Purchase" onclick="window.location.href='../purchase/purchase.html'" style="list-style:none; width:100%;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h14l-1 12H6z"></path><path d="M9 8V6a3 3 0 0 1 6 0v2"></path><line x1="8" y1="12" x2="16" y2="12"></line><line x1="10" y1="16" x2="14" y2="16"></line></svg>
+          <span>Purchase Management</span>
+        </li>
+        <!-- <li class="nav-item" data-label="Reports" aria-label="Reports" onclick="window.location.href='../reports/report.html'" style="list-style:none; width:100%;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
+          <span>Reports</span>
+        </li> -->
+      </nav>
+    </aside>
+
+    <!-- Sidebar toggle — self-contained, identical to productm.html so it works even
+         if purchase.js errors out elsewhere. -->
+    <script>
+      (function () {
+        function init() {
+          var sidebar = document.getElementById('sidebar');
+          var toggleBtn = document.getElementById('sidebarToggle');
+          var toggleIcon = document.getElementById('toggleIcon');
+          var backdrop = document.getElementById('sidebarBackdrop');
+          if (!sidebar || !toggleBtn) return;
+
+          function isMobile() { return window.innerWidth <= 1023; }
+
+          function setExpanded(expanded) {
+            sidebar.classList.toggle('expanded', expanded);
+            sidebar.classList.toggle('collapsed', !expanded);
+            if (toggleIcon) toggleIcon.style.transform = expanded ? 'rotate(180deg)' : 'rotate(0deg)';
+            if (backdrop) {
+              if (expanded && isMobile()) {
+                backdrop.classList.remove('hidden');
+                backdrop.classList.add('visible');
+              } else {
+                backdrop.classList.add('hidden');
+                backdrop.classList.remove('visible');
+              }
+            }
+          }
+
+          toggleBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            setExpanded(!sidebar.classList.contains('expanded'));
+          });
+
+          if (backdrop) {
+            backdrop.addEventListener('click', function () { setExpanded(false); });
+          }
+
+          document.querySelectorAll('#sidebar .nav-item').forEach(function (item) {
+            item.addEventListener('click', function () {
+              if (isMobile()) setExpanded(false);
+            });
+          });
+
+          window.addEventListener('resize', function () {
+            if (!isMobile() && backdrop) {
+              backdrop.classList.add('hidden');
+              backdrop.classList.remove('visible');
+            }
+          });
+
+          setExpanded(!isMobile());
+        }
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', init);
+        } else {
+          init();
+        }
+      })();
+    </script>
+
+    <!-- ===================== MAIN ===================== -->
+    <main class="app-main flex-1 bg-cream px-4 sm:px-5 md:px-6 py-4 min-w-0">
+
+      <!-- Topbar (matches productm.html) -->
+      <div class="flex items-center justify-between mb-4 gap-3 flex-wrap">
+        <div>
+          <p class="text-sm text-gray-700 font-semibold">👋 Hello, Admin</p>
+          <p class="text-[11px] text-gray-400">Manage purchase orders &amp; GST reports</p>
+        </div>
+        <div class="flex items-center gap-2.5 relative">
+          <div class="relative">
+            <button id="profileBtn" aria-label="Profile" class="w-8 h-8 rounded-full bg-peach-500 flex items-center justify-center text-white font-semibold text-sm shadow-sm">A</button>
+            <div id="profileDropdown" class="topbar-dropdown hidden">
+              <button id="profileLogoutBtn" class="topbar-logout-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Offline banner — shown only if the backend (port 8092) is unreachable -->
+      <div id="offlineBanner" class="hidden" style="background:#FEF3C7;border:1px solid #FDE68A;color:#92400E;font-size:12px;font-weight:600;padding:9px 14px;border-radius:10px;margin-bottom:14px;display:flex;align-items:center;gap:8px;">
+        <span>⚠️</span>
+        <span>Server offline — showing demo/sample data. Start the backend on port 8092 to sync real data.</span>
+      </div>
+
+      <!-- Page Header -->
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">📦 Purchase Management</h1>
+          <p class="page-subtitle">Track purchase orders, suppliers &amp; GST compliance (1B &amp; 3B)</p>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap">
+          <button class="btn-primary" onclick="openPurchaseModal()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New Purchase
+          </button>
+          <button class="btn-outline" onclick="openSupplierModal()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Add Supplier
+          </button>
+        </div>
+      </div>
+
+      <!-- Summary Cards -->
+      <div class="summary-grid">
+        <div class="summary-card flex items-center gap-3">
+          <div class="icon purple">📄</div>
+          <div>
+            <div class="label">Total Purchases</div>
+            <div class="value" id="statTotalPurchases">0</div>
+            <div class="trend">All time</div>
+          </div>
+        </div>
+        <div class="summary-card flex items-center gap-3">
+          <div class="icon green">✅</div>
+          <div>
+            <div class="label">Received</div>
+            <div class="value" id="statReceived">0</div>
+            <div class="trend">Completed orders</div>
+          </div>
+        </div>
+        <div class="summary-card flex items-center gap-3">
+          <div class="icon orange">⏳</div>
+          <div>
+            <div class="label">Pending</div>
+            <div class="value" id="statPending">0</div>
+            <div class="trend">Awaiting delivery</div>
+          </div>
+        </div>
+        <div class="summary-card flex items-center gap-3">
+          <div class="icon blue">💰</div>
+          <div>
+            <div class="label">Total Value</div>
+            <div class="value" id="statTotalValue">₹0</div>
+            <div class="trend">Purchase value</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabs: Purchases | GSTR-1B | GSTR-3B -->
+      <div class="tab-bar">
+        <button class="tab-btn active" data-tab="purchases" onclick="switchTab('purchases')">📋 Purchases</button>
+        <button class="tab-btn" data-tab="gstr1b" onclick="switchTab('gstr1b')">📊 GSTR-1B</button>
+        <button class="tab-btn" data-tab="gstr3b" onclick="switchTab('gstr3b')">📊 GSTR-3B</button>
+      </div>
+
+      <!-- ============ TAB 1: PURCHASES LIST ============ -->
+      <div id="tabPurchases" class="tab-content">
+        <div class="filter-bar">
+          <input type="text" id="searchPurchase" placeholder="Search by PO No., Supplier..." class="flex-1 min-w-[150px]" oninput="applyFilters()" />
+          <select id="filterStatus" onchange="applyFilters()">
+            <option value="All">All Status</option>
+            <option value="Pending">Pending</option>
+            <option value="Received">Received</option>
+            <option value="Cancelled">Cancelled</option>
+          </select>
+          <input type="date" id="filterDateFrom" onchange="applyFilters()" />
+          <span class="text-gray-400 text-xs">to</span>
+          <input type="date" id="filterDateTo" onchange="applyFilters()" />
+          <button class="btn-reset" onclick="resetFilters()">Reset</button>
+        </div>
+
+        <div class="table-card">
+          <div class="table-card-header">
+            <div>
+              <h3>Purchase Orders</h3>
+              <p>Manage all your purchase orders</p>
+            </div>
+            <span id="purchaseCount" class="text-xs text-gray-400">0 records</span>
+          </div>
+          <div class="table-scroll">
+            <table class="data-table" id="purchaseTable">
+              <thead>
+                <tr>
+                  <th data-sort="poNo">PO No.</th>
+                  <th data-sort="supplier">Supplier</th>
+                  <th data-sort="date">Date</th>
+                  <th data-sort="amount">Amount</th>
+                  <th data-sort="status">Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="purchaseTbody">
+                <tr><td colspan="6" class="text-center text-gray-400 py-6">Loading...</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="table-footer">
+            <div class="flex items-center gap-2">
+              <span>Rows per page</span>
+              <select id="rowsPerPage" onchange="changeRowsPerPage()">
+                <option value="10">10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+              </select>
+              <span id="rowsRangeLabel">Showing 0-0 of 0</span>
+            </div>
+            <div class="pagination" id="paginationControls"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ TAB 2: GSTR-1B ============ -->
+      <div id="tabGstr1b" class="tab-content hidden">
+        <div class="gst-report-card">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <h4>📊 GSTR-1B — Outward Supply Details</h4>
+              <p class="text-xs text-gray-400">Invoice-wise details of all sales made during the period</p>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <input type="month" id="gstr1bMonth" class="field-input w-auto" />
+              <button class="btn-primary" onclick="generateGstr1b()">Generate</button>
+              <button class="btn-outline" onclick="exportGstr1b()">📥 Export</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="gst-summary-grid mb-4" id="gstr1bSummary">
+          <div class="gst-summary-item"><div class="label">Total Sales</div><div class="value" id="gstr1bTotalSales">₹0</div></div>
+          <div class="gst-summary-item"><div class="label">B2B Sales</div><div class="value" id="gstr1bB2B">₹0</div></div>
+          <div class="gst-summary-item"><div class="label">B2C Sales</div><div class="value" id="gstr1bB2C">₹0</div></div>
+          <div class="gst-summary-item"><div class="label">Total Tax</div><div class="value" id="gstr1bTotalTax">₹0</div></div>
+        </div>
+
+        <div class="table-card">
+          <div class="table-card-header"><h3>Invoice Details</h3></div>
+          <div class="table-scroll">
+            <table class="data-table" id="gstr1bTable">
+              <thead>
+                <tr>
+                  <th>Invoice No.</th><th>Invoice Date</th><th>Customer</th><th>GSTIN</th>
+                  <th>Taxable Value</th><th>CGST</th><th>SGST</th><th>IGST</th><th>Total</th>
+                </tr>
+              </thead>
+              <tbody id="gstr1bTbody">
+                <tr><td colspan="9" class="text-center text-gray-400 py-6">Select month &amp; generate</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ TAB 3: GSTR-3B ============ -->
+      <div id="tabGstr3b" class="tab-content hidden">
+        <div class="gst-report-card">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <h4>📊 GSTR-3B — Summary Return</h4>
+              <p class="text-xs text-gray-400">Summary of outward supplies, inward supplies &amp; tax liability</p>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <input type="month" id="gstr3bMonth" class="field-input w-auto" />
+              <button class="btn-primary" onclick="generateGstr3b()">Generate</button>
+              <button class="btn-outline" onclick="exportGstr3b()">📥 Export</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div class="gst-report-card">
+            <h4>Outward Supplies (Sales)</h4>
+            <div class="gst-summary-grid">
+              <div class="gst-summary-item"><div class="label">Taxable Value</div><div class="value" id="gstr3bOutwardTaxable">₹0</div></div>
+              <div class="gst-summary-item"><div class="label">CGST</div><div class="value" id="gstr3bOutwardCGST">₹0</div></div>
+              <div class="gst-summary-item"><div class="label">SGST</div><div class="value" id="gstr3bOutwardSGST">₹0</div></div>
+              <div class="gst-summary-item"><div class="label">IGST</div><div class="value" id="gstr3bOutwardIGST">₹0</div></div>
+            </div>
+          </div>
+          <div class="gst-report-card">
+            <h4>Inward Supplies (Purchases)</h4>
+            <div class="gst-summary-grid">
+              <div class="gst-summary-item"><div class="label">Taxable Value</div><div class="value" id="gstr3bInwardTaxable">₹0</div></div>
+              <div class="gst-summary-item"><div class="label">ITC CGST</div><div class="value" id="gstr3bInwardCGST">₹0</div></div>
+              <div class="gst-summary-item"><div class="label">ITC SGST</div><div class="value" id="gstr3bInwardSGST">₹0</div></div>
+              <div class="gst-summary-item"><div class="label">ITC IGST</div><div class="value" id="gstr3bInwardIGST">₹0</div></div>
+            </div>
+          </div>
+          <div class="gst-report-card">
+            <h4>Net Tax Liability</h4>
+            <div class="gst-summary-grid">
+              <div class="gst-summary-item"><div class="label">CGST Payable</div><div class="value" id="gstr3bNetCGST">₹0</div></div>
+              <div class="gst-summary-item"><div class="label">SGST Payable</div><div class="value" id="gstr3bNetSGST">₹0</div></div>
+              <div class="gst-summary-item"><div class="label">IGST Payable</div><div class="value" id="gstr3bNetIGST">₹0</div></div>
+              <div class="gst-summary-item"><div class="label">Total Tax Payable</div><div class="value" id="gstr3bNetTotal">₹0</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ================= MODAL: New Purchase Order ================= -->
+  <div id="purchaseModal" class="modal-overlay hidden">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title">New Purchase Order</div>
+          <div class="modal-subtitle">Enter purchase order details</div>
+        </div>
+        <button class="modal-close-btn" onclick="closeModal('purchaseModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="purchaseForm" onsubmit="savePurchase(event)">
+          <div class="form-grid">
+            <div class="field-group full-width">
+              <label class="field-label">Supplier *</label>
+              <select id="poSupplier" class="field-input" required>
+                <option value="">Select Supplier</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label class="field-label">PO Date *</label>
+              <input type="date" id="poDate" class="field-input" required />
+            </div>
+            <div class="field-group">
+              <label class="field-label">Expected Delivery</label>
+              <input type="date" id="poDelivery" class="field-input" />
+            </div>
+            <div class="field-group full-width">
+              <label class="field-label">Items</label>
+              <div id="poItemsContainer">
+                <div class="flex gap-2 items-center mb-2 flex-wrap">
+                  <input type="text" placeholder="Item name" class="field-input flex-1" id="poItemName" style="min-width:120px" />
+                  <input type="number" placeholder="Qty" class="field-input" id="poItemQty" style="width:80px" />
+                  <input type="number" placeholder="Rate" class="field-input" id="poItemRate" style="width:100px" />
+                  <button type="button" class="btn-primary" onclick="addPoItem()">Add</button>
+                </div>
+              </div>
+              <div id="poItemsList" class="text-sm text-gray-600"></div>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Subtotal</label>
+              <input type="number" id="poSubtotal" class="field-input" readonly />
+            </div>
+            <div class="field-group">
+              <label class="field-label">GST (%)</label>
+              <input type="number" id="poGst" class="field-input" value="18" onchange="calcPoTotal()" />
+            </div>
+            <div class="field-group">
+              <label class="field-label">CGST</label>
+              <input type="number" id="poCgst" class="field-input" readonly />
+            </div>
+            <div class="field-group">
+              <label class="field-label">SGST</label>
+              <input type="number" id="poSgst" class="field-input" readonly />
+            </div>
+            <div class="field-group full-width">
+              <label class="field-label">Grand Total</label>
+              <input type="number" id="poGrandTotal" class="field-input" readonly style="font-weight:700;font-size:16px;" />
+            </div>
+            <div class="field-group full-width">
+              <label class="field-label">Notes</label>
+              <input type="text" id="poNotes" class="field-input" placeholder="Any remarks..." />
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeModal('purchaseModal')">Cancel</button>
+        <button class="btn-primary" onclick="document.getElementById('purchaseForm').requestSubmit()">Create Purchase</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: Add Supplier ================= -->
+  <div id="supplierModal" class="modal-overlay hidden">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title">Add Supplier</div>
+          <div class="modal-subtitle">Register a new supplier/vendor</div>
+        </div>
+        <button class="modal-close-btn" onclick="closeModal('supplierModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="supplierForm" onsubmit="saveSupplier(event)">
+          <div class="form-grid">
+            <div class="field-group full-width">
+              <label class="field-label">Supplier Name *</label>
+              <input type="text" id="supplierName" class="field-input" required placeholder="Enter supplier name" />
+            </div>
+            <div class="field-group">
+              <label class="field-label">GSTIN</label>
+              <input type="text" id="supplierGst" class="field-input" placeholder="22AAAAA0000A1Z5" />
+            </div>
+            <div class="field-group">
+              <label class="field-label">Mobile</label>
+              <input type="text" id="supplierMobile" class="field-input" placeholder="9876543210" />
+            </div>
+            <div class="field-group full-width">
+              <label class="field-label">Address</label>
+              <input type="text" id="supplierAddress" class="field-input" placeholder="Full address" />
+            </div>
+            <div class="field-group">
+              <label class="field-label">City</label>
+              <input type="text" id="supplierCity" class="field-input" placeholder="City" />
+            </div>
+            <div class="field-group">
+              <label class="field-label">State</label>
+              <input type="text" id="supplierState" class="field-input" placeholder="State" />
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeModal('supplierModal')">Cancel</button>
+        <button class="btn-primary" onclick="document.getElementById('supplierForm').requestSubmit()">Save Supplier</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container" class="fixed bottom-5 right-5 z-[600] space-y-2 max-w-[calc(100vw-2.5rem)]"></div>
+
+  <script src="/purchase/purchase.js"></script>
+</body>
+</html>
