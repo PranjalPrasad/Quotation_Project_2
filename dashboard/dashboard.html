@@ -1,4 +1,3 @@
-<!-- ============ dashboard.html ============ -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -43,23 +42,24 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<link rel="stylesheet" href="/dashboard/dashboard.css" />
+<link rel="stylesheet" href="./dashboard.css" />
 </head>
 <body class="bg-cream">
   <div class="app-shell w-full flex">
     <div id="sidebarBackdrop" class="sidebar-backdrop hidden"></div>
-
+ 
+    <!-- ===================== SIDEBAR ===================== -->
     <aside id="sidebar" class="sidebar app-sidebar relative flex flex-col items-center py-5 gap-6 bg-cream border-r border-brand-200 transition-all duration-300 ease-in-out w-20 shrink-0">
       <button id="sidebarToggle" aria-label="Toggle sidebar" class="absolute -right-3 top-8 w-6 h-6 rounded-full bg-cream shadow-md border border-brand-200 flex items-center justify-center text-brand-500 hover:scale-110 transition-transform">
         <svg id="toggleIcon" class="w-3.5 h-3.5 transition-transform duration-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="15 18 9 12 15 6"></polyline>
         </svg>
       </button>
-
+ 
       <div class="flex items-center justify-center shrink-0">
-        <img src="/img/image.png" alt="VKM Logo" class="w-auto h-10 object-contain" />
+        <img src="../img/image.png" alt="VKM Logo" class="w-auto h-10 object-contain" />
       </div>
-
+ 
       <nav class="nav-list w-full flex-1 flex flex-col items-center gap-1.5 mt-3 px-3">
         <li data-role="SUPER_ADMIN,ADMIN,SALES" id="menuDashboard" class="nav-item active" data-label="Dashboard" aria-label="Dashboard" onclick="window.location.href='dashboard.html'" style="list-style:none; width:100%;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect></svg>
@@ -88,15 +88,17 @@
         </li>
       </nav>
     </aside>
-
+ 
+    <!-- ===================== MAIN ===================== -->
     <main class="app-main flex-1 bg-cream px-4 sm:px-5 md:px-6 py-4 min-w-0">
-
+ 
+      <!-- Topbar -->
       <div class="flex items-center justify-between mb-4 gap-3 flex-wrap">
-        <div class="min-w-0">
-          <p class="text-sm text-gray-700 truncate">Hello, <span class="font-semibold">Admin</span></p>
-          <p class="text-[11px] text-gray-400 truncate">Here's what's happening at VKM today</p>
+        <div>
+          <p class="text-sm text-gray-700">👋 Hello, <span class="font-semibold">Admin</span></p>
+          <p class="text-[11px] text-gray-400">Here's what's happening at VKM today</p>
         </div>
-        <div class="flex items-center gap-2.5 relative shrink-0">
+        <div class="flex items-center gap-2.5 relative">
           <div class="relative">
             <button id="profileBtn" aria-label="Profile" class="w-8 h-8 rounded-full bg-brand-600 flex items-center justify-center text-white font-semibold text-sm shadow-sm">A</button>
             <div id="profileDropdown" class="topbar-dropdown hidden">
@@ -108,10 +110,15 @@
           </div>
         </div>
       </div>
-
+ 
+      <!-- ============================================================
+           DASHBOARD
+           ============================================================ -->
+ 
+      <!-- Page header -->
       <div class="dash-header">
         <div>
-          <h1 class="dash-title"> Dashboard</h1>
+          <h1 class="dash-title">📊 Dashboard</h1>
           <p class="dash-subtitle">Overview of quotations, customers &amp; production</p>
         </div>
         <div class="dash-header-actions">
@@ -121,7 +128,8 @@
           </div>
         </div>
       </div>
-
+ 
+      <!-- Summary cards -->
       <div class="summary-grid">
         <div class="summary-card">
           <div class="summary-icon">
@@ -158,38 +166,43 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
           </div>
           <div class="min-w-0">
-            <p class="summary-title">Pending Quotation</p>
-            <p class="summary-count" id="kpiConversionRate">20</p>
+            <p class="summary-title">Conversion Rate</p>
+            <p class="summary-count" id="kpiConversionRate">0%</p>
             <p class="summary-trend" id="kpiConversionSub">0 of 0 quotations</p>
           </div>
         </div>
       </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5 mb-3.5">
-        <div class="table-card">
-          <div class="table-card-head">
-            <div>
-              <h2>Monthly Quotation Value Trend</h2>
-              <p>Last 6 months, quotation value raised</p>
-            </div>
+ 
+      <!-- ============================================================
+           CHARTS SECTION - FIXED (2 separate cards)
+           ============================================================ -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+       
+        <!-- Chart 1: Monthly Trend -->
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-brand-200">
+          <div class="mb-3">
+            <h3 class="text-sm font-semibold text-gray-700">Monthly Quotation Value Trend</h3>
+            <p class="text-xs text-gray-400">Last 6 months, quotation value raised</p>
           </div>
-          <div class="table-card-body">
-            <div class="pie-wrap"><canvas id="chartMonthlyTrend"></canvas></div>
-          </div>
-        </div>
-        <div class="table-card">
-          <div class="table-card-head">
-            <div>
-              <h2>Quotation Value by Machine Category</h2>
-              <p>Brick machines vs. components vs. consumables</p>
-            </div>
-          </div>
-          <div class="table-card-body">
-            <div class="pie-wrap"><canvas id="chartCategoryRevenue"></canvas></div>
+          <div class="relative" style="height:220px;">
+            <canvas id="chartMonthlyTrend"></canvas>
           </div>
         </div>
+ 
+        <!-- Chart 2: Category Revenue -->
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-brand-200">
+          <div class="mb-3">
+            <h3 class="text-sm font-semibold text-gray-700">Quotation Value by Machine Category</h3>
+            <p class="text-xs text-gray-400">Brick machines vs. components vs. consumables</p>
+          </div>
+          <div class="relative" style="height:220px;">
+            <canvas id="chartCategoryRevenue"></canvas>
+          </div>
+        </div>
+ 
       </div>
-
+ 
+      <!-- Top Selling Machines -->
       <div class="table-card">
         <div class="table-card-head">
           <div>
@@ -216,7 +229,8 @@
           </div>
         </div>
       </div>
-
+ 
+      <!-- Recent Quotations full table -->
       <div class="table-card">
         <div class="table-card-head">
           <div>
@@ -257,7 +271,8 @@
         </div>
       </div>
     </main>
-
+ 
+    <!-- ============ Right panel ============ -->
     <aside class="app-right hidden xl:flex w-64 shrink-0 flex-col bg-cream border-l border-brand-200 px-4 py-4">
       <p class="right-panel-label mb-2">Quick Actions</p>
       <div class="flex flex-col gap-2 mb-4">
@@ -278,21 +293,26 @@
           View Reports
         </button>
       </div>
-
+ 
       <div class="flex items-center justify-between mb-2">
         <p class="right-panel-label">Recent Quotations</p>
       </div>
       <div id="recentQuotationsList" class="flex flex-col gap-1.5 mb-4"></div>
-
+ 
       <p class="right-panel-label mb-2">Machines in Production</p>
       <div class="bg-brand-100/60 rounded-xl p-3 border border-brand-200 flex-1">
         <p class="text-lg font-semibold text-gray-800" id="rightInProduction">—</p>
         <p class="text-[10.5px] text-gray-400 mb-2">Units currently on the shop floor</p>
         <div id="rightProductionBreakdown" class="flex flex-col gap-1.5 text-[11px] text-gray-600"></div>
       </div>
+ 
+      <!-- Recent Payments -->
+      <p class="right-panel-label mt-4 mb-2">Recent Payments</p>
+      <div id="recentPaymentsList" class="flex flex-col gap-2.5"></div>
     </aside>
   </div>
-
+ 
+  <!-- ============ View / Edit modal ============ -->
   <div id="quoteModal" class="modal-overlay hidden">
     <div class="modal-panel">
       <div class="modal-header">
@@ -340,7 +360,8 @@
       </div>
     </div>
   </div>
-
+ 
+  <!-- ============ Print slip ============ -->
   <div id="printArea" class="print-area">
     <div class="print-header">
       <div class="print-brand">Vaishnokripa Mercantile Pvt. Ltd.</div>
@@ -358,9 +379,9 @@
     </table>
     <div class="print-footer">Generated on <span id="pGenDate"></span></div>
   </div>
-
+ 
   <div id="toast-container" class="fixed bottom-5 right-5 z-[400] space-y-2 max-w-[calc(100vw-2.5rem)]"></div>
-
-<script src="/dashboard/dashboard.js"></script>
+ 
+  <script src="/dashboard/dashboard.js"></script>
 </body>
 </html>
